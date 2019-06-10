@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  backend:
+    container_name: bs-api
+    build:
+      context: ./
+      dockerfile: Dockerfile-backend
+    ports:
+      - "8080:8080"
+    environment:
+     - NODE_ENV=local
+     - ES_HOST=elasticsearch
+     - PORT=3000
+
+  frontend: # Nginx Server For Frontend App
+    container_name: bs-frontend
+    image: nginx
+    volumes: # Serve local "public" dir
+      - ./public:/usr/share/nginx/html
+    ports:
+      - "8080:80" # Forward site to localhost:8080
+
+  elasticsearch: # Elasticsearch Instance
+    container_name: bs-search
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
+    volumes: # Persist ES data in seperate "esdata" volume
+      - esdata:/usr/share/elasticsearch/data
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+    ports: # Expose ElasticSearch ports
+      - "9300:9300"
+      - "9200:9200"
+
+volumes:
+  esdata:
