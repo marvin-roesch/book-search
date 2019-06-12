@@ -4,7 +4,7 @@
     <h1>Book Search</h1>
     <SearchBar></SearchBar>
     <div class="book-list">
-      <router-link to="/new-book">Add Book</router-link>
+      <router-link :to="{name: 'book-upload'}">Add Book</router-link>
     </div>
   </div>
 </div>

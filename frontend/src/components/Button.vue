@@ -1,5 +1,5 @@
 <template>
-<router-link ref="button" :class="classes" :to="to" v-if="to">
+<router-link ref="button" :class="classes" :to="to" v-if="to && !disabled">
   <slot></slot>
 </router-link>
 <button ref="button" :class="classes" @click.prevent="click" :style="{width: fixedWidth}" v-else>
@@ -116,6 +116,12 @@ $primary: #42b983;
     border: 0.25rem solid rgba(255, 255, 255, 0.3);
     border-top-color: rgba(255, 255, 255, 0.75);
     animation: 1.5s spin infinite linear;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

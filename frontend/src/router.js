@@ -1,6 +1,10 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 import Home from './views/Home.vue';
+import NewBook from '@/views/NewBook.vue';
+import BookUploader from '@/components/wizard/BookUploader.vue';
+import TableOfContents from '@/components/wizard/TableOfContents.vue';
+import MetadataEditor from '@/components/wizard/MetadataEditor.vue';
 
 Vue.use(Router);
 
@@ -15,8 +19,25 @@ export default new Router({
     },
     {
       path: '/new-book',
-      name: 'add_book',
-      component: () => import('./views/NewBook.vue'),
+      name: 'new-book',
+      component: NewBook,
+      children: [
+        {
+          path: '/',
+          name: 'book-upload',
+          component: BookUploader,
+        },
+        {
+          path: '/metadata',
+          name: 'book-metadata',
+          component: MetadataEditor,
+        },
+        {
+          path: '/table-of-contents',
+          name: 'table-of-contents',
+          component: TableOfContents,
+        },
+      ],
     },
   ],
 });
