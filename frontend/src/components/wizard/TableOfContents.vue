@@ -62,7 +62,12 @@ export default {
             },
           },
         );
-        console.log(book);
+        setTimeout(
+          () => {
+            this.$router.push({ name: 'book-classes', params: { book } });
+          },
+          500,
+        );
       } catch (error) {
         this.updating = false;
       }

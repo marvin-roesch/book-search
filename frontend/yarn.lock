@@ -2830,6 +2830,11 @@ css@^2.1.0:
     source-map-resolve "^0.5.2"
     urix "^0.1.0"
 
+cssbeautify@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/cssbeautify/-/cssbeautify-0.3.1.tgz#12dd1f734035c2e6faca67dcbdcef74e42811397"
+  integrity sha1-Et0fc0A1wub6ymfcvc73TkKBE5c=
+
 cssesc@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/cssesc/-/cssesc-0.1.0.tgz#c814903e45623371a0477b40109aaafbeeaddbb4"
@@ -4598,7 +4603,7 @@ hex-color-regex@^1.1.0:
   resolved "https://registry.yarnpkg.com/hex-color-regex/-/hex-color-regex-1.1.0.tgz#4c06fccb4602fe2602b3c93df82d7e7dbf1a8a8e"
   integrity sha512-l9sfDFsuqtOqKDsQdqrMRk0U85RZc0RtOR9yPI7mRVOa4FsR/BVnZ0shmQRM96Ji99kYZP/7hn1cedc1+ApsTQ==
 
-highlight.js@^9.6.0:
+highlight.js@*, highlight.js@^9.6.0:
   version "9.15.8"
   resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-9.15.8.tgz#f344fda123f36f1a65490e932cf90569e4999971"
   integrity sha512-RrapkKQWwE+wKdF73VsOa2RQdIoO3mxwJ4P8mhbI6KYJUraUHRKM5w5zQQKXNk0xNL4UVRdulV9SBJcmzJNzVA==
@@ -9587,6 +9592,13 @@ vue-feather-icons@^4.22.0:
   dependencies:
     babel-helper-vue-jsx-merge-props "^2.0.2"
 
+vue-highlightjs@^1.3.3:
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/vue-highlightjs/-/vue-highlightjs-1.3.3.tgz#29a0d57132fc1ce15cfa61e896918f5b718c5d52"
+  integrity sha1-KaDVcTL8HOFc+mHolpGPW3GMXVI=
+  dependencies:
+    highlight.js "*"
+
 vue-hot-reload-api@^2.3.0:
   version "2.3.3"
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.3.3.tgz#2756f46cb3258054c5f4723de8ae7e87302a1ccf"
@@ -9624,6 +9636,13 @@ vue-router@^3.0.3:
   resolved "https://registry.yarnpkg.com/vue-router/-/vue-router-3.0.6.tgz#2e4f0f9cbb0b96d0205ab2690cfe588935136ac3"
   integrity sha512-Ox0ciFLswtSGRTHYhGvx2L44sVbTPNS+uD2kRISuo8B39Y79rOo0Kw0hzupTmiVtftQYCZl87mwldhh2L9Aquw==
 
+vue-shadow-dom@^1.3.1:
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/vue-shadow-dom/-/vue-shadow-dom-1.3.1.tgz#9116da468e83e44a3c54a504bdcbb1f43b246da7"
+  integrity sha512-mJC1C3n6Hfv3HogucpyLt/VZxfdAsKn1uGj27d3nqr9+tRmd11Xsu0Q02YGg1muyjctRsPDZFN5PwGZgDtoJ6g==
+  dependencies:
+    vue "^2.6.6"
+
 vue-style-loader@^4.1.0:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/vue-style-loader/-/vue-style-loader-4.1.2.tgz#dedf349806f25ceb4e64f3ad7c0a44fba735fcf8"
@@ -9645,7 +9664,12 @@ vue-template-es2015-compiler@^1.6.0, vue-template-es2015-compiler@^1.9.0:
   resolved "https://registry.yarnpkg.com/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.9.1.tgz#1ee3bc9a16ecbf5118be334bb15f9c46f82f5825"
   integrity sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==
 
-vue@^2.6.10:
+vue2-transitions@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/vue2-transitions/-/vue2-transitions-0.3.0.tgz#765fc0d743103fcfe2d10f431697d8873a075c17"
+  integrity sha512-m1ad8K8kufqiEhj5gXHkkqOioI5sW0FaMbRiO0Tv2WFfGbO2eIKrfkFiO3HPQtMJboimaLCN4p/zL81clLbG4w==
+
+vue@^2.6.10, vue@^2.6.6:
   version "2.6.10"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.6.10.tgz#a72b1a42a4d82a721ea438d1b6bf55e66195c637"
   integrity sha512-ImThpeNU9HbdZL3utgMCq0oiMzAkt1mcgy3/E6zWC/G6AaQoeuFdsl9nDhTDU3X1R6FK7nsIUuRACVcjI+A2GQ==

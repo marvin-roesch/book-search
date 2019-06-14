@@ -5,6 +5,7 @@ import NewBook from '@/views/NewBook.vue';
 import BookUploader from '@/components/wizard/BookUploader.vue';
 import TableOfContents from '@/components/wizard/TableOfContents.vue';
 import MetadataEditor from '@/components/wizard/MetadataEditor.vue';
+import ClassMapper from '@/components/wizard/ClassMapper.vue';
 
 Vue.use(Router);
 
@@ -36,6 +37,11 @@ export default new Router({
           path: '/table-of-contents',
           name: 'table-of-contents',
           component: TableOfContents,
+        },
+        {
+          path: '/classes',
+          name: 'book-classes',
+          component: ClassMapper,
         },
       ],
     },
