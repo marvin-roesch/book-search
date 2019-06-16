@@ -24,16 +24,20 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var author by Books.author
 }
 
-object TableOfContentEntries : IntIdTable() {
+object Chapters : IntIdTable() {
     val book = reference("book", Books).index()
     val tocReference = varchar("toc_reference", 255)
+    val title = varchar("title", 255)
+    val content = text("content")
 }
 
-class TableOfContentEntry(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<TableOfContentEntry>(TableOfContentEntries)
+class Chapter(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<Chapter>(Chapters)
 
-    var book by Book referencedOn TableOfContentEntries.book
-    var tocReference by TableOfContentEntries.tocReference
+    var book by Book referencedOn Chapters.book
+    var title by Chapters.title
+    var tocReference by Chapters.tocReference
+    var content by Chapters.content
 }
 
 object Images : Table() {

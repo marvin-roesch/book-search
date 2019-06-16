@@ -62,12 +62,7 @@ export default {
             },
           },
         );
-        setTimeout(
-          () => {
-            this.$router.push({ name: 'book-classes', params: { book } });
-          },
-          500,
-        );
+        this.$router.push({ name: 'book-classes', params: { book } });
       } catch (error) {
         this.updating = false;
       }

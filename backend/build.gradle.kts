@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     application
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.30"
     id("com.github.johnrengelman.shadow") version "5.0.0"
 }
 
@@ -31,6 +31,11 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.freeCompilerArgs = listOf(
+        "-Xnew-inference",
+        "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi",
+        "-Xuse-experimental=kotlinx.coroutines.ObsoleteCoroutinesApi"
+    )
 }
 
 application {

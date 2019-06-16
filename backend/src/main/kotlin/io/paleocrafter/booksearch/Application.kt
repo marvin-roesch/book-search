@@ -25,11 +25,10 @@ import io.ktor.routing.patch
 import io.ktor.routing.put
 import io.ktor.routing.route
 import io.ktor.routing.routing
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.find
 import kotlinx.coroutines.channels.mapNotNull
-import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.launch
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
@@ -42,11 +41,10 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
-
-val db = Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=MYSQL", driver = "org.h2.Driver")
 
 fun Application.main() {
     install(DefaultHeaders)
@@ -61,15 +59,27 @@ fun Application.main() {
         }
     }
 
+    Database.connect(
+        environment.config.property("db.connection").getString(),
+        environment.config.property("db.driver").getString()
+    )
+
     transaction {
-        SchemaUtils.create(Books, TableOfContentEntries, Images)
+        SchemaUtils.create(Books, Chapters, Images)
     }
+
+    val index = BookIndex()
 
     routing {
         route("api") {
             put("book") {
                 val multipart = call.receiveMultipart()
-                val file = produce { multipart.forEachPart { send(it) } }
+                val channel = Channel<PartData>()
+                launch {
+                    multipart.forEachPart { channel.send(it) }
+                    channel.close()
+                }
+                val file = channel
                     .mapNotNull { it as? PartData.FileItem }
                     .find { it.name == "book" && File(it.originalFileName).extension == "epub" }
                     ?: return@put call.respond(
@@ -89,7 +99,7 @@ fun Application.main() {
                 val bookId = UUID.randomUUID()
                 val bookAuthor = epub.metadata.authors.first()
                 val authorName = "${bookAuthor.firstname} ${bookAuthor.lastname}"
-                val book = transaction(db) {
+                val book = transaction {
                     val blob = connection.createBlob()
                     buffer.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
                     Book.new(bookId) {
@@ -111,7 +121,7 @@ fun Application.main() {
                 val id = UUID.fromString(call.parameters["id"])
                 val request = call.receive<BookPatchRequest>()
                 val epubReader = EpubReader()
-                val epub = transaction(db) {
+                val epub = transaction {
                     val book = Book.findById(id) ?: return@transaction null
                     book.title = request.title
                     book.author = request.author
@@ -137,24 +147,19 @@ fun Application.main() {
                 val id = UUID.fromString(call.parameters["id"])
                 val entries = call.receive<Set<String>>()
                 val epubReader = EpubReader()
-                val classes = transaction(db) {
+                val classes = transaction {
                     val book = Book.findById(id) ?: return@transaction null
 
-                    TableOfContentEntries.deleteWhere { TableOfContentEntries.book eq id }
+                    Chapters.deleteWhere { Chapters.book eq id }
                     Images.deleteWhere { Images.book eq id }
 
                     val epub = epubReader.readEpub(book.content.binaryStream)
                     val linearized = epub.tableOfContents.tocReferences
                         .flatMap { linearizeTableOfContents(it) }
                         .filter { it.first in entries }
-                    for ((ref, _) in linearized) {
-                        TableOfContentEntry.new {
-                            this.book = book
-                            tocReference = ref
-                        }
-                    }
+                        .map { it.first to Jsoup.parse(String(it.second.resource.data)) }
 
-                    linearized
+                    val processed = linearized
                         .flatMap { ref ->
                             ref.second.processContent(id, epub.resources) { name, data ->
                                 val blob = connection.createBlob()
@@ -168,6 +173,16 @@ fun Application.main() {
                         }
                         .groupBy { it.name }
                         .map { it.value.first().copy(occurrences = it.value.size) }
+
+                    for ((ref, content) in linearized) {
+                        Chapter.new {
+                            this.book = book
+                            tocReference = ref
+                            this.content = content.outerHtml()
+                        }
+                    }
+
+                    processed
                 } ?: return@put call.respond(
                     HttpStatusCode.NotFound,
                     mapOf("message" to "Book with ID '$id' does not exist")
@@ -186,7 +201,7 @@ fun Application.main() {
                     HttpStatusCode.BadRequest,
                     mapOf("message" to "Image name must be provided")
                 )
-                val (imageType, imageData) = transaction(db) {
+                val (imageType, imageData) = transaction {
                     val book = Book.findById(id) ?: return@transaction null
 
                     val image = Images.select { (Images.book eq book.id) and (Images.name eq name) }.firstOrNull()
@@ -200,6 +215,25 @@ fun Application.main() {
                 )
 
                 call.respond(ByteArrayContent(imageData, imageType))
+            }
+
+            put("/book/{id}/index") {
+                val id = UUID.fromString(call.parameters["id"])
+                val classMappings = call.receive<Map<String, String>>().mapValues { BookStyle.fromJson(it.value) ?: BookStyle.STRIP_CLASS }
+                val chapters = transaction {
+                    val book = Book.findById(id) ?: return@transaction null
+                    Chapter.find { Chapters.book eq book.id }.map { it.title to it.content }
+                } ?: return@put call.respond(
+                    HttpStatusCode.NotFound,
+                    mapOf("message" to "Book with ID '$id' does not exist")
+                )
+
+                index.index(id, chapters, classMappings)
+
+                call.respond(mapOf(
+                    "id" to id,
+                    "message" to "success"
+                ))
             }
         }
     }
@@ -218,14 +252,13 @@ fun serializeTableOfContents(toc: TOCReference): Map<String, Any> {
 val TOCReference.id: String
     get() = "$fragmentId.$resourceId"
 
-fun TOCReference.processContent(bookId: UUID, resources: Resources, imageHandler: (name: String, data: ByteArray) -> Unit): List<HtmlClass> {
-    val content = Jsoup.parse(String(this.resource.data))
-    val styles = content.select("link[rel='stylesheet']")
+fun Document.processContent(bookId: UUID, resources: Resources, imageHandler: (name: String, data: ByteArray) -> Unit): List<HtmlClass> {
+    val styles = this.select("link[rel='stylesheet']")
         .map { it.attr("href") }
         .mapNotNull { resources.getByIdOrHref(it) }
         .joinToString("\n") { String(it.data, Charset.forName(it.inputEncoding)) }
 
-    val images = content.select("img")
+    val images = this.select("img")
     for (img in images) {
         val src = img.attr("src")
         val data = resources.getByHref(src).data
@@ -233,8 +266,8 @@ fun TOCReference.processContent(bookId: UUID, resources: Resources, imageHandler
         img.attr("src", "/api/book/$bookId/images/$src")
     }
 
-    return content.body().allElements
-        .filter { it.html().isNotEmpty() }
+    return this.body().allElements
+        .filter { it.`is`("p") || it.parents().any { p -> p.`is`("p") } }
         .flatMap { el ->
             el.classNames().map { HtmlClass(it, el.outerHtml(), styles) }
         }
@@ -244,8 +277,4 @@ data class HtmlClass(val name: String, val sample: String, val styles: String, v
 
 fun linearizeTableOfContents(toc: TOCReference): List<Pair<String, TOCReference>> {
     return listOf(toc.id to toc) + toc.children.flatMap { linearizeTableOfContents(it) }
-}
-
-fun main() {
-    embeddedServer(Netty, 3080, module = Application::main).start()
 }

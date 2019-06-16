@@ -62,12 +62,7 @@ export default {
             },
           },
         );
-        setTimeout(
-          () => {
-            this.$router.push({ name: 'table-of-contents', params: { book } });
-          },
-          500,
-        );
+        this.$router.push({ name: 'table-of-contents', params: { book } });
       } catch (error) {
         this.updating = false;
       }

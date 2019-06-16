@@ -52,12 +52,7 @@ export default {
             }).bind(this),
           },
         );
-        setTimeout(
-          () => {
-            this.$router.push({ name: 'book-metadata', params: { book } });
-          },
-          500
-        );
+        this.$router.push({ name: 'book-metadata', params: { book } });
       } catch (error) {
 
       }
