@@ -22,6 +22,7 @@ import io.ktor.request.receiveMultipart
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.patch
+import io.ktor.routing.post
 import io.ktor.routing.put
 import io.ktor.routing.route
 import io.ktor.routing.routing
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
+import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
@@ -154,14 +156,14 @@ fun Application.main() {
                     Images.deleteWhere { Images.book eq id }
 
                     val epub = epubReader.readEpub(book.content.binaryStream)
-                    val linearized = epub.tableOfContents.tocReferences
+                    val chapters = epub.tableOfContents.tocReferences
                         .flatMap { linearizeTableOfContents(it) }
                         .filter { it.first in entries }
-                        .map { it.first to Jsoup.parse(String(it.second.resource.data)) }
+                        .map { Pair(it.first, it.second.title) to Jsoup.parse(String(it.second.resource.data)) }
 
-                    val processed = linearized
-                        .flatMap { ref ->
-                            ref.second.processContent(id, epub.resources) { name, data ->
+                    val processed = chapters
+                        .flatMap { chapter ->
+                            chapter.second.processContent(id, epub.resources) { name, data ->
                                 val blob = connection.createBlob()
                                 data.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
                                 Images.insertIgnore {
@@ -174,10 +176,11 @@ fun Application.main() {
                         .groupBy { it.name }
                         .map { it.value.first().copy(occurrences = it.value.size) }
 
-                    for ((ref, content) in linearized) {
-                        Chapter.new {
+                    for ((metadata, content) in chapters) {
+                        Chapter.new(UUID.randomUUID()) {
                             this.book = book
-                            tocReference = ref
+                            tocReference = metadata.first
+                            this.title = metadata.second
                             this.content = content.outerHtml()
                         }
                     }
@@ -222,7 +225,7 @@ fun Application.main() {
                 val classMappings = call.receive<Map<String, String>>().mapValues { BookStyle.fromJson(it.value) ?: BookStyle.STRIP_CLASS }
                 val chapters = transaction {
                     val book = Book.findById(id) ?: return@transaction null
-                    Chapter.find { Chapters.book eq book.id }.map { it.title to it.content }
+                    Chapter.find { Chapters.book eq book.id }.map { it.also { c -> c.refresh() } }
                 } ?: return@put call.respond(
                     HttpStatusCode.NotFound,
                     mapOf("message" to "Book with ID '$id' does not exist")
@@ -235,9 +238,32 @@ fun Application.main() {
                     "message" to "success"
                 ))
             }
+
+            post("/search") {
+                val request = call.receive<SearchRequest>()
+                val searchResult = index.search(0, request.query)
+
+                val response = transaction {
+                    searchResult.results.map {
+                        val book = Book.findById(it.bookId) ?: return@transaction null
+                        mapOf(
+                            "book" to book.title,
+                            "chapter" to it.chapter,
+                            "paragraphs" to it.paragraphs
+                        )
+                    }
+                } ?: return@post call.respond(
+                    HttpStatusCode.NotFound,
+                    mapOf("message" to "Book does not exist")
+                )
+
+                call.respond(response)
+            }
         }
     }
 }
+
+data class SearchRequest(val query: String)
 
 data class BookPatchRequest(val title: String, val author: String)
 

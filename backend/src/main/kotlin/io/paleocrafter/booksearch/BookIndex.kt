@@ -8,6 +8,10 @@ import org.elasticsearch.action.admin.indices.open.OpenIndexRequest
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest
 import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.index.IndexRequest
+import org.elasticsearch.action.search.MultiSearchRequest
+import org.elasticsearch.action.search.MultiSearchResponse
+import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestHighLevelClient
@@ -15,6 +19,10 @@ import org.elasticsearch.client.indices.CreateIndexRequest
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.indices.PutMappingRequest
 import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.index.query.Operator
+import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.builder.SearchSourceBuilder
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.intellij.lang.annotations.Language
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -22,6 +30,7 @@ import org.jsoup.nodes.Node
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
+
 
 class BookIndex {
     private val client = RestHighLevelClient(
@@ -117,7 +126,7 @@ class BookIndex {
     }
 
     suspend fun reset() {
-        if (suspendCoroutine<Boolean> {
+        if (suspendCoroutine {
                 client.indices().existsAsync(GetIndexRequest("chapters"), RequestOptions.DEFAULT, SuspendingActionListener(it))
             }) {
             suspendCoroutine {
@@ -126,7 +135,8 @@ class BookIndex {
         }
     }
 
-    suspend fun index(id: UUID, chapters: Iterable<Pair<String, String>>, classMappings: Map<String, BookStyle>) {
+    suspend fun index(id: UUID, chapters: Iterable<Chapter>, classMappings: Map<String, BookStyle>) {
+        reset()
         ensureElasticIndex()
         val entries = chapters.flatMap { this.collectEntries(it, classMappings) }
 
@@ -147,15 +157,15 @@ class BookIndex {
         }
     }
 
-    private fun collectEntries(chapter: Pair<String, String>, classMappings: Map<String, BookStyle>): List<IndexEntry> {
-        val content = Jsoup.parse(chapter.second).body()
+    private fun collectEntries(chapter: Chapter, classMappings: Map<String, BookStyle>): List<IndexEntry> {
+        val content = Jsoup.parse(chapter.content).body()
         content.stripStyles()
         content.stripLinks()
         content.mapClasses(classMappings)
 
         val paragraphs = content.select("p")
 
-        return paragraphs.mapIndexed { position, p -> IndexEntry(chapter.first, position, p.html(), p.classNames()) }
+        return paragraphs.mapIndexed { position, p -> IndexEntry(chapter.title, position, p.html(), p.classNames()) }
     }
 
     private fun Element.stripStyles() {
@@ -195,11 +205,91 @@ class BookIndex {
             last.after(node)
             node
         }
+        remove()
+    }
+
+    suspend fun search(page: Int, query: String): SearchResults {
+        val baseQuery = SearchSourceBuilder()
+        baseQuery.query(QueryBuilders.queryStringQuery(query).defaultField("text.stripped").defaultOperator(Operator.AND))
+        baseQuery.size(10)
+        baseQuery.from(page * 10)
+
+        baseQuery.highlighter(
+            HighlightBuilder().field(
+                HighlightBuilder.Field("text.stripped")
+                    .numOfFragments(0)
+                    .preTags("<strong>")
+                    .postTags("</strong>")
+            )
+        )
+
+        val baseResponse = suspendCoroutine<SearchResponse> {
+            client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
+        }
+
+        val contextRequest = MultiSearchRequest()
+        for (hit in baseResponse.hits) {
+            val source = hit.sourceAsMap
+            val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
+            val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
+            val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
+            val contextQuery = SearchSourceBuilder()
+            contextQuery.query(
+                QueryBuilders.boolQuery()
+                    .should(
+                        QueryBuilders.boolQuery()
+                            .must(QueryBuilders.termQuery("book", bookId))
+                            .must(QueryBuilders.termQuery("chapter", chapter))
+                            .must(QueryBuilders.rangeQuery("position").from(position - 2).to(position + 2))
+                    )
+                    .mustNot(
+                        QueryBuilders.termQuery("position", position)
+                    )
+            )
+            contextRequest.add(SearchRequest("chapters").source(contextQuery))
+        }
+        val contextResponses = if (baseResponse.hits.any()) {
+            suspendCoroutine<MultiSearchResponse> {
+                client.msearchAsync(contextRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
+            }.responses
+        } else {
+            emptyArray()
+        }
+
+        return SearchResults(
+            baseResponse.hits.totalHits.value,
+            baseResponse.hits.mapIndexed { index, hit ->
+                val context = contextResponses[index].response.hits.map {
+                    val source = it.sourceAsMap
+                    val position = source["position"] as? Int
+                        ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
+                    val text = source["text"] as? String ?: throw IllegalStateException("Indexed paragraph must have text!")
+                    val classes = source["classes"] as? List<String>
+                        ?: throw IllegalStateException("Indexed paragraph must have class array!")
+
+                    SearchParagraph(false, position, text, classes)
+                }
+                val source = hit.sourceAsMap
+                val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
+                val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
+                val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
+                val text = hit.highlightFields["text.stripped"]?.fragments?.first()
+                    ?: throw IllegalStateException("Search result must have highlight!")
+                val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
+                val paragraph = SearchParagraph(true, position, text.string(), classes)
+
+                SearchResult(
+                    UUID.fromString(bookId),
+                    chapter,
+                    (context + paragraph).sortedBy { it.position }
+                )
+            }
+        )
     }
 
     private data class IndexEntry(val chapter: String, val position: Int, val text: String, val classes: Set<String>)
 
-    class SuspendingActionListener<T>(private val continuation: Continuation<T>) : ActionListener<T> {
+    private class SuspendingActionListener<T>(private val continuation: Continuation<T>) : ActionListener<T> {
         override fun onFailure(e: Exception) {
             continuation.resumeWith(Result.failure(e))
         }
@@ -209,3 +299,9 @@ class BookIndex {
         }
     }
 }
+
+data class SearchResults(val totalHits: Long, val results: List<SearchResult>)
+
+data class SearchResult(val bookId: UUID, val chapter: String, val paragraphs: List<SearchParagraph>)
+
+class SearchParagraph(val main: Boolean, val position: Int, val text: String, val classes: List<String>)

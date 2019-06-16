@@ -6,6 +6,7 @@ import BookUploader from '@/components/wizard/BookUploader.vue';
 import TableOfContents from '@/components/wizard/TableOfContents.vue';
 import MetadataEditor from '@/components/wizard/MetadataEditor.vue';
 import ClassMapper from '@/components/wizard/ClassMapper.vue';
+import SearchResults from '@/views/SearchResults.vue';
 
 Vue.use(Router);
 
@@ -44,6 +45,11 @@ export default new Router({
           component: ClassMapper,
         },
       ],
+    },
+    {
+      path: '/search',
+      name: 'search',
+      component: SearchResults,
     },
   ],
 });
