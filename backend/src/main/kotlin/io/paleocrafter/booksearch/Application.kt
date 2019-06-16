@@ -175,7 +175,8 @@ fun Application.main() {
 
                 call.respond(mapOf(
                     "id" to id,
-                    "classes" to classes
+                    "classes" to classes,
+                    "mappings" to BookStyle.values().groupBy { it.group }
                 ))
             }
 
