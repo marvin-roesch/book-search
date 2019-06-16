@@ -16,7 +16,7 @@
           </a>
           <transition name="fade">
             <div class="search-results-toolbar-filter-container" v-if="filterVisible">
-              <book-filter :series="this.series"></book-filter>
+              <book-filter :series="this.series" @filtered="onFilter"></book-filter>
             </div>
           </transition>
         </div>
@@ -79,12 +79,24 @@ export default {
       infiniteId: (new Date()).getTime(),
     };
   },
+  async mounted() {
+    const { data: allSeries } = await axios.get('/api/series');
+    const { books, series } = this.$route.query;
+    const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
+    const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
+    this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesFilter, bookFilter));
+  },
   methods: {
-    async search(query, page) {
-      const { data: series } = await axios.get('/api/series');
-      this.series = series.map(s => this.prepareSeries(s));
+    async search() {
+      const { books, series } = this.$route.query;
+      const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
+      const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
+
       const { data: { results, totalHits } } = await axios.post('/api/search', {
-        query, page,
+        query: this.$route.query.q,
+        page: this.page,
+        bookFilter,
+        seriesFilter,
       });
       const mapped = results.map(({ book, chapter, paragraphs }) => {
         const mainParagraph = paragraphs.find(p => p.main);
@@ -105,18 +117,41 @@ export default {
 
       return mapped.length > 0;
     },
-    prepareSeries(series) {
+    prepareSeries(path, series, seriesFilter, bookFilter) {
       return {
         ...series,
-        books: series.books.map(b => ({ ...b, selected: true })),
-        children: series.children.map(s => this.prepareSeries(s)),
+        books: series.books
+          .map(b => ({
+            ...b,
+            selected: (seriesFilter === null || seriesFilter.includes(path))
+              || (bookFilter === null || bookFilter.includes(b.id)),
+          })),
+        children: series.children
+          .map(s => this.prepareSeries(`${path}\\${s.name}`, s, seriesFilter, bookFilter)),
       };
     },
     onQueryChange(event) {
-      this.$router.push({ name: 'search', query: { q: event.target.value } });
+      this.$router.push({
+        name: 'search',
+        query: {
+          q: event.target.value,
+          series: this.$route.query.series,
+          books: this.$route.query.books,
+        },
+      });
+    },
+    onFilter({ series, books }) {
+      this.$router.push({
+        name: 'search',
+        query: {
+          q: this.$route.query.q,
+          series: series.join('+'),
+          books: books.join('+'),
+        },
+      });
     },
     async infiniteHandler($state) {
-      if (await this.search(this.$route.query.q, this.page)) {
+      if (await this.search()) {
         this.page += 1;
         $state.loaded();
       } else {
@@ -125,10 +160,13 @@ export default {
     },
   },
   watch: {
-    '$route.query.q': function () {
-      this.page = 0;
-      this.results = [];
-      this.infiniteId = (new Date()).getTime();
+    '$route.query': {
+      handler() {
+        this.page = 0;
+        this.results = [];
+        this.infiniteId = (new Date()).getTime();
+      },
+      deep: true,
     },
   },
 };

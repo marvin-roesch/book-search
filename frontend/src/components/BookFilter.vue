@@ -13,7 +13,7 @@
         <CheckBox
           :name="book.id"
           :value="book.selected"
-          @input="book.selected = $event.target.checked"
+          @input="toggleBook(book, $event.target.checked)"
         >
           {{ book.title }}
         </CheckBox>
@@ -39,12 +39,57 @@ export default {
         && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
     },
     toggleSeries(series, value) {
+      this.toggleSeriesImpl(series, value);
+      this.$emit('filtered', this.buildFilter());
+    },
+    toggleSeriesImpl(series, value) {
       series.books.forEach((b) => {
         b.selected = value;
       });
       series.children.forEach((s) => {
-        this.toggleSeries(s, value);
+        this.toggleSeriesImpl(s, value);
       });
+    },
+    toggleBook(book, selected) {
+      book.selected = selected;
+      this.$emit('filtered', this.buildFilter());
+    },
+    buildFilter() {
+      return this.series.reduce(
+        ({ series, books }, c) => {
+          const { series: cSeries, books: cBooks } = this.buildSeriesFilter('', c);
+          return ({
+            series: [...series, ...cSeries],
+            books: [...books, ...cBooks],
+          });
+        },
+        { series: [], books: [] },
+      );
+    },
+    buildSeriesFilter(seriesPrefix, s) {
+      const seriesPath = seriesPrefix.length === 0 ? s.name : `${seriesPrefix}\\${s.name}`;
+
+      if (this.allSelected(s)) {
+        return { series: [seriesPath], books: [] };
+      }
+
+      const currentBooks = s.books.filter(b => b.selected).map(b => b.id);
+
+      const { series, books } = s.children.reduce(
+        ({ accSeries, accBooks }, c) => {
+          const { series: cSeries, books: cBooks } = this.buildSeriesFilter(seriesPath, c);
+          return ({
+            series: [...accSeries, ...cSeries],
+            books: [...accBooks, cBooks],
+          });
+        },
+        { series: [], books: [] },
+      );
+
+      return {
+        series,
+        books: [...currentBooks, ...books],
+      };
     },
   },
 };

@@ -208,9 +208,21 @@ class BookIndex {
         remove()
     }
 
-    suspend fun search(page: Int, query: String): SearchResults {
+    suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults {
         val baseQuery = SearchSourceBuilder()
-        baseQuery.query(QueryBuilders.queryStringQuery(query).defaultField("text.stripped").defaultOperator(Operator.AND))
+        baseQuery.query(
+            QueryBuilders.boolQuery()
+                .must(QueryBuilders.queryStringQuery(query).defaultField("text.stripped").defaultOperator(Operator.AND))
+                .filter(
+                    QueryBuilders.boolQuery()
+                        .minimumShouldMatch(1)
+                        .also { qry ->
+                            filter.forEach {
+                                qry.should(QueryBuilders.termQuery("book", it.toString()))
+                            }
+                        }
+                )
+        )
         baseQuery.size(10)
         baseQuery.from(page * 10)
 
@@ -274,7 +286,7 @@ class BookIndex {
                 val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
                 val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
                 val text = hit.highlightFields["text.stripped"]?.fragments?.first()?.string() ?: source["text"] as? String
-                    ?: throw IllegalStateException("Search result must have highlight!")
+                ?: throw IllegalStateException("Search result must have highlight!")
                 val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
                 val paragraph = SearchParagraph(true, position, text, classes)
 

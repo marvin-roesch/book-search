@@ -38,6 +38,7 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
@@ -265,7 +266,28 @@ fun Application.main() {
 
             post("/search") {
                 val request = call.receive<SearchRequest>()
-                val searchResult = index.search(request.page, request.query)
+
+                val filter = transaction {
+                    if (request.seriesFilter == null && request.bookFilter == null) {
+                        Book.all()
+                    } else {
+                        val adjustedFilter = request.seriesFilter.orEmpty()
+                        if ("No Series" in adjustedFilter) {
+                            Book.find { (Books.series inList adjustedFilter) or (Books.series.isNull()) }
+                        } else {
+                            Book.find { (Books.series inList adjustedFilter) }
+                        }
+                    }.map { it.id.value }
+                } + request.bookFilter.orEmpty().map { UUID.fromString(it) }
+
+                if (filter.isEmpty()) {
+                    return@post call.respond(mapOf(
+                        "totalHits" to 0,
+                        "results" to emptyList<Any>()
+                    ))
+                }
+
+                val searchResult = index.search(request.query, request.page, filter)
 
                 val results = transaction {
                     searchResult.results.map {
@@ -290,7 +312,7 @@ fun Application.main() {
     }
 }
 
-data class SearchRequest(val query: String, val page: Int)
+data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
 
 data class BookPatchRequest(val title: String, val author: String)
 
