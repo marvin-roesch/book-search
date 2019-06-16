@@ -19,7 +19,12 @@
         </CheckBox>
       </li>
     </ul>
-    <BookFilter class="book-filter-child" :series="s.children"></BookFilter>
+    <BookFilter
+      class="book-filter-child"
+      :root="false"
+      :series="s.children"
+      @filtered="onChildFiltered">
+    </BookFilter>
   </li>
 </ul>
 </template>
@@ -31,6 +36,7 @@ export default {
   name: 'BookFilter',
   components: { CheckBox },
   props: {
+    root: Boolean,
     series: Array,
   },
   methods: {
@@ -40,7 +46,11 @@ export default {
     },
     toggleSeries(series, value) {
       this.toggleSeriesImpl(series, value);
-      this.$emit('filtered', this.buildFilter());
+      if (this.root) {
+        this.$emit('filtered', this.buildFilter());
+      } else {
+        this.$emit('filtered');
+      }
     },
     toggleSeriesImpl(series, value) {
       series.books.forEach((b) => {
@@ -52,9 +62,17 @@ export default {
     },
     toggleBook(book, selected) {
       book.selected = selected;
-      this.$emit('filtered', this.buildFilter());
+      if (this.root) {
+        this.$emit('filtered', this.buildFilter());
+      } else {
+        this.$emit('filtered');
+      }
     },
     buildFilter() {
+      if (this.series.reduce((acc, s) => acc && this.allSelected(s), true)) {
+        return { series: undefined, books: undefined };
+      }
+
       return this.series.reduce(
         ({ series, books }, c) => {
           const { series: cSeries, books: cBooks } = this.buildSeriesFilter('', c);
@@ -66,21 +84,19 @@ export default {
         { series: [], books: [] },
       );
     },
-    buildSeriesFilter(seriesPrefix, s) {
-      const seriesPath = seriesPrefix.length === 0 ? s.name : `${seriesPrefix}\\${s.name}`;
-
+    buildSeriesFilter(seriesPath, s) {
       if (this.allSelected(s)) {
-        return { series: [seriesPath], books: [] };
+        return { series: [`${seriesPath}${s.name}`], books: [] };
       }
 
       const currentBooks = s.books.filter(b => b.selected).map(b => b.id);
 
       const { series, books } = s.children.reduce(
-        ({ accSeries, accBooks }, c) => {
-          const { series: cSeries, books: cBooks } = this.buildSeriesFilter(seriesPath, c);
+        ({ series: accSeries, books: accBooks }, c) => {
+          const { series: cSeries, books: cBooks } = this.buildSeriesFilter(`${seriesPath}${s.name}\\`, c);
           return ({
             series: [...accSeries, ...cSeries],
-            books: [...accBooks, cBooks],
+            books: [...accBooks, ...cBooks],
           });
         },
         { series: [], books: [] },
@@ -90,6 +106,13 @@ export default {
         series,
         books: [...currentBooks, ...books],
       };
+    },
+    onChildFiltered() {
+      if (this.root) {
+        this.$emit('filtered', this.buildFilter());
+      } else {
+        this.$emit('filtered');
+      }
     },
   },
 };
@@ -111,6 +134,10 @@ export default {
     list-style-type: none;
     margin: 0;
     padding: 0 0 0 2rem;
+  }
+
+  li {
+    padding: 0.125rem 0;
   }
 
   &-child {

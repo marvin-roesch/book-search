@@ -30,17 +30,17 @@ export default new Router({
           component: BookUploader,
         },
         {
-          path: '/metadata',
+          path: ':id/metadata',
           name: 'book-metadata',
           component: MetadataEditor,
         },
         {
-          path: '/table-of-contents',
+          path: ':id/table-of-contents',
           name: 'table-of-contents',
           component: TableOfContents,
         },
         {
-          path: '/classes',
+          path: ':id/classes',
           name: 'book-classes',
           component: ClassMapper,
         },

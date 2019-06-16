@@ -14,10 +14,22 @@ export default {
 
 <style lang="scss">
 .book-wizard {
-  position: relative;
-  max-height: 80vh;
+  padding: 2rem;
+  background: white;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
+  width: 40vw;
   display: flex;
   flex-direction: column;
+  position: relative;
+  max-height: 80vh;
+  margin: 0 auto;
+
+  h2 {
+    font-weight: 400;
+    margin: 0 0 0.5rem;
+  }
 }
 
 .button-bar {

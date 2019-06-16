@@ -26,7 +26,7 @@ export default {
           return;
         }
 
-        this.summary = newVal.flatMap(s => this.summarizeSeries(s));
+        this.summary = newVal.flatMap(s => this.summarizeSeries('', s));
       },
       deep: true,
     },
@@ -36,14 +36,14 @@ export default {
       return series.books.reduce((acc, b) => acc && b.selected, true)
         && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
     },
-    summarizeSeries(series) {
+    summarizeSeries(prefix, series) {
       if (this.allSelected(series)) {
-        return [series.name];
+        return [`${prefix}${series.name}`];
       }
 
       return [
         ...series.books.filter(b => b.selected).map(b => b.title),
-        ...series.children.flatMap(s => this.summarizeSeries(s)),
+        ...series.children.flatMap(s => this.summarizeSeries(`${prefix}${series.name} > `, s)),
       ];
     },
   },

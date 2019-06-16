@@ -12,40 +12,17 @@ import io.ktor.features.StatusPages
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.ByteArrayContent
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
 import io.ktor.http.fromFilePath
 import io.ktor.jackson.jackson
-import io.ktor.request.receive
-import io.ktor.request.receiveMultipart
 import io.ktor.response.respond
 import io.ktor.routing.get
-import io.ktor.routing.patch
-import io.ktor.routing.post
-import io.ktor.routing.put
 import io.ktor.routing.route
 import io.ktor.routing.routing
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.find
-import kotlinx.coroutines.channels.mapNotNull
-import kotlinx.coroutines.launch
-import nl.siegmann.epublib.domain.Resources
-import nl.siegmann.epublib.domain.TOCReference
-import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertIgnore
-import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import java.io.File
-import java.nio.charset.Charset
 import java.util.UUID
 
 fun Application.main() {
@@ -67,137 +44,11 @@ fun Application.main() {
     )
 
     transaction {
-        SchemaUtils.createMissingTablesAndColumns(Books, Chapters, Images)
+        SchemaUtils.createMissingTablesAndColumns(Books, Chapters, Images, ClassMappings)
     }
-
-    val index = BookIndex()
 
     routing {
         route("api") {
-            put("book") {
-                val multipart = call.receiveMultipart()
-                val channel = Channel<PartData>()
-                launch {
-                    multipart.forEachPart { channel.send(it) }
-                    channel.close()
-                }
-                val file = channel
-                    .mapNotNull { it as? PartData.FileItem }
-                    .find { it.name == "book" && File(it.originalFileName).extension == "epub" }
-                    ?: return@put call.respond(
-                        HttpStatusCode.BadRequest,
-                        mapOf("message" to "Must provide epub file")
-                    )
-                val buffer = file.streamProvider().use { it.readBytes() }
-                val epubReader = EpubReader()
-                val epub = try {
-                    epubReader.readEpub(buffer.inputStream())
-                } catch (exception: Exception) {
-                    return@put call.respond(
-                        HttpStatusCode.BadRequest,
-                        mapOf("message" to "Must provide valid epub file")
-                    )
-                }
-                val bookId = UUID.randomUUID()
-                val bookAuthor = epub.metadata.authors.first()
-                val authorName = "${bookAuthor.firstname} ${bookAuthor.lastname}"
-                val book = transaction {
-                    val blob = connection.createBlob()
-                    buffer.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
-                    Book.new(bookId) {
-                        content = blob
-                        title = epub.title
-                        author = authorName
-                    }
-                }
-                call.respond(
-                    mapOf(
-                        "id" to bookId,
-                        "title" to book.title,
-                        "author" to book.author
-                    )
-                )
-            }
-
-            patch("/book/{id}") {
-                val id = UUID.fromString(call.parameters["id"])
-                val request = call.receive<BookPatchRequest>()
-                val epubReader = EpubReader()
-                val epub = transaction {
-                    val book = Book.findById(id) ?: return@transaction null
-                    book.title = request.title
-                    book.author = request.author
-                    Books.update({ Books.id.eq(id) }) {
-                        it[title] = request.title
-                        it[author] = request.author
-                    }
-
-                    epubReader.readEpub(book.content.binaryStream)
-                } ?: return@patch call.respond(
-                    HttpStatusCode.NotFound,
-                    mapOf("message" to "Book with ID '$id' does not exist")
-                )
-                call.respond(
-                    mapOf(
-                        "id" to id,
-                        "toc" to epub.tableOfContents.tocReferences.map { serializeTableOfContents(it) }
-                    )
-                )
-            }
-
-            put("/book/{id}/table-of-contents") {
-                val id = UUID.fromString(call.parameters["id"])
-                val entries = call.receive<Set<String>>()
-                val epubReader = EpubReader()
-                val classes = transaction {
-                    val book = Book.findById(id) ?: return@transaction null
-
-                    Chapters.deleteWhere { Chapters.book eq id }
-                    Images.deleteWhere { Images.book eq id }
-
-                    val epub = epubReader.readEpub(book.content.binaryStream)
-                    val chapters = epub.tableOfContents.tocReferences
-                        .flatMap { linearizeTableOfContents(it) }
-                        .filter { it.first in entries }
-                        .map { Pair(it.first, it.second.title) to Jsoup.parse(String(it.second.resource.data)) }
-
-                    val processed = chapters
-                        .flatMap { chapter ->
-                            chapter.second.processContent(id, epub.resources) { name, data ->
-                                val blob = connection.createBlob()
-                                data.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
-                                Images.insertIgnore {
-                                    it[Images.book] = book.id
-                                    it[Images.name] = name
-                                    it[Images.data] = blob
-                                }
-                            }
-                        }
-                        .groupBy { it.name }
-                        .map { it.value.first().copy(occurrences = it.value.size) }
-
-                    for ((metadata, content) in chapters) {
-                        Chapter.new(UUID.randomUUID()) {
-                            this.book = book
-                            tocReference = metadata.first
-                            this.title = metadata.second
-                            this.content = content.outerHtml()
-                        }
-                    }
-
-                    processed
-                } ?: return@put call.respond(
-                    HttpStatusCode.NotFound,
-                    mapOf("message" to "Book with ID '$id' does not exist")
-                )
-
-                call.respond(mapOf(
-                    "id" to id,
-                    "classes" to classes,
-                    "mappings" to BookStyle.values().groupBy { it.group }
-                ))
-            }
-
             get("/book/{id}/images/{name}") {
                 val id = UUID.fromString(call.parameters["id"])
                 val name = call.parameters["name"] ?: return@get call.respond(
@@ -220,145 +71,9 @@ fun Application.main() {
                 call.respond(ByteArrayContent(imageData, imageType))
             }
 
-            put("/book/{id}/index") {
-                val id = UUID.fromString(call.parameters["id"])
-                val classMappings = call.receive<Map<String, String>>().mapValues { BookStyle.fromJson(it.value) ?: BookStyle.STRIP_CLASS }
-                val chapters = transaction {
-                    val book = Book.findById(id) ?: return@transaction null
-                    Chapter.find { Chapters.book eq book.id }.map { it.also { c -> c.refresh() } }
-                } ?: return@put call.respond(
-                    HttpStatusCode.NotFound,
-                    mapOf("message" to "Book with ID '$id' does not exist")
-                )
+            bookManagement()
 
-                index.index(id, chapters, classMappings)
-
-                call.respond(mapOf(
-                    "id" to id,
-                    "message" to "success"
-                ))
-            }
-
-            get("/series") {
-                call.respond(
-                    transaction {
-                        val series = mutableMapOf<String, Series>()
-                        for (book in Book.all()) {
-                            val seriesHierarchy = book.series?.split("\\") ?: listOf("No Series")
-
-                            var destinationSeries: Series? = null
-                            var seriesMap = series
-                            for (seriesName in seriesHierarchy) {
-                                val s = seriesMap.computeIfAbsent(seriesName) { Series(seriesName, mutableListOf(), mutableMapOf()) }
-                                destinationSeries = s
-                                seriesMap = s.children
-                            }
-
-                            if (destinationSeries != null) {
-                                val position = destinationSeries.books.binarySearch { it.orderInSeries.compareTo(book.orderInSeries) }
-                                destinationSeries.books.add(Math.max(position, 0), book)
-                            }
-                        }
-                        series.map { it.value.toJson() }
-                    }
-                )
-            }
-
-            post("/search") {
-                val request = call.receive<SearchRequest>()
-
-                val filter = transaction {
-                    if (request.seriesFilter == null && request.bookFilter == null) {
-                        Book.all()
-                    } else {
-                        val adjustedFilter = request.seriesFilter.orEmpty()
-                        if ("No Series" in adjustedFilter) {
-                            Book.find { (Books.series inList adjustedFilter) or (Books.series.isNull()) }
-                        } else {
-                            Book.find { (Books.series inList adjustedFilter) }
-                        }
-                    }.map { it.id.value }
-                } + request.bookFilter.orEmpty().map { UUID.fromString(it) }
-
-                if (filter.isEmpty()) {
-                    return@post call.respond(mapOf(
-                        "totalHits" to 0,
-                        "results" to emptyList<Any>()
-                    ))
-                }
-
-                val searchResult = index.search(request.query, request.page, filter)
-
-                val results = transaction {
-                    searchResult.results.map {
-                        val book = Book.findById(it.bookId) ?: return@transaction null
-                        mapOf(
-                            "book" to book.title,
-                            "chapter" to it.chapter,
-                            "paragraphs" to it.paragraphs
-                        )
-                    }
-                } ?: return@post call.respond(
-                    HttpStatusCode.NotFound,
-                    mapOf("message" to "Book does not exist")
-                )
-
-                call.respond(mapOf(
-                    "totalHits" to searchResult.totalHits,
-                    "results" to results
-                ))
-            }
+            bookSearch()
         }
     }
-}
-
-data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
-
-data class BookPatchRequest(val title: String, val author: String)
-
-data class Series(val name: String, val books: MutableList<Book>, val children: MutableMap<String, Series>) {
-    fun toJson(): Map<String, Any> =
-        mapOf(
-            "name" to name,
-            "books" to books.map { it.toJson() },
-            "children" to children.map { it.value.toJson() }
-        )
-}
-
-fun serializeTableOfContents(toc: TOCReference): Map<String, Any> {
-    return mapOf(
-        "id" to toc.id,
-        "title" to toc.title,
-        "children" to toc.children.map { serializeTableOfContents(it) }
-    )
-}
-
-val TOCReference.id: String
-    get() = "$fragmentId.$resourceId"
-
-fun Document.processContent(bookId: UUID, resources: Resources, imageHandler: (name: String, data: ByteArray) -> Unit): List<HtmlClass> {
-    val styles = this.select("link[rel='stylesheet']")
-        .map { it.attr("href") }
-        .mapNotNull { resources.getByIdOrHref(it) }
-        .joinToString("\n") { String(it.data, Charset.forName(it.inputEncoding)) }
-
-    val images = this.select("img")
-    for (img in images) {
-        val src = img.attr("src")
-        val data = resources.getByHref(src).data
-        imageHandler(src, data)
-        img.attr("src", "/api/book/$bookId/images/$src")
-    }
-
-    return this.body().allElements
-        .filter { it.`is`("p") || it.parents().any { p -> p.`is`("p") } }
-        .flatMap { el ->
-            el.classNames().map { HtmlClass(it, el.outerHtml(), styles) }
-        }
-}
-
-data class HtmlClass(val name: String, val sample: String, val styles: String, val occurrences: Int = 0)
-
-fun linearizeTableOfContents(toc: TOCReference): List<Pair<String, TOCReference>> {
-    return listOf(toc.id to toc) + toc.children.flatMap { linearizeTableOfContents(it) }
 }

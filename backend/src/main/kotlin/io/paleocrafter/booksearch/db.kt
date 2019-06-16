@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.UUIDTable
 import org.jetbrains.exposed.sql.Table
+import org.jsoup.nodes.Element
 import java.util.UUID
 
 object Books : UUIDTable() {
@@ -51,8 +52,16 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     var indexedContent by Chapters.indexedContent
 }
 
+data class ResolvedChapter(val bookId: UUID, val title: String, val content: Element)
+
 object Images : Table() {
     val book = reference("book", Books).primaryKey(0)
     val name = varchar("name", 255).primaryKey(1)
     val data = blob("data")
+}
+
+object ClassMappings : Table() {
+    val book = reference("book", Books).primaryKey(0)
+    val className = varchar("class_name", 255).primaryKey(1)
+    val mapping = varchar("mapping", 255)
 }

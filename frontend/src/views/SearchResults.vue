@@ -16,7 +16,7 @@
           </a>
           <transition name="fade">
             <div class="search-results-toolbar-filter-container" v-if="filterVisible">
-              <book-filter :series="this.series" @filtered="onFilter"></book-filter>
+              <book-filter :root="true" :series="this.series" @filtered="onFilter"></book-filter>
             </div>
           </transition>
         </div>
@@ -82,9 +82,15 @@ export default {
   async mounted() {
     const { data: allSeries } = await axios.get('/api/series');
     const { books, series } = this.$route.query;
+
     const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
     const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
-    this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesFilter, bookFilter));
+
+    const seriesRegex = seriesFilter === null ? null : seriesFilter.map(
+      f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
+    );
+
+    this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesRegex, bookFilter));
   },
   methods: {
     async search() {
@@ -123,8 +129,10 @@ export default {
         books: series.books
           .map(b => ({
             ...b,
-            selected: (seriesFilter === null || seriesFilter.includes(path))
-              || (bookFilter === null || bookFilter.includes(b.id)),
+            selected: (seriesFilter === null && bookFilter === null)
+              || bookFilter === null
+              || seriesFilter.some(f => path.match(f))
+              || bookFilter.includes(b.id),
           })),
         children: series.children
           .map(s => this.prepareSeries(`${path}\\${s.name}`, s, seriesFilter, bookFilter)),
@@ -145,8 +153,8 @@ export default {
         name: 'search',
         query: {
           q: this.$route.query.q,
-          series: series.join('+'),
-          books: books.join('+'),
+          series: series === undefined ? undefined : series.join('+'),
+          books: series === undefined ? undefined : books.join('+'),
         },
       });
     },

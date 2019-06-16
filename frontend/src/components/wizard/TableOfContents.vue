@@ -1,7 +1,11 @@
 <template>
 <div class="table-of-contents">
   <h2>Select the chapters you want to make searchable</h2>
-  <TableOfContentsEntry :entries="toc" class="table-of-contents-root" @change="updateTableOfContents"></TableOfContentsEntry>
+  <TableOfContentsEntry
+    :entries="toc"
+    class="table-of-contents-root"
+    @change="updateTableOfContents">
+  </TableOfContentsEntry>
   <div class="button-bar">
     <Button slim @click="$router.back()" :disabled="updating">Back</Button>
     <Button slim @click="submit" :loading="updating" :disabled="updating">Next</Button>
@@ -17,14 +21,19 @@ import axios from 'axios';
 export default {
   name: 'TableOfContents',
   components: { Button, TableOfContentsEntry },
-  mounted() {
-    const { book } = this.$route.params;
-    if (!book) {
+  async mounted() {
+    this.updating = true;
+    const { id } = this.$route.params;
+    if (!id) {
       this.$router.replace({ name: 'book-upload' });
       return;
     }
-    this.bookId = book.id;
-    this.toc = this.mapTableOfContents(book.toc);
+
+    const { data: { toc } } = await axios.get(`/api/book/${id}/table-of-contents`);
+
+    this.bookId = id;
+    this.toc = this.mapTableOfContents(toc);
+    this.updating = false;
   },
   data() {
     return {
@@ -35,14 +44,18 @@ export default {
   },
   methods: {
     mapTableOfContents(toc) {
-      return toc.map(entry => ({ ...entry, selected: true, children: this.mapTableOfContents(entry.children) }));
+      return toc.map(entry => ({
+        ...entry,
+        selected: true,
+        children: this.mapTableOfContents(entry.children),
+      }));
     },
     updateTableOfContents({ id, selected }) {
       this.updateTableOfContentsEntry(this.toc, id.split('/'), selected);
     },
     updateTableOfContentsEntry(toc, path, selected) {
       const [head, ...tail] = path;
-      const entry = toc.filter(entry => entry.id === head)[0];
+      const entry = toc.filter(e => e.id === head)[0];
       if (tail.length === 0) {
         entry.selected = selected;
       } else {
@@ -53,8 +66,8 @@ export default {
       const entries = this.linearizeSelectedEntries(this.toc);
       this.updating = true;
       try {
-        const { data: book } = await axios.put(
-          `/api/book/${this.bookId}/table-of-contents`,
+        await axios.put(
+          `/api/book/${this.bookId}/chapters`,
           entries,
           {
             headers: {
@@ -62,14 +75,19 @@ export default {
             },
           },
         );
-        this.$router.push({ name: 'book-classes', params: { book } });
+        this.$router.push({ name: 'book-classes', params: { id: this.bookId } });
       } catch (error) {
         this.updating = false;
       }
     },
     linearizeSelectedEntries(toc) {
       return toc
-        .flatMap(entry => [entry.selected ? entry.id : undefined, ...this.linearizeSelectedEntries(entry.children)])
+        .flatMap(entry => [
+          entry.selected
+            ? entry.id
+            : undefined,
+          ...this.linearizeSelectedEntries(entry.children),
+        ])
         .filter(id => id !== undefined);
     },
   },

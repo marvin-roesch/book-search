@@ -11,6 +11,22 @@
     <UserIcon></UserIcon>
     </template>
   </TextField>
+  <TextField name="book-series" placeholder="Series" v-model="series">
+    <template slot="icon">
+    <GridIcon></GridIcon>
+    </template>
+  </TextField>
+  <TextField
+    type="number"
+    name="book-series-order"
+    placeholder="Order in Series"
+    :inputConfig="{min: 1}"
+    v-model="orderInSeries"
+  >
+    <template slot="icon">
+    <HashIcon></HashIcon>
+    </template>
+  </TextField>
   <div class="button-bar">
     <Button slim :to="{name: 'book-upload'}" :disabled="updating">Back</Button>
     <Button slim @click="updateMetadata" :loading="updating" :disabled="updating">Next</Button>
@@ -20,29 +36,36 @@
 
 <script>
 import axios from 'axios';
-import TableOfContentsEntry from '@/components/wizard/TableOfContentsEntry.vue';
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
-import { TypeIcon, UserIcon } from 'vue-feather-icons';
+import { GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
 
 export default {
   name: 'MetadataEditor',
-  components: { UserIcon, TypeIcon, TextField, Button, TableOfContentsEntry },
-  mounted() {
-    const { book } = this.$route.params;
-    if (!book) {
+  components: { UserIcon, TypeIcon, TextField, Button, HashIcon, GridIcon },
+  async mounted() {
+    this.updating = true;
+    const { id } = this.$route.params;
+    if (!id) {
       this.$router.replace({ name: 'book-upload' });
       return;
     }
-    this.bookId = book.id;
-    this.title = book.title;
-    this.author = book.author;
+    const { data: { title, author, series, orderInSeries } } = await axios.get(`/api/book/${id}`);
+
+    this.bookId = id;
+    this.title = title;
+    this.author = author;
+    this.series = series;
+    this.orderInSeries = orderInSeries.toString();
+    this.updating = false;
   },
   data() {
     return {
       bookId: '',
       title: '',
       author: '',
+      series: '',
+      orderInSeries: '1',
       updating: false,
     };
   },
@@ -50,11 +73,13 @@ export default {
     async updateMetadata() {
       this.updating = true;
       try {
-        const { data: book } = await axios.patch(
+        await axios.patch(
           `/api/book/${this.bookId}`,
           {
             title: this.title,
             author: this.author,
+            series: this.series,
+            orderInSeries: Number(this.orderInSeries),
           },
           {
             headers: {
@@ -62,7 +87,7 @@ export default {
             },
           },
         );
-        this.$router.push({ name: 'table-of-contents', params: { book } });
+        this.$router.push({ name: 'table-of-contents', params: { id: this.bookId } });
       } catch (error) {
         this.updating = false;
       }

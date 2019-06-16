@@ -24,7 +24,6 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.intellij.lang.annotations.Language
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import java.util.UUID
@@ -71,6 +70,7 @@ class BookIndex {
                 "analyzer": {
                     "strip_html_analyzer": {
                         "tokenizer": "classic",
+                        "filter": ["lowercase"],
                         "char_filter": ["html_stripper"]
                     }
                 },
@@ -135,10 +135,9 @@ class BookIndex {
         }
     }
 
-    suspend fun index(id: UUID, chapters: Iterable<Chapter>, classMappings: Map<String, BookStyle>) {
-        reset()
+    suspend fun index(id: UUID, chapters: Iterable<ResolvedChapter>) {
         ensureElasticIndex()
-        val entries = chapters.flatMap { this.collectEntries(it, classMappings) }
+        val entries = chapters.flatMap { this.collectEntries(it) }
 
         val bulkRequest = BulkRequest("chapters")
         for (entry in entries) {
@@ -157,55 +156,8 @@ class BookIndex {
         }
     }
 
-    private fun collectEntries(chapter: Chapter, classMappings: Map<String, BookStyle>): List<IndexEntry> {
-        val content = Jsoup.parse(chapter.content).body()
-        content.stripStyles()
-        content.stripLinks()
-        content.mapClasses(classMappings)
-
-        val paragraphs = content.select("p")
-
-        return paragraphs.mapIndexed { position, p -> IndexEntry(chapter.title, position, p.html(), p.classNames()) }
-    }
-
-    private fun Element.stripStyles() {
-        for (elem in this.allElements) {
-            elem.removeAttr("style")
-        }
-    }
-
-    private fun Element.stripLinks() {
-        val links = this.select("a")
-        val iterator = links.iterator()
-        while (iterator.hasNext()) {
-            val link = iterator.next()
-            link.replaceWith(link.childNodes().toList())
-            iterator.remove()
-        }
-    }
-
-    private fun Element.mapClasses(classMappings: Map<String, BookStyle>) {
-        val currentElements = this.allElements.toList()
-        for (elem in currentElements) {
-            for (cls in elem.classNames()) {
-                val style = classMappings[cls] ?: BookStyle.STRIP_CLASS
-                elem.removeClass(cls)
-                if (style == BookStyle.STRIP_ELEMENT) {
-                    elem.remove()
-                    break
-                } else if (style != BookStyle.STRIP_CLASS) {
-                    elem.addClass(style.id)
-                }
-            }
-        }
-    }
-
-    private fun Node.replaceWith(nodes: Iterable<Node>) {
-        nodes.fold(this) { last, node ->
-            last.after(node)
-            node
-        }
-        remove()
+    private fun collectEntries(chapter: ResolvedChapter): List<IndexEntry> {
+        return chapter.content.select("p").mapIndexed { position, p -> IndexEntry(chapter.title, position, p.html(), p.classNames()) }
     }
 
     suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults {

@@ -40,7 +40,7 @@ export default {
       const formData = new FormData();
       formData.append('book', file);
       try {
-        const { data: book } = await axios.put(
+        const { data: { id } } = await axios.put(
           '/api/book',
           formData,
           {
@@ -52,7 +52,7 @@ export default {
             }).bind(this),
           },
         );
-        this.$router.push({ name: 'book-metadata', params: { book } });
+        this.$router.push({ name: 'book-metadata', params: { id } });
       } catch (error) {
 
       }

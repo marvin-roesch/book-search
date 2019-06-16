@@ -19,7 +19,7 @@
     </Expandable>
   </div>
   <div class="button-bar">
-    <Button slim :to="{name: 'book-upload'}" :disabled="updating">Back</Button>
+    <Button slim @click="$router.back()" :disabled="updating">Back</Button>
     <Button slim @click="index" :loading="updating" :disabled="updating">Next</Button>
   </div>
 </div>
@@ -34,15 +34,20 @@ import axios from 'axios';
 export default {
   name: 'ClassMapper',
   components: { Expandable, ClassPreview, Button },
-  mounted() {
-    const { book } = this.$route.params;
-    if (!book) {
+  async mounted() {
+    this.updating = true;
+    const { id } = this.$route.params;
+    if (!id) {
       this.$router.replace({ name: 'book-upload' });
       return;
     }
-    this.bookId = book.id;
-    this.classes = book.classes.map(cls => ({ ...cls, mapping: 'no-selection' }));
-    this.availableMappings = book.mappings;
+
+    const { data: { classes, mappings } } = await axios.get(`/api/book/${id}/available-classes`);
+
+    this.bookId = id;
+    this.classes = classes.map(cls => ({ ...cls, mapping: 'no-selection' }));
+    this.availableMappings = mappings;
+    this.updating = false;
   },
   data() {
     return {
@@ -56,8 +61,8 @@ export default {
     async index() {
       this.updating = true;
       try {
-        const { data: book } = await axios.put(
-          `/api/book/${this.bookId}/index`,
+        const { data: _ } = await axios.put(
+          `/api/book/${this.bookId}/class-mappings`,
           this.classes.reduce(
             (acc, cls) => ({ ...acc, [cls.name]: cls.mapping }),
             {},
@@ -68,6 +73,7 @@ export default {
             },
           },
         );
+        await axios.put(`/api/book/${this.bookId}/index`);
         this.updating = false;
       } catch (error) {
         this.updating = false;
