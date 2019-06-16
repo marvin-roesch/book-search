@@ -33,7 +33,6 @@ import kotlinx.coroutines.launch
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
-import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
@@ -67,7 +66,7 @@ fun Application.main() {
     )
 
     transaction {
-        SchemaUtils.create(Books, Chapters, Images)
+        SchemaUtils.createMissingTablesAndColumns(Books, Chapters, Images)
     }
 
     val index = BookIndex()
@@ -239,11 +238,36 @@ fun Application.main() {
                 ))
             }
 
+            get("/series") {
+                call.respond(
+                    transaction {
+                        val series = mutableMapOf<String, Series>()
+                        for (book in Book.all()) {
+                            val seriesHierarchy = book.series?.split("\\") ?: listOf("No Series")
+
+                            var destinationSeries: Series? = null
+                            var seriesMap = series
+                            for (seriesName in seriesHierarchy) {
+                                val s = seriesMap.computeIfAbsent(seriesName) { Series(seriesName, mutableListOf(), mutableMapOf()) }
+                                destinationSeries = s
+                                seriesMap = s.children
+                            }
+
+                            if (destinationSeries != null) {
+                                val position = destinationSeries.books.binarySearch { it.orderInSeries.compareTo(book.orderInSeries) }
+                                destinationSeries.books.add(Math.max(position, 0), book)
+                            }
+                        }
+                        series.map { it.value.toJson() }
+                    }
+                )
+            }
+
             post("/search") {
                 val request = call.receive<SearchRequest>()
-                val searchResult = index.search(0, request.query)
+                val searchResult = index.search(request.page, request.query)
 
-                val response = transaction {
+                val results = transaction {
                     searchResult.results.map {
                         val book = Book.findById(it.bookId) ?: return@transaction null
                         mapOf(
@@ -257,15 +281,27 @@ fun Application.main() {
                     mapOf("message" to "Book does not exist")
                 )
 
-                call.respond(response)
+                call.respond(mapOf(
+                    "totalHits" to searchResult.totalHits,
+                    "results" to results
+                ))
             }
         }
     }
 }
 
-data class SearchRequest(val query: String)
+data class SearchRequest(val query: String, val page: Int)
 
 data class BookPatchRequest(val title: String, val author: String)
+
+data class Series(val name: String, val books: MutableList<Book>, val children: MutableMap<String, Series>) {
+    fun toJson(): Map<String, Any> =
+        mapOf(
+            "name" to name,
+            "books" to books.map { it.toJson() },
+            "children" to children.map { it.value.toJson() }
+        )
+}
 
 fun serializeTableOfContents(toc: TOCReference): Map<String, Any> {
     return mapOf(

@@ -273,10 +273,10 @@ class BookIndex {
                 val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
                 val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
                 val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-                val text = hit.highlightFields["text.stripped"]?.fragments?.first()
+                val text = hit.highlightFields["text.stripped"]?.fragments?.first()?.string() ?: source["text"] as? String
                     ?: throw IllegalStateException("Search result must have highlight!")
                 val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
-                val paragraph = SearchParagraph(true, position, text.string(), classes)
+                val paragraph = SearchParagraph(true, position, text, classes)
 
                 SearchResult(
                     UUID.fromString(bookId),

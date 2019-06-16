@@ -1,5 +1,18 @@
 <template>
-<div :class="{ 'bidirectional-expandable': true, 'bidirectional-expandable-expanded': expanded }">
+<div :class="{
+  'bidirectional-expandable': true,
+  'bidirectional-expandable-expanded': expanded,
+  'bidirectional-expandable-animated': mayAnimate
+}">
+<!--  <transition name="fade">-->
+<!--    <div class="bidirectional-expandable-loader" v-if="!initialized">-->
+<!--      <content-loader :height="80" :width="450" primaryColor="#f3f3f3" secondaryColor="#ecebeb">-->
+<!--        <rect x="0" y="5" rx="4" ry="4" width="300" height="6.4"/>-->
+<!--        <rect x="0" y="19" rx="4" ry="4" width="220" height="6.4"/>-->
+<!--        <rect x="0" y="33" rx="4" ry="4" width="220" height="6.4"/>-->
+<!--      </content-loader>-->
+<!--    </div>-->
+<!--  </transition>-->
   <div class="bidirectional-expandable-start"
        :style="{ marginTop: `${expanded ? 0 : -(startHeight - visibleHeight)}px` }"
        ref="start">
@@ -7,7 +20,11 @@
   </div>
   <slot></slot>
   <div class="bidirectional-expandable-end"
-       :style="!initialized ? undefined : { maxHeight: expanded ? `${endHeight}px` : `${visibleHeight}px` }"
+       :style="
+       !initialized
+       ? undefined
+       : { maxHeight: expanded ? `${endHeight}px` : `${visibleHeight}px` }
+       "
        ref="end">
     <slot name="end"></slot>
   </div>
@@ -15,9 +32,11 @@
 </template>
 
 <script>
+import { ContentLoader } from 'vue-content-loader';
+
 export default {
   name: 'BidirectionalExpandable',
-  components: {},
+  components: { ContentLoader },
   props: {
     expanded: Boolean,
     visibleHeight: Number,
@@ -25,6 +44,7 @@ export default {
   data() {
     return {
       initialized: false,
+      mayAnimate: false,
       startHeight: 900,
       endHeight: this.visibleHeight,
     };
@@ -34,6 +54,9 @@ export default {
     observer.observe(this.$refs.start, { childList: true });
     observer.observe(this.$refs.end, { childList: true });
     setTimeout(() => this.recalculate(), 100);
+    setTimeout(() => {
+      this.mayAnimate = true;
+    }, 150);
   },
   methods: {
     recalculate() {
@@ -52,6 +75,8 @@ export default {
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
+  min-height: 5rem;
+  background: #fff;
 
   &:before, &:after {
     content: '';
@@ -72,14 +97,30 @@ export default {
     bottom: 0;
   }
 
+  &-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
   &-start {
-    transition: margin-top 0.2s ease-in-out;
     overflow: auto;
   }
 
   &-end {
-    transition: max-height 0.2s ease-in-out;
     overflow-y: hidden;
+  }
+
+  &-animated {
+    .bidirectional-expandable-start {
+      transition: margin-top 0.2s ease-in-out;
+    }
+
+    .bidirectional-expandable-end {
+      transition: max-height 0.2s ease-in-out;
+    }
   }
 
   &-expanded {

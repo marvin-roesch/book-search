@@ -26,17 +26,14 @@
 </template>
 
 <script>
-import TableOfContentsEntry from '@/components/wizard/TableOfContentsEntry.vue';
 import Button from '@/components/Button.vue';
-import TextField from '@/components/TextField.vue';
-import { TypeIcon, UserIcon } from 'vue-feather-icons';
 import ClassPreview from '@/components/wizard/ClassPreview.vue';
 import Expandable from '@/components/Expandable.vue';
 import axios from 'axios';
 
 export default {
   name: 'ClassMapper',
-  components: { Expandable, ClassPreview, UserIcon, TypeIcon, TextField, Button, TableOfContentsEntry },
+  components: { Expandable, ClassPreview, Button },
   mounted() {
     const { book } = this.$route.params;
     if (!book) {
@@ -62,8 +59,8 @@ export default {
         const { data: book } = await axios.put(
           `/api/book/${this.bookId}/index`,
           this.classes.reduce(
-            (acc, cls) => ({...acc, [cls.name]: cls.mapping}),
-            {}
+            (acc, cls) => ({ ...acc, [cls.name]: cls.mapping }),
+            {},
           ),
           {
             headers: {
