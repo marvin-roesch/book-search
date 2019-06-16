@@ -25,7 +25,7 @@ fun Route.bookSearch() {
                 it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
             }
             Chapter.find { Chapters.book eq book.id }.map {
-                ResolvedChapter(id, it.title, Jsoup.parse(it.content).body()).also { resolved ->
+                ResolvedChapter(it.id.value, id, it.title, Jsoup.parse(it.content).body()).also { resolved ->
                     BookNormalizer.normalize(resolved, classMappings)
                     it.indexedContent = resolved.content.html()
                 }
@@ -98,15 +98,16 @@ fun Route.bookSearch() {
         val results = transaction {
             searchResult.results.map {
                 val book = Book.findById(it.bookId) ?: return@transaction null
+                val chapter = Chapter.findById(it.chapter) ?: return@transaction null
                 mapOf(
-                    "book" to book.title,
-                    "chapter" to it.chapter,
+                    "book" to book.toJson(),
+                    "chapter" to chapter.toJson(),
                     "paragraphs" to it.paragraphs
                 )
             }
         } ?: return@post call.respond(
             HttpStatusCode.NotFound,
-            mapOf("message" to "Book does not exist")
+            mapOf("message" to "Book or chapter does not exist")
         )
 
         call.respond(mapOf(

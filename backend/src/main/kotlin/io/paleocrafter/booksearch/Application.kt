@@ -74,6 +74,8 @@ fun Application.main() {
             bookManagement()
 
             bookSearch()
+
+            chapterView()
         }
     }
 }

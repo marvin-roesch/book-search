@@ -4,15 +4,6 @@
   'bidirectional-expandable-expanded': expanded,
   'bidirectional-expandable-animated': mayAnimate
 }">
-<!--  <transition name="fade">-->
-<!--    <div class="bidirectional-expandable-loader" v-if="!initialized">-->
-<!--      <content-loader :height="80" :width="450" primaryColor="#f3f3f3" secondaryColor="#ecebeb">-->
-<!--        <rect x="0" y="5" rx="4" ry="4" width="300" height="6.4"/>-->
-<!--        <rect x="0" y="19" rx="4" ry="4" width="220" height="6.4"/>-->
-<!--        <rect x="0" y="33" rx="4" ry="4" width="220" height="6.4"/>-->
-<!--      </content-loader>-->
-<!--    </div>-->
-<!--  </transition>-->
   <div class="bidirectional-expandable-start"
        :style="{ marginTop: `${expanded ? 0 : -(startHeight - visibleHeight)}px` }"
        ref="start">
@@ -32,11 +23,8 @@
 </template>
 
 <script>
-import { ContentLoader } from 'vue-content-loader';
-
 export default {
   name: 'BidirectionalExpandable',
-  components: { ContentLoader },
   props: {
     expanded: Boolean,
     visibleHeight: Number,

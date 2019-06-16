@@ -34,9 +34,9 @@
   <div class="search-result-container">
     <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
     <div :class="{ 'search-result': true, 'search-result-with-siblings': result.showSiblings }"
-         @click="result.showSiblings = !result.showSiblings"
+         @click="toggleSiblings(result)"
          v-for="(result, index) in results" :key="index">
-      <h2>{{ result.book }} - {{ result.chapter }}</h2>
+      <h2>{{ result.book.title }} - {{ result.chapter.title }}</h2>
       <BidirectionalExpandable :expanded="result.showSiblings" :visible-height="24">
         <template slot="start">
         <p :class="paragraph.classes" v-html="paragraph.text"
@@ -48,6 +48,9 @@
         <p :class="paragraph.classes" v-html="paragraph.text"
            v-for="paragraph in result.nextParagraphs" :key="paragraph.position">
         </p>
+        <router-link :to="{name: 'chapter', params: { id: result.chapter.id }}">
+          Read Chapter
+        </router-link>
         </template>
       </BidirectionalExpandable>
     </div>
@@ -63,11 +66,17 @@ import { SearchIcon } from 'vue-feather-icons';
 import BookFilter from '@/components/BookFilter.vue';
 import BookFilterSummary from '@/components/BookFilterSummary.vue';
 import InfiniteLoading from 'vue-infinite-loading';
+import Button from '@/components/Button.vue';
 
 export default {
   name: 'search-results',
   components: {
-    BookFilterSummary, BookFilter, SearchIcon, BidirectionalExpandable, InfiniteLoading,
+    Button,
+    BookFilterSummary,
+    BookFilter,
+    SearchIcon,
+    BidirectionalExpandable,
+    InfiniteLoading,
   },
   data() {
     return {
@@ -164,6 +173,11 @@ export default {
         $state.loaded();
       } else {
         $state.complete();
+      }
+    },
+    toggleSiblings(result) {
+      if (window.getSelection().type !== 'Range') {
+        result.showSiblings = !result.showSiblings;
       }
     },
   },

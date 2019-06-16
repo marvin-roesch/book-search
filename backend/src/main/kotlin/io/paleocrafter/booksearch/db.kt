@@ -50,9 +50,15 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     var tocReference by Chapters.tocReference
     var content by Chapters.content
     var indexedContent by Chapters.indexedContent
+
+    fun toJson() =
+        mapOf(
+            "id" to id.value,
+            "title" to title
+        )
 }
 
-data class ResolvedChapter(val bookId: UUID, val title: String, val content: Element)
+data class ResolvedChapter(val id: UUID, val bookId: UUID, val title: String, val content: Element)
 
 object Images : Table() {
     val book = reference("book", Books).primaryKey(0)

@@ -21,11 +21,10 @@ import org.elasticsearch.client.indices.PutMappingRequest
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.Operator
 import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.reindex.DeleteByQueryRequest
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.intellij.lang.annotations.Language
-import org.jsoup.nodes.Element
-import org.jsoup.nodes.Node
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
@@ -137,6 +136,15 @@ class BookIndex {
 
     suspend fun index(id: UUID, chapters: Iterable<ResolvedChapter>) {
         ensureElasticIndex()
+
+        suspendCoroutine {
+            client.deleteByQueryAsync(
+                DeleteByQueryRequest("chapters").setQuery(QueryBuilders.termQuery("book", id.toString())),
+                RequestOptions.DEFAULT,
+                SuspendingActionListener(it)
+            )
+        }
+
         val entries = chapters.flatMap { this.collectEntries(it) }
 
         val bulkRequest = BulkRequest("chapters")
@@ -157,7 +165,9 @@ class BookIndex {
     }
 
     private fun collectEntries(chapter: ResolvedChapter): List<IndexEntry> {
-        return chapter.content.select("p").mapIndexed { position, p -> IndexEntry(chapter.title, position, p.html(), p.classNames()) }
+        return chapter.content.select("p").mapIndexed { position, p ->
+            IndexEntry(chapter.id.toString(), position, p.html(), p.classNames())
+        }
     }
 
     suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults {
@@ -244,7 +254,7 @@ class BookIndex {
 
                 SearchResult(
                     UUID.fromString(bookId),
-                    chapter,
+                    UUID.fromString(chapter),
                     (context + paragraph).sortedBy { it.position }
                 )
             }
@@ -266,6 +276,6 @@ class BookIndex {
 
 data class SearchResults(val totalHits: Long, val results: List<SearchResult>)
 
-data class SearchResult(val bookId: UUID, val chapter: String, val paragraphs: List<SearchParagraph>)
+data class SearchResult(val bookId: UUID, val chapter: UUID, val paragraphs: List<SearchParagraph>)
 
 class SearchParagraph(val main: Boolean, val position: Int, val text: String, val classes: List<String>)

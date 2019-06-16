@@ -7,6 +7,7 @@ import TableOfContents from '@/components/wizard/TableOfContents.vue';
 import MetadataEditor from '@/components/wizard/MetadataEditor.vue';
 import ClassMapper from '@/components/wizard/ClassMapper.vue';
 import SearchResults from '@/views/SearchResults.vue';
+import Chapter from '@/views/Chapter.vue';
 
 Vue.use(Router);
 
@@ -50,6 +51,11 @@ export default new Router({
       path: '/search',
       name: 'search',
       component: SearchResults,
+    },
+    {
+      path: '/chapter/:id',
+      name: 'chapter',
+      component: Chapter,
     },
   ],
 });
