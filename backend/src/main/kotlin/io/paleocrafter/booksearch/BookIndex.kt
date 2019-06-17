@@ -22,6 +22,11 @@ import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.Operator
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.DeleteByQueryRequest
+import org.elasticsearch.search.SearchHits
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder
+import org.elasticsearch.search.aggregations.metrics.TopHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.intellij.lang.annotations.Language
@@ -65,6 +70,7 @@ class BookIndex {
     @Language("JSON")
     private val indexSettings = """
         {
+            "max_inner_result_window": 1000,
             "analysis": {
                 "analyzer": {
                     "strip_html_analyzer": {
@@ -81,6 +87,14 @@ class BookIndex {
             }
         }
     """.trimIndent()
+
+    private val highlighter =
+        HighlightBuilder().field(
+            HighlightBuilder.Field("text.stripped")
+                .numOfFragments(0)
+                .preTags("<strong>")
+                .postTags("</strong>")
+        )
 
     private suspend fun ensureElasticIndex() {
         if (!suspendCoroutine<Boolean> {
@@ -170,9 +184,8 @@ class BookIndex {
         }
     }
 
-    suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults {
-        val baseQuery = SearchSourceBuilder()
-        baseQuery.query(
+    private fun buildBaseQuery(query: String, filter: List<UUID>) =
+        SearchSourceBuilder().query(
             QueryBuilders.boolQuery()
                 .must(QueryBuilders.queryStringQuery(query).defaultField("text.stripped").defaultOperator(Operator.AND))
                 .filter(
@@ -185,15 +198,39 @@ class BookIndex {
                         }
                 )
         )
+
+    suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults {
+        val baseQuery = buildBaseQuery(query, filter)
         baseQuery.size(10)
         baseQuery.from(page * 10)
 
-        baseQuery.highlighter(
-            HighlightBuilder().field(
-                HighlightBuilder.Field("text.stripped")
-                    .numOfFragments(0)
-                    .preTags("<strong>")
-                    .postTags("</strong>")
+        baseQuery.highlighter(highlighter)
+
+        val baseResponse = suspendCoroutine<SearchResponse> {
+            client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
+        }
+
+        return SearchResults(baseResponse.hits.totalHits.value, gatherContext(baseResponse.hits))
+    }
+
+    suspend fun searchGrouped(query: String, startBook: UUID?, startChapter: UUID?, chapterPage: Int, filter: List<UUID>): GroupedSearchResults {
+        val baseQuery = buildBaseQuery(query, filter)
+        baseQuery.aggregation(
+            AggregationBuilders.composite(
+                "chapters",
+                listOf(
+                    TermsValuesSourceBuilder("book").field("book"),
+                    TermsValuesSourceBuilder("chapter").field("chapter")
+                )
+            ).also {
+                if (startBook != null && startChapter != null) {
+                    it.aggregateAfter(mapOf("book" to startBook.toString(), "chapter" to startChapter.toString()))
+                }
+            }.size(1).subAggregation(
+                AggregationBuilders.topHits("paragraphs")
+                    .from(chapterPage * 10)
+                    .size(10)
+                    .highlighter(highlighter)
             )
         )
 
@@ -201,8 +238,30 @@ class BookIndex {
             client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
         }
 
+        val totalHits = baseResponse.hits.totalHits.value
+        val chapters = baseResponse.aggregations.get<CompositeAggregation>("chapters")
+        val buckets = chapters.buckets
+
+        if (buckets.isEmpty()) {
+            return GroupedSearchResults(totalHits, null, null, emptyList())
+        }
+
+        val hits = buckets.first().aggregations.get<TopHits>("paragraphs").hits
+        if (hits.none()) {
+            val afterKey = chapters.afterKey()
+            val nextBook = (afterKey["book"] as? String).let { UUID.fromString(it) }
+                ?: throw IllegalStateException("Search must provide next book ID!")
+            val nextChapter = (afterKey["book"] as? String).let { UUID.fromString(it) }
+                ?: throw IllegalStateException("Search must provide next chapter ID!")
+            return GroupedSearchResults(totalHits, nextBook, nextChapter, emptyList())
+        }
+
+        return GroupedSearchResults(totalHits, null, null, gatherContext(hits))
+    }
+
+    private suspend fun gatherContext(hits: SearchHits): List<SearchResult> {
         val contextRequest = MultiSearchRequest()
-        for (hit in baseResponse.hits) {
+        for (hit in hits) {
             val source = hit.sourceAsMap
             val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
             val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
@@ -222,7 +281,7 @@ class BookIndex {
             )
             contextRequest.add(SearchRequest("chapters").source(contextQuery))
         }
-        val contextResponses = if (baseResponse.hits.any()) {
+        val contextResponses = if (hits.any()) {
             suspendCoroutine<MultiSearchResponse> {
                 client.msearchAsync(contextRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
             }.responses
@@ -230,35 +289,32 @@ class BookIndex {
             emptyArray()
         }
 
-        return SearchResults(
-            baseResponse.hits.totalHits.value,
-            baseResponse.hits.mapIndexed { index, hit ->
-                val context = contextResponses[index].response.hits.map {
-                    val source = it.sourceAsMap
-                    val position = source["position"] as? Int
-                        ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-                    val text = source["text"] as? String ?: throw IllegalStateException("Indexed paragraph must have text!")
-                    val classes = source["classes"] as? List<String>
-                        ?: throw IllegalStateException("Indexed paragraph must have class array!")
+        return hits.mapIndexed { index, hit ->
+            val context = contextResponses[index].response.hits.map {
+                val source = it.sourceAsMap
+                val position = source["position"] as? Int
+                    ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
+                val text = source["text"] as? String ?: throw IllegalStateException("Indexed paragraph must have text!")
+                val classes = source["classes"] as? List<String>
+                    ?: throw IllegalStateException("Indexed paragraph must have class array!")
 
-                    SearchParagraph(false, position, text, classes)
-                }
-                val source = hit.sourceAsMap
-                val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
-                val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
-                val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-                val text = hit.highlightFields["text.stripped"]?.fragments?.first()?.string() ?: source["text"] as? String
-                ?: throw IllegalStateException("Search result must have highlight!")
-                val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
-                val paragraph = SearchParagraph(true, position, text, classes)
-
-                SearchResult(
-                    UUID.fromString(bookId),
-                    UUID.fromString(chapter),
-                    (context + paragraph).sortedBy { it.position }
-                )
+                SearchParagraph(false, position, text, classes)
             }
-        )
+            val source = hit.sourceAsMap
+            val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
+            val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
+            val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
+            val text = hit.highlightFields["text.stripped"]?.fragments?.first()?.string() ?: source["text"] as? String
+            ?: throw IllegalStateException("Search result must have highlight!")
+            val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
+            val paragraph = SearchParagraph(true, position, text, classes)
+
+            SearchResult(
+                UUID.fromString(bookId),
+                UUID.fromString(chapter),
+                (context + paragraph).sortedBy { it.position }
+            )
+        }
     }
 
     private data class IndexEntry(val chapter: String, val position: Int, val text: String, val classes: Set<String>)
@@ -275,6 +331,8 @@ class BookIndex {
 }
 
 data class SearchResults(val totalHits: Long, val results: List<SearchResult>)
+
+data class GroupedSearchResults(val totalHits: Long, val nextBook: UUID?, val nextChapter: UUID?, val results: List<SearchResult>)
 
 data class SearchResult(val bookId: UUID, val chapter: UUID, val paragraphs: List<SearchParagraph>)
 

@@ -8,7 +8,6 @@ import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.put
-import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jsoup.Jsoup
@@ -74,18 +73,20 @@ fun Route.bookSearch() {
         )
     }
 
+    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?) =
+        transaction {
+            if (seriesFilter == null && bookFilter == null) {
+                Book.all()
+            } else {
+                val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
+                Book.all().filter { (it.series ?: "No Series").let { s -> adjustedFilter.any { r -> r.containsMatchIn(s) } } }
+            }.map { it.id.value }
+        } + bookFilter.orEmpty().map { UUID.fromString(it) }
+
     post("/search") {
         val request = call.receive<SearchRequest>()
 
-        val filter = transaction {
-            if (request.seriesFilter == null && request.bookFilter == null) {
-                Book.all()
-            } else {
-                val adjustedFilter = request.seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
-                Book.all().filter { (it.series ?: "No Series").let { s -> adjustedFilter.any { r -> r.containsMatchIn(s) } } }
-            }.map { it.id.value }
-        } + request.bookFilter.orEmpty().map { UUID.fromString(it) }
-
+        val filter = buildFilter(request.seriesFilter, request.bookFilter)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -115,6 +116,44 @@ fun Route.bookSearch() {
             "results" to results
         ))
     }
+
+    post("/grouped-search") {
+        val request = call.receive<GroupedSearchRequest>()
+
+        val filter = buildFilter(request.seriesFilter, request.bookFilter)
+        if (filter.isEmpty()) {
+            return@post call.respond(mapOf(
+                "totalHits" to 0,
+                "results" to emptyList<Any>()
+            ))
+        }
+
+        val searchResult = index.searchGrouped(request.query, request.startBook, request.startChapter, request.chapterPage, filter)
+
+        val results = transaction {
+            searchResult.results.map {
+                val book = Book.findById(it.bookId) ?: return@transaction null
+                val chapter = Chapter.findById(it.chapter) ?: return@transaction null
+                mapOf(
+                    "book" to book.toJson(),
+                    "chapter" to chapter.toJson(),
+                    "paragraphs" to it.paragraphs
+                )
+            }
+        } ?: return@post call.respond(
+            HttpStatusCode.NotFound,
+            mapOf("message" to "Book or chapter does not exist")
+        )
+
+        call.respond(mapOf(
+            "totalHits" to searchResult.totalHits,
+            "nextBook" to searchResult.nextBook,
+            "nextChapter" to searchResult.nextChapter,
+            "results" to results
+        ))
+    }
 }
 
 private data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
+
+private data class GroupedSearchRequest(val query: String, val startBook: UUID?, val startChapter: UUID?, val chapterPage: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
