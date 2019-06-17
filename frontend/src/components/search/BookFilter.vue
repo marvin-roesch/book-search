@@ -133,7 +133,7 @@ export default {
   &-books {
     list-style-type: none;
     margin: 0;
-    padding: 0 0 0 2rem;
+    padding: 0 0 0 1rem;
   }
 
   li {
@@ -142,7 +142,7 @@ export default {
 
   &-child {
     flex-direction: column;
-    padding-left: 2rem;
+    padding-left: 1rem;
 
     .book-filter-series {
       margin: 0;

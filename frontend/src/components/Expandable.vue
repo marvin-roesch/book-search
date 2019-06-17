@@ -79,7 +79,7 @@ export default {
   }
 
   &-expanded {
-    .expandable-toggle-button {
+    & > .expandable-header .expandable-toggle-button {
       transform: rotate(-180deg);
     }
   }

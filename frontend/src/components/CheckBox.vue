@@ -15,9 +15,6 @@
       :checked="value"
     >
     <label :for="htmlId" class="checkbox-label">
-      <span class="checkbox-toggle">
-        <CheckIcon class="checkbox-toggle-icon"></CheckIcon>
-      </span>
       <slot></slot>
     </label>
   </div>
@@ -25,11 +22,8 @@
 </template>
 
 <script>
-import { CheckIcon } from 'vue-feather-icons';
-
 export default {
   name: 'CheckBox',
-  components: { CheckIcon },
   props: {
     name: String,
     value: [Boolean, String],
@@ -76,11 +70,6 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
   }
 
   .checkbox-input {
-    opacity: 0;
-    height: 0;
-    margin: 0;
-    width: 0;
-
     & + .checkbox-label:hover {
       cursor: pointer;
     }

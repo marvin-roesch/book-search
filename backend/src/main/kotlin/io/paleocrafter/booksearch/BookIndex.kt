@@ -251,7 +251,7 @@ class BookIndex {
             val afterKey = chapters.afterKey()
             val nextBook = (afterKey["book"] as? String).let { UUID.fromString(it) }
                 ?: throw IllegalStateException("Search must provide next book ID!")
-            val nextChapter = (afterKey["book"] as? String).let { UUID.fromString(it) }
+            val nextChapter = (afterKey["chapter"] as? String).let { UUID.fromString(it) }
                 ?: throw IllegalStateException("Search must provide next chapter ID!")
             return GroupedSearchResults(totalHits, nextBook, nextChapter, emptyList())
         }
