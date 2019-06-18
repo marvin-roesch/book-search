@@ -3,26 +3,25 @@
   'bidirectional-expandable': true,
   'bidirectional-expandable-expanded': expanded,
   'bidirectional-expandable-animated': mayAnimate
-}">
+}" ref="expandable">
   <div class="bidirectional-expandable-start"
        :style="{ marginTop: `${expanded ? 0 : -(startHeight - visibleHeight)}px` }"
        ref="start">
     <slot name="start"></slot>
   </div>
   <slot></slot>
-  <div class="bidirectional-expandable-end"
-       :style="
-       !initialized
-       ? undefined
-       : { maxHeight: expanded ? `${endHeight}px` : `${visibleHeight}px` }
-       "
-       ref="end">
-    <slot name="end"></slot>
+  <div class="bidirectional-expandable-end-container"
+       :style="{ maxHeight: expanded ? `${endHeight}px` : `${visibleHeight}px` }">
+    <div class="bidirectional-expandable-end" ref="end">
+      <slot name="end"></slot>
+    </div>
   </div>
 </div>
 </template>
 
 <script>
+import ResizeObserverLite from 'resize-observer-lite';
+
 export default {
   name: 'BidirectionalExpandable',
   props: {
@@ -31,28 +30,34 @@ export default {
   },
   data() {
     return {
-      initialized: false,
       mayAnimate: false,
       startHeight: 900,
       endHeight: this.visibleHeight,
     };
   },
   mounted() {
-    const observer = new MutationObserver(() => this.recalculate());
-    observer.observe(this.$refs.start, { childList: true });
-    observer.observe(this.$refs.end, { childList: true });
-    setTimeout(() => this.recalculate(), 100);
+    const startObserver = new ResizeObserverLite(size => this.recalculateStart(size));
+    const endObserver = new ResizeObserverLite(size => this.recalculateEnd(size));
+    startObserver.observe(this.$refs.start);
+    endObserver.observe(this.$refs.end);
     setTimeout(() => {
       this.mayAnimate = true;
     }, 150);
   },
   methods: {
-    recalculate() {
-      this.startHeight = this.$refs.start.clientHeight;
-      this.$refs.end.style.maxHeight = '9999px';
-      this.$refs.end.style.height = 'auto';
-      this.endHeight = this.$refs.end.clientHeight;
-      this.initialized = true;
+    recalculateStart(size) {
+      this.mayAnimate = false;
+      this.startHeight = size.height;
+      setTimeout(() => {
+        this.mayAnimate = true;
+      }, 150);
+    },
+    recalculateEnd(size) {
+      this.mayAnimate = false;
+      this.endHeight = size.height;
+      setTimeout(() => {
+        this.mayAnimate = true;
+      }, 150);
     },
   },
 };
@@ -106,7 +111,7 @@ export default {
       transition: margin-top 0.2s ease-in-out;
     }
 
-    .bidirectional-expandable-end {
+    .bidirectional-expandable-end-container {
       transition: max-height 0.2s ease-in-out;
     }
   }

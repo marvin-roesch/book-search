@@ -1,8 +1,10 @@
 <template>
 <div class="search-result-container">
   <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
-  <search-result :result="result" v-for="(result, index) in results" :key="index"></search-result>
-  <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler"></infinite-loading>
+  <search-result :result="result" v-for="(result, index) in results" :key="`$query` + index">
+  </search-result>
+  <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
+  </infinite-loading>
 </div>
 </template>
 
@@ -35,6 +37,7 @@ export default {
       this.page = 0;
       this.results = [];
       this.infiniteId = (new Date()).getTime();
+      console.log('RESETTO');
     },
     async search() {
       const { data: { results, totalHits } } = await axios.post('/api/search', {

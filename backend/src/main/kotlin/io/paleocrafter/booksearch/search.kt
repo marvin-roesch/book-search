@@ -99,7 +99,7 @@ fun Route.bookSearch() {
         val results = transaction {
             searchResult.results.map {
                 val book = Book.findById(it.bookId) ?: return@transaction null
-                val chapter = Chapter.findById(it.chapter) ?: return@transaction null
+                val chapter = Chapter.findById(it.chapterId) ?: return@transaction null
                 mapOf(
                     "book" to book.toJson(),
                     "chapter" to chapter.toJson(),
@@ -128,27 +128,39 @@ fun Route.bookSearch() {
             ))
         }
 
-        val searchResult = index.searchGrouped(request.query, request.startBook, request.startChapter, request.chapterPage, filter)
+        val searchResult = index.searchGrouped(request.query, filter)
 
         val results = transaction {
-            searchResult.results.map {
-                val book = Book.findById(it.bookId) ?: return@transaction null
-                val chapter = Chapter.findById(it.chapter) ?: return@transaction null
-                mapOf(
-                    "book" to book.toJson(),
-                    "chapter" to chapter.toJson(),
-                    "paragraphs" to it.paragraphs
+            searchResult.results
+                .map { bookResult ->
+                    val book = Book.findById(bookResult.bookId)!!
+                    book to bookResult
+                }
+                .sortedWith(
+                    compareBy<Pair<Book, BookSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
+                        (it.first.series ?: "").split("\\")
+                    }.thenBy { it.first.orderInSeries }
                 )
-            }
-        } ?: return@post call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book or chapter does not exist")
-        )
+                .map { (book, bookResult) ->
+                    book.toJson() +
+                        ("chapters" to bookResult.chapters
+                            .map { chapterResult ->
+                                val chapter = Chapter.findById(chapterResult.chapterId)!!
+                                chapter to chapterResult
+                            }
+                            .sortedBy { it.first.title }
+                            .map { (chapter, chapterResult) ->
+                                chapter.toJson() +
+                                    ("totalOccurrences" to chapterResult.totalOccurrences) +
+                                    ("results" to chapterResult.results)
+                            }
+                            .toList())
+                }
+                .toList()
+        }
 
         call.respond(mapOf(
             "totalHits" to searchResult.totalHits,
-            "nextBook" to searchResult.nextBook,
-            "nextChapter" to searchResult.nextChapter,
             "results" to results
         ))
     }
@@ -156,4 +168,19 @@ fun Route.bookSearch() {
 
 private data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
 
-private data class GroupedSearchRequest(val query: String, val startBook: UUID?, val startChapter: UUID?, val chapterPage: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
+private data class GroupedSearchRequest(val query: String, val seriesFilter: List<String>?, val bookFilter: List<String>?)
+
+private fun <T> Comparator<in T>.lexicographical(): Comparator<in Iterable<T>> =
+    Comparator { left, right ->
+        // Zipping limits the compared parts to the shorter list, then we perform a component-wise comparison
+        // Short-circuits if any component of the left side is smaller or greater
+        left.zip(right).fold(0) { acc, (a, b) -> if (acc != 0) return@Comparator acc else this.compare(a, b) }.let {
+            // When all the parts are equal, the longer list wins (is greater)
+            if (it == 0) {
+                left.count() - right.count()
+            } else {
+                // Still required if the last part was not equal, the short-circuiting does not cover that
+                it
+            }
+        }
+    }

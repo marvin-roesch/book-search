@@ -21,7 +21,7 @@
           </transition>
         </div>
         <div class="search-results-toolbar-grouping">
-          <CheckBox :value="groupResults" @input="groupResults = $event.target.checked">
+          <CheckBox :value="groupResults" @input="changeResultGrouping($event.target.checked)">
             Group by chapter
           </CheckBox>
         </div>
@@ -66,7 +66,6 @@ export default {
     return {
       series: [],
       filterVisible: false,
-      groupResults: false,
     };
   },
   computed: {
@@ -77,6 +76,9 @@ export default {
     bookFilter() {
       const { books } = this.$route.query;
       return books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
+    },
+    groupResults() {
+      return this.$route.query.grouped;
     },
   },
   async mounted() {
@@ -109,22 +111,35 @@ export default {
       };
     },
     onQueryChange(event) {
-      this.$router.push({
+      this.$router.replace({
         name: 'search',
         query: {
           q: event.target.value,
           series: this.$route.query.series,
           books: this.$route.query.books,
+          grouped: this.$route.query.grouped,
         },
       });
     },
     onFilter({ series, books }) {
-      this.$router.push({
+      this.$router.replace({
         name: 'search',
         query: {
           q: this.$route.query.q,
           series: series === undefined ? undefined : series.join('+'),
           books: series === undefined ? undefined : books.join('+'),
+          grouped: this.$route.query.grouped,
+        },
+      });
+    },
+    changeResultGrouping(grouped) {
+      this.$router.replace({
+        name: 'search',
+        query: {
+          q: this.$route.query.q,
+          series: this.$route.query.series,
+          books: this.$route.query.books,
+          grouped: grouped || undefined,
         },
       });
     },
@@ -133,6 +148,10 @@ export default {
 </script>
 
 <style lang="scss">
+body {
+  overflow-y: scroll;
+}
+
 .search-results {
   box-sizing: border-box;
   display: flex;
@@ -190,6 +209,7 @@ export default {
           border-radius: 4px;
           outline: 0;
           box-sizing: border-box;
+          background: white;
         }
       }
 
