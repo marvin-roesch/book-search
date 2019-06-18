@@ -1,4 +1,4 @@
-package io.paleocrafter.booksearch
+package io.paleocrafter.booksearch.books
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonFormat

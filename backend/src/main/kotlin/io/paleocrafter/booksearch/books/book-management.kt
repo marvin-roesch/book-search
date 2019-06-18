@@ -1,4 +1,4 @@
-package io.paleocrafter.booksearch
+package io.paleocrafter.booksearch.books
 
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
@@ -216,7 +216,9 @@ fun Route.bookManagement() {
 
     put("/book/{id}/class-mappings") {
         val id = UUID.fromString(call.parameters["id"])
-        val classMappings = call.receive<Map<String, String>>().mapValues { BookStyle.fromJson(it.value) ?: BookStyle.STRIP_CLASS }
+        val classMappings = call.receive<Map<String, String>>().mapValues { BookStyle.fromJson(it.value)
+            ?: BookStyle.STRIP_CLASS
+        }
 
         transaction {
             val book = Book.findById(id) ?: return@transaction null

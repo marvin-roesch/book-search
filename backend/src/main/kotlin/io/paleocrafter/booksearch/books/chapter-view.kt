@@ -1,4 +1,4 @@
-package io.paleocrafter.booksearch
+package io.paleocrafter.booksearch.books
 
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode

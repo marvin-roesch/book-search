@@ -1,4 +1,4 @@
-package io.paleocrafter.booksearch
+package io.paleocrafter.booksearch.books
 
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node

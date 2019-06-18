@@ -1,4 +1,4 @@
-package io.paleocrafter.booksearch
+package io.paleocrafter.booksearch.books
 
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.UUIDEntity

@@ -1,4 +1,4 @@
-package io.paleocrafter.booksearch
+package io.paleocrafter.booksearch.books
 
 import org.apache.http.HttpHost
 import org.elasticsearch.action.ActionListener
@@ -320,7 +320,8 @@ class BookIndex {
                             .groupBy { result -> result.chapterId }
                             .asSequence()
                             .map { (chapterId, chapterResults) ->
-                                ChapterSearchResult(chapterId, chapterCounts[chapterId.toString()] ?: 0, chapterResults)
+                                ChapterSearchResult(chapterId, chapterCounts[chapterId.toString()]
+                                    ?: 0, chapterResults)
                             }
                     )
                 }
