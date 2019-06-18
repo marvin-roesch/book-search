@@ -8,22 +8,31 @@ import MetadataEditor from '@/components/wizard/MetadataEditor.vue';
 import ClassMapper from '@/components/wizard/ClassMapper.vue';
 import SearchResults from '@/views/SearchResults.vue';
 import Chapter from '@/views/Chapter.vue';
+import store from '@/store';
+import Login from '@/views/Login.vue';
 
 Vue.use(Router);
 
-export default new Router({
+const router = new Router({
   mode: 'history',
   base: process.env.BASE_URL,
   routes: [
     {
+      path: '/login',
+      name: 'login',
+      component: Login,
+      meta: { requiresUnauthorized: true },
+    },
+    {
       path: '/',
       name: 'home',
       component: Home,
+      meta: { requiresAuth: true },
     },
     {
       path: '/new-book',
-      name: 'new-book',
       component: NewBook,
+      meta: { requiresAuth: true, requiresBookPerms: true },
       children: [
         {
           path: '/',
@@ -51,11 +60,67 @@ export default new Router({
       path: '/search',
       name: 'search',
       component: SearchResults,
+      meta: { requiresAuth: true },
     },
     {
       path: '/chapter/:id',
       name: 'chapter',
       component: Chapter,
+      meta: { requiresAuth: true },
     },
   ],
 });
+
+router.beforeEach(async (to, from, next) => {
+  let auth = store.getters.authorized;
+  if (!auth) {
+    auth = await store.dispatch('checkIdentity');
+  }
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!auth) {
+      next(
+        {
+          path: '/login',
+          query: { redirect: to.fullPath },
+        },
+      );
+    } else {
+      next();
+    }
+  } else if (to.matched.some(record => record.meta.requiresUnauthorized)) {
+    if (auth) {
+      next(from.name === null ? '/' : false);
+    } else {
+      next();
+    }
+  } else {
+    next();
+  }
+});
+
+router.beforeEach((to, from, next) => {
+  const { identity } = store.state;
+  if (identity === null) {
+    next();
+    return;
+  }
+
+  const { canManageBooks, canManageUsers } = identity;
+  if (to.matched.some(record => record.meta.requiresBookPerms)) {
+    if (!canManageUsers) {
+      next(false);
+    } else {
+      next();
+    }
+  } else if (to.matched.some(record => record.meta.requiresUserPerms)) {
+    if (!canManageBooks) {
+      next(false);
+    } else {
+      next();
+    }
+  } else {
+    next(); // make sure to always call next()!
+  }
+});
+
+export default router;

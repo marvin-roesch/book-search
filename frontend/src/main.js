@@ -4,6 +4,7 @@ import hljs from 'highlight.js/lib/highlight';
 import hljsCss from 'highlight.js/lib/languages/css';
 import App from './App.vue';
 import router from './router';
+import store from './store';
 
 hljs.registerLanguage('css', hljsCss);
 
@@ -35,5 +36,6 @@ Vue.config.productionTip = false;
 
 new Vue({
   router,
+  store,
   render: h => h(App),
 }).$mount('#app');

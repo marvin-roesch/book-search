@@ -30,7 +30,8 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             "id" to id.value,
             "title" to title,
             "author" to author,
-            "series" to series
+            "series" to series,
+            "orderInSeries" to orderInSeries
         )
 }
 
