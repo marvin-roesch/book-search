@@ -42,6 +42,40 @@ fun Route.bookSearch() {
         ))
     }
 
+    post("/book/reindex-all") {
+        val books = transaction {
+            Book.all().associate { book ->
+                book.id.value to transaction {
+                    val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
+                        it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
+                    }
+                    Chapter.find { Chapters.book eq book.id }.map {
+                        ResolvedChapter(it.id.value, book.id.value, it.title, Jsoup.parse(it.content).body()).also { resolved ->
+                            BookNormalizer.normalize(resolved, classMappings)
+                            it.indexedContent = resolved.content.html()
+                        }
+                    }
+                }
+            }
+        }
+
+        index.reset()
+
+        for ((id, normalized) in books) {
+            index.index(id, normalized)
+        }
+
+        call.respond(mapOf(
+            "message" to "success"
+        ))
+    }
+
+    get("/book/{id}/dictionary") {
+        val id = UUID.fromString(call.parameters["id"])
+
+        call.respond(index.getDictionary(id))
+    }
+
     data class Series(val name: String, val books: MutableList<Book>, val children: MutableMap<String, Series>) {
         fun toJson(): Map<String, Any> =
             mapOf(

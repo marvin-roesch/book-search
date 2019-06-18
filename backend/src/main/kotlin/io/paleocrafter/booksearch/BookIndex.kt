@@ -26,6 +26,7 @@ import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.AggregationBuilders
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation
 import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder
+import org.elasticsearch.search.aggregations.bucket.significant.SignificantTerms
 import org.elasticsearch.search.aggregations.metrics.TopHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
@@ -34,7 +35,6 @@ import org.intellij.lang.annotations.Language
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
-
 
 class BookIndex {
     private val client = RestHighLevelClient(
@@ -62,6 +62,10 @@ class BookIndex {
                         "stripped": {
                             "type": "text",
                             "analyzer": "strip_html_analyzer"
+                        },
+                        "signature": {
+                            "type": "text",
+                            "analyzer": "signature_analyzer"
                         }
                     }
                 }
@@ -78,11 +82,65 @@ class BookIndex {
                         "tokenizer": "classic",
                         "filter": ["lowercase"],
                         "char_filter": ["html_stripper"]
+                    },
+                    "signature_analyzer": {
+                        "tokenizer": "standard",
+                        "filter": [
+                            "lowercase",
+                            "possessive_stemmer",
+                            "suffix_cleanup",
+                            "en_US",
+                            "english_stops",
+                            "dictionary_stops",
+                            "revert_hyphens",
+                            "remove_duplicates"
+                        ],
+                        "char_filter": ["html_stripper", "normalize_apostrophes", "convert_hyphens"]
                     }
                 },
                 "char_filter": {
                     "html_stripper": {
                         "type": "html_strip"
+                    },
+                    "convert_hyphens": {
+                        "type": "pattern_replace",
+                        "pattern": "([^\\s]{3,})-([^\\s]{3,})",
+                        "replacement": "$1_$2"
+                    },
+                    "normalize_apostrophes": {
+                        "type": "mapping",
+                        "mappings": [
+                            "’ => '"
+                        ]
+                    }
+                },
+                "filter": {
+                    "suffix_cleanup": {
+                        "type": "length",
+                        "min": 3
+                    },
+                    "possessive_stemmer": {
+                        "type": "stemmer",
+                        "name": "possessive_english"
+                    },
+                    "en_US" : {
+                        "type" : "hunspell",
+                        "locale" : "en_US",
+                        "dedup" : true
+                    },
+                    "english_stops": {
+                        "type": "stop",
+                        "stopwords":  "_english_"
+                    },
+                    "dictionary_stops": {
+                        "type": "stop",
+                        "stopwords_path": "hunspell/en_US/stopwords.txt",
+                        "ignore_case": true
+                    },
+                    "revert_hyphens": {
+                        "type": "pattern_replace",
+                        "pattern": "_",
+                        "replacement": "-"
                     }
                 }
             }
@@ -328,6 +386,28 @@ class BookIndex {
         }
     }
 
+    suspend fun getDictionary(bookId: UUID): List<DictionaryEntry> {
+        val query = SearchSourceBuilder().query(
+            QueryBuilders.termQuery("book", bookId.toString())
+        )
+        query.aggregation(
+            AggregationBuilders.significantText(
+                "dictionary",
+                "text.signature"
+            ).size(1000)
+        )
+
+        val response = suspendCoroutine<SearchResponse> {
+            client.searchAsync(SearchRequest("chapters").source(query), RequestOptions.DEFAULT, SuspendingActionListener(it))
+        }
+
+        return response.aggregations.get<SignificantTerms>("dictionary").buckets
+            .map {
+                DictionaryEntry(it.key.toString(), it.docCount)
+            }
+            .sortedByDescending { it.occurrences }
+    }
+
     private data class IndexEntry(val chapter: String, val position: Int, val text: String, val classes: Set<String>)
 
     private class SuspendingActionListener<T>(private val continuation: Continuation<T>) : ActionListener<T> {
@@ -352,3 +432,5 @@ data class ChapterSearchResult(val chapterId: UUID, val totalOccurrences: Int, v
 data class SearchResult(val bookId: UUID, val chapterId: UUID, val mainPosition: Int, val paragraphs: List<SearchParagraph>)
 
 class SearchParagraph(val main: Boolean, val position: Int, val text: String, val classes: List<String>)
+
+data class DictionaryEntry(val word: String, val occurrences: Long)
