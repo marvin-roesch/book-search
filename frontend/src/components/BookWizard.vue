@@ -1,6 +1,6 @@
 <template>
 <div class="book-wizard">
-  <transition name="fade">
+  <transition name="slide">
     <router-view></router-view>
   </transition>
 </div>
@@ -41,12 +41,12 @@ export default {
   }
 }
 
-.fade-enter-active, .fade-leave-active {
+.slide-enter-active, .slide-leave-active {
   transition: opacity .2s, max-height .2s;
   max-height: 80vh;
 }
 
-.fade-enter, .fade-leave-to {
+.slide-enter, .slide-leave-to {
   opacity: 0;
   max-height: 0;
 }

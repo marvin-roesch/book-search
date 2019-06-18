@@ -37,7 +37,6 @@ export default {
       this.page = 0;
       this.results = [];
       this.infiniteId = (new Date()).getTime();
-      console.log('RESETTO');
     },
     async search() {
       const { data: { results, totalHits } } = await axios.post('/api/search', {
