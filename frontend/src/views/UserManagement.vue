@@ -24,8 +24,8 @@ export default {
 
   .user-panel {
     position: absolute;
-    top: 1.35rem;
-    right: 2rem;
+    top: 19.5px;
+    left: 32px;
   }
 }
 </style>

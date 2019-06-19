@@ -1,6 +1,7 @@
 <template>
 <div class="search-results">
   <div class="search-results-toolbar-container">
+    <UserPanel></UserPanel>
     <QueryPanel
       class="search-results-toolbar"
       toolbar
@@ -13,7 +14,6 @@
       @filter="onFilter"
       @group-results="onGroupResults">
     </QueryPanel>
-    <UserPanel></UserPanel>
   </div>
   <grouped-search-results
     :query="$route.query.q"
@@ -156,7 +156,7 @@ body {
 
     .user-panel {
       position: absolute;
-      right: 2rem;
+      left: 2rem;
     }
 
     .search-results-toolbar {

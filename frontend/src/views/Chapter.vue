@@ -15,7 +15,7 @@ export default {
   },
   async mounted() {
     const { id } = this.$route.params;
-    const { data: { title, content } } = await this.$api.get(`/api/chapter/${id}`);
+    const { data: { title, content } } = await this.$api.get(`/chapter/${id}`);
 
     this.title = title;
     this.content = content;
