@@ -27,9 +27,8 @@
 
 <script>
 import Button from '@/components/Button.vue';
-import ClassPreview from '@/components/wizard/ClassPreview.vue';
+import ClassPreview from '@/components/management/wizard/ClassPreview.vue';
 import Expandable from '@/components/Expandable.vue';
-import axios from 'axios';
 
 export default {
   name: 'ClassMapper',
@@ -42,7 +41,7 @@ export default {
       return;
     }
 
-    const { data: { classes, mappings } } = await axios.get(`/api/book/${id}/available-classes`);
+    const { data: { classes, mappings } } = await this.$api.get(`/book/${id}/available-classes`);
 
     this.bookId = id;
     this.classes = classes.map(cls => ({ ...cls, mapping: 'no-selection' }));
@@ -61,8 +60,8 @@ export default {
     async index() {
       this.updating = true;
       try {
-        const { data: _ } = await axios.put(
-          `/api/book/${this.bookId}/class-mappings`,
+        await this.$api.put(
+          `/book/${this.bookId}/class-mappings`,
           this.classes.reduce(
             (acc, cls) => ({ ...acc, [cls.name]: cls.mapping }),
             {},
@@ -73,7 +72,7 @@ export default {
             },
           },
         );
-        await axios.put(`/api/book/${this.bookId}/index`);
+        await this.$api.put(`/book/${this.bookId}/index`);
         this.updating = false;
       } catch (error) {
         this.updating = false;

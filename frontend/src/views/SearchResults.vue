@@ -30,7 +30,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import FlatSearchResults from '@/components/search/FlatSearchResults.vue';
 import GroupedSearchResults from '@/components/search/GroupedSearchResults.vue';
 import QueryPanel from '@/components/search/QueryPanel.vue';
@@ -63,7 +62,7 @@ export default {
     },
   },
   async mounted() {
-    const { data: allSeries } = await axios.get('/api/series');
+    const { data: allSeries } = await this.$api.get('/series');
     const { books, series } = this.$route.query;
 
     const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;

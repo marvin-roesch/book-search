@@ -35,7 +35,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
 import { GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
@@ -50,7 +49,7 @@ export default {
       this.$router.replace({ name: 'book-upload' });
       return;
     }
-    const { data: { title, author, series, orderInSeries } } = await axios.get(`/api/book/${id}`);
+    const { data: { title, author, series, orderInSeries } } = await this.$api.get(`/book/${id}`);
 
     this.bookId = id;
     this.title = title;
@@ -73,8 +72,8 @@ export default {
     async updateMetadata() {
       this.updating = true;
       try {
-        await axios.patch(
-          `/api/book/${this.bookId}`,
+        await this.$api.patch(
+          `/book/${this.bookId}`,
           {
             title: this.title,
             author: this.author,

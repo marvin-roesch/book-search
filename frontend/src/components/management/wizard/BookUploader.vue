@@ -18,8 +18,6 @@
 </template>
 
 <script>
-import axios from 'axios';
-
 export default {
   name: 'BookUploader',
   data() {
@@ -40,8 +38,8 @@ export default {
       const formData = new FormData();
       formData.append('book', file);
       try {
-        const { data: { id } } = await axios.put(
-          '/api/book',
+        const { data: { id } } = await this.$api.put(
+          '/book',
           formData,
           {
             headers: {

@@ -17,14 +17,14 @@ export default {
   mounted() {
     const style = document.createElement('style');
     style.type = 'text/css';
-    style.appendChild(document.createTextNode(`@import url('/book-preview.css');`));
+    style.appendChild(document.createTextNode('@import url(\'/book-preview.css\');'));
     style.appendChild(document.createTextNode(this.cls.styles));
     this.$refs.preview.shadowRoot.prepend(style);
     this.styleCode = this.getStyle(style.sheet);
   },
   data() {
     return {
-      styleCode: ''
+      styleCode: '',
     };
   },
   methods: {
@@ -48,7 +48,7 @@ export default {
         }
 
         if (ruleBuffer.indexOf(rule.selectorText) === -1) {
-          ruleBuffer = rule.selectorText + '{' + ruleBuffer + '}';
+          ruleBuffer = `${rule.selectorText} {${ruleBuffer}}`;
         }
 
         buffer += ruleBuffer;

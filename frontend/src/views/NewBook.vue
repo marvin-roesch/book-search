@@ -6,11 +6,11 @@
 
 <script>
 import BookWizard from '@/components/BookWizard.vue';
+
 export default {
   name: 'new-book',
   components: { BookWizard },
-  methods: {
-  },
+  methods: {},
   data() {
     return {
       toc: null,

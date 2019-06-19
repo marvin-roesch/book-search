@@ -5,8 +5,11 @@ import hljsCss from 'highlight.js/lib/languages/css';
 import App from './App.vue';
 import router from './router';
 import store from './store';
+import Api from './api';
 
 hljs.registerLanguage('css', hljsCss);
+
+Vue.use(Api);
 
 Vue.use(shadow);
 

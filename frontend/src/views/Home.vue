@@ -17,7 +17,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import QueryPanel from '@/components/search/QueryPanel.vue';
 
 export default {
@@ -36,7 +35,7 @@ export default {
     };
   },
   async mounted() {
-    const { data: allSeries } = await axios.get('/api/series');
+    const { data: allSeries } = await this.$api.get('/series');
     const { q, books, series, grouped } = { ...this.oldQuery, ...this.$route.query };
 
     this.query = q || '';

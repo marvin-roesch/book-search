@@ -17,11 +17,14 @@ export default new Vuex.Store({
     setIdentity(state, identity) {
       state.identity = identity;
     },
+    resetIdentity(state) {
+      state.identity = null;
+    },
   },
   actions: {
     async checkIdentity({ commit }) {
       try {
-        const { data: identity } = await axios.get('/api/identity');
+        const { data: identity } = await axios.get('/api/auth/identity');
         commit('setIdentity', identity);
         return true;
       } catch (error) {
@@ -33,7 +36,7 @@ export default new Vuex.Store({
     },
     async login({ commit }, payload) {
       try {
-        const { data: identity } = await axios.post('/api/login', payload);
+        const { data: identity } = await axios.post('/api/auth/login', payload);
         commit('setIdentity', identity);
       } catch (error) {
         if (error.response && error.response.status === 401) {

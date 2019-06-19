@@ -9,7 +9,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import InfiniteLoading from 'vue-infinite-loading';
 import SearchResult from '@/components/search/SearchResult.vue';
 
@@ -39,7 +38,7 @@ export default {
       this.infiniteId = (new Date()).getTime();
     },
     async search() {
-      const { data: { results, totalHits } } = await axios.post('/api/search', {
+      const { data: { results, totalHits } } = await this.$api.post('/search', {
         query: this.query,
         page: this.page,
         seriesFilter: this.seriesFilter,

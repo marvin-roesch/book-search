@@ -19,7 +19,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import SearchResult from '@/components/search/SearchResult.vue';
 import Expandable from '@/components/Expandable.vue';
 
@@ -52,38 +51,42 @@ export default {
       this.search();
     },
     async search() {
-      const {
-        data: {
-          totalHits, results,
-        },
-      } = await axios.post('/api/grouped-search', {
-        query: this.query,
-        seriesFilter: this.seriesFilter,
-        bookFilter: this.bookFilter,
-      });
+      try {
+        const {
+          data: {
+            totalHits, results,
+          },
+        } = await this.$api.post('/grouped-search', {
+          query: this.query,
+          seriesFilter: this.seriesFilter,
+          bookFilter: this.bookFilter,
+        });
 
-      this.results = results.map(b => (
-        {
-          ...b,
-          chapters: b.chapters.map(c => (
-            {
-              ...c,
-              results: c.results.map(({ book, chapter, paragraphs }) => {
-                const mainParagraph = paragraphs.find(p => p.main);
-                return {
-                  book,
-                  chapter,
-                  mainParagraph,
-                  prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
-                  nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
-                  showSiblings: false,
-                };
-              }),
-            }
-          )),
-        }
-      ));
-      this.totalHits = totalHits;
+        this.results = results.map(b => (
+          {
+            ...b,
+            chapters: b.chapters.map(c => (
+              {
+                ...c,
+                results: c.results.map(({ book, chapter, paragraphs }) => {
+                  const mainParagraph = paragraphs.find(p => p.main);
+                  return {
+                    book,
+                    chapter,
+                    mainParagraph,
+                    prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
+                    nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
+                    showSiblings: false,
+                  };
+                }),
+              }
+            )),
+          }
+        ));
+        this.totalHits = totalHits;
+      } catch (error) {
+
+      }
     },
   },
   watch: {

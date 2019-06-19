@@ -14,9 +14,8 @@
 </template>
 
 <script>
-import TableOfContentsEntry from '@/components/wizard/TableOfContentsEntry.vue';
+import TableOfContentsEntry from '@/components/management/wizard/TableOfContentsEntry.vue';
 import Button from '@/components/Button.vue';
-import axios from 'axios';
 
 export default {
   name: 'TableOfContents',
@@ -29,7 +28,7 @@ export default {
       return;
     }
 
-    const { data: { toc } } = await axios.get(`/api/book/${id}/table-of-contents`);
+    const { data: { toc } } = await this.$api.get(`/book/${id}/table-of-contents`);
 
     this.bookId = id;
     this.toc = this.mapTableOfContents(toc);
@@ -66,8 +65,8 @@ export default {
       const entries = this.linearizeSelectedEntries(this.toc);
       this.updating = true;
       try {
-        await axios.put(
-          `/api/book/${this.bookId}/chapters`,
+        await this.$api.put(
+          `/book/${this.bookId}/chapters`,
           entries,
           {
             headers: {
