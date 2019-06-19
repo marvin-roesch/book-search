@@ -1,5 +1,6 @@
 <template>
 <div class="home">
+  <UserPanel></UserPanel>
   <div class="home-content">
     <h1>Book Search</h1>
     <QueryPanel
@@ -18,10 +19,12 @@
 
 <script>
 import QueryPanel from '@/components/search/QueryPanel.vue';
+import UserPanel from '@/components/UserPanel.vue';
 
 export default {
   name: 'home',
   components: {
+    UserPanel,
     QueryPanel,
   },
   data() {
@@ -99,6 +102,7 @@ export default {
 
 <style scoped lang="scss">
 .home {
+  position: relative;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -106,6 +110,12 @@ export default {
   align-items: center;
   width: 100%;
   height: 100vh;
+
+  .user-panel {
+    position: absolute;
+    top: 1.35rem;
+    right: 2rem;
+  }
 
   &-content {
     position: relative;

@@ -1,0 +1,36 @@
+.fade {
+  &, &-relative {
+    &-enter-active, &-leave-active {
+      transition: opacity .3s;
+    }
+  }
+
+  &-enter-active, &-leave-active {
+    position: absolute;
+  }
+
+  &-enter, &-leave-to, &-relative-enter, &-relative-leave-to {
+    opacity: 0;
+  }
+}
+
+.fade-slide-up {
+  &-enter, &-enter-active {
+    transition: all 0.8s;
+    transition-delay: var(--delay);
+  }
+
+  &-enter {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  &-leave, &-leave-active {
+    transition: all 0.1s;
+  }
+
+  &-leave-to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}

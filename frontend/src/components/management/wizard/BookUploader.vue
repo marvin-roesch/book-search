@@ -1,7 +1,12 @@
 <template>
 <div class="book-uploader">
-  <input id="book-upload-field" type="file" accept="application/epub+zip" required @change="fileSelected"
-         :disabled="selectedFileName !== null">
+  <input
+    id="book-upload-field"
+    type="file"
+    accept="application/epub+zip"
+    required
+    :disabled="selectedFileName !== null"
+    @change="fileSelected">
   <svg width="150" class="book-icon">
     <clipPath id="ripple-clip">
       <circle cx="66" cy="66" r="66" class="ripple"></circle>

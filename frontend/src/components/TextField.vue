@@ -53,9 +53,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-$base-text-color: #2c3e50;
-$primary: #42b983;
-$errors: $primary;
 $inactive-color: desaturate(lighten($primary, 20%), 20%);
 
 .text-field {

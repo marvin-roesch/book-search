@@ -51,10 +51,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-$primary: #42B983;
-$base-text-color: #2c3e50;
-$inactive-color: desaturate(lighten($primary, 20%), 20%);
-
 .checkbox {
   position: relative;
 
@@ -72,40 +68,6 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
   .checkbox-input {
     & + .checkbox-label:hover {
       cursor: pointer;
-    }
-
-    & + .checkbox-label .checkbox-toggle {
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      margin-right: 0.5rem;
-      background: $inactive-color;
-      transition: background-color 0.2s ease-in-out;
-      border-radius: 50%;
-
-      &-icon {
-        color: white;
-        transform: scale(0.75);
-        transition: opacity 0.2s ease-in-out;
-        opacity: 0;
-      }
-    }
-
-    &:checked + .checkbox-label .checkbox-toggle {
-      background: $primary;
-
-      &-icon {
-        opacity: 1;
-      }
-    }
-
-    &:focus, &:active {
-      & + .checkbox-label .checkbox-toggle {
-        box-shadow: 0 0 3px rgba(saturate($primary, 30%), 0.75);
-      }
     }
   }
 

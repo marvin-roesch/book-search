@@ -1,0 +1,11 @@
+@import "variables";
+
+a {
+  position: relative;
+  color: $primary;
+  text-decoration: none;
+
+  &:hover, &:active, &:focus {
+    color: saturate($primary, 10%);
+  }
+}

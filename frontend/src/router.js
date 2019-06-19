@@ -10,8 +10,14 @@ import SearchResults from '@/views/SearchResults.vue';
 import Chapter from '@/views/Chapter.vue';
 import store from '@/store';
 import Login from '@/views/Login.vue';
+import UserManagement from '@/views/UserManagement.vue';
 
 Vue.use(Router);
+
+const withPrefix = (prefix, routes) => routes.map((route) => {
+  route.path = prefix + route.path;
+  return route;
+});
 
 const router = new Router({
   mode: 'history',
@@ -29,33 +35,41 @@ const router = new Router({
       component: Home,
       meta: { requiresAuth: true },
     },
-    {
-      path: '/new-book',
-      component: NewBook,
-      meta: { requiresAuth: true, requiresBookPerms: true },
-      children: [
-        {
-          path: '/',
-          name: 'book-upload',
-          component: BookUploader,
-        },
-        {
-          path: ':id/metadata',
-          name: 'book-metadata',
-          component: MetadataEditor,
-        },
-        {
-          path: ':id/table-of-contents',
-          name: 'table-of-contents',
-          component: TableOfContents,
-        },
-        {
-          path: ':id/classes',
-          name: 'book-classes',
-          component: ClassMapper,
-        },
-      ],
-    },
+    ...withPrefix('/management', [
+      {
+        path: '/users',
+        name: 'user-management',
+        component: UserManagement,
+        meta: { requiresAuth: true, requiresUserPerms: true },
+      },
+      {
+        path: '/new-book',
+        component: NewBook,
+        meta: { requiresAuth: true, requiresBookPerms: true },
+        children: [
+          {
+            path: '/',
+            name: 'book-upload',
+            component: BookUploader,
+          },
+          {
+            path: ':id/metadata',
+            name: 'book-metadata',
+            component: MetadataEditor,
+          },
+          {
+            path: ':id/table-of-contents',
+            name: 'table-of-contents',
+            component: TableOfContents,
+          },
+          {
+            path: ':id/classes',
+            name: 'book-classes',
+            component: ClassMapper,
+          },
+        ],
+      },
+    ]),
     {
       path: '/search',
       name: 'search',

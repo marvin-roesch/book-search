@@ -55,8 +55,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-$primary: #42b983;
-
 .button {
   background: $primary;
   font-weight: bold;

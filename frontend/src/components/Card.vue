@@ -1,6 +1,6 @@
-<template functional>
-<component :is="props.tag" class="card" v-bind="$props">
-  <h2>{{ props.title }}</h2>
+<template>
+<component :is="tag" class="card">
+  <h2>{{ title }}</h2>
   <slot></slot>
   <div class="card-footer" v-if="$slots.footer">
     <slot name="footer"></slot>
@@ -26,7 +26,7 @@ export default {
   padding: 2rem;
   background: white;
   border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
 
   h2 {

@@ -13,6 +13,7 @@
       @filter="onFilter"
       @group-results="onGroupResults">
     </QueryPanel>
+    <UserPanel></UserPanel>
   </div>
   <grouped-search-results
     :query="$route.query.q"
@@ -33,10 +34,12 @@
 import FlatSearchResults from '@/components/search/FlatSearchResults.vue';
 import GroupedSearchResults from '@/components/search/GroupedSearchResults.vue';
 import QueryPanel from '@/components/search/QueryPanel.vue';
+import UserPanel from '@/components/UserPanel.vue';
 
 export default {
   name: 'search-results',
   components: {
+    UserPanel,
     QueryPanel,
     GroupedSearchResults,
     FlatSearchResults,
@@ -147,7 +150,14 @@ body {
     box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
     position: fixed;
     background: white;
+    display: flex;
+    align-items: center;
     z-index: 2000;
+
+    .user-panel {
+      position: absolute;
+      right: 2rem;
+    }
 
     .search-results-toolbar {
       width: 50%;

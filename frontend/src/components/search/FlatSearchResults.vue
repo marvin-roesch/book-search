@@ -1,8 +1,15 @@
 <template>
 <div class="search-result-container">
   <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
-  <search-result :result="result" v-for="(result, index) in results" :key="`$query` + index">
-  </search-result>
+  <transition-group tag="div" class="search-result-list" name="fade-slide-up"
+                    @after-leave="infiniteId = (new Date()).getTime()">
+    <search-result
+      :result="result"
+      :style="{'--delay': `${result.delay}ms`}"
+      v-for="(result, index) in results"
+      :key="`$route.fullPath` + index">
+    </search-result>
+  </transition-group>
   <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
   </infinite-loading>
 </div>
@@ -29,6 +36,8 @@ export default {
       page: 0,
       totalHits: 0,
       infiniteId: (new Date()).getTime(),
+      resultDelay: 0,
+      lastResult: new Date(),
     };
   },
   methods: {
@@ -36,6 +45,8 @@ export default {
       this.page = 0;
       this.results = [];
       this.infiniteId = (new Date()).getTime();
+      this.resultDelay = 0;
+      this.lastResult = new Date();
     },
     async search() {
       const { data: { results, totalHits } } = await this.$api.post('/search', {
@@ -46,6 +57,16 @@ export default {
       });
       const mapped = results.map(({ book, chapter, paragraphs }) => {
         const mainParagraph = paragraphs.find(p => p.main);
+
+        const resultDate = new Date();
+        if ((resultDate.getTime() - this.lastResult.getTime()) <= 500) {
+          this.resultDelay += 100;
+        } else {
+          this.resultDelay = 0;
+        }
+
+        this.lastResult = resultDate;
+
         return {
           book,
           chapter,
@@ -53,6 +74,7 @@ export default {
           prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
           nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
           showSiblings: false,
+          delay: this.resultDelay,
         };
       });
 
@@ -85,3 +107,12 @@ export default {
   },
 };
 </script>
+
+<style lang="scss">
+.search-result-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+}
+</style>

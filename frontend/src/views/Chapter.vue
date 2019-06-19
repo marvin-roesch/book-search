@@ -5,8 +5,6 @@
 </template>
 
 <script>
-import axios from 'axios';
-
 export default {
   name: 'chapter',
   data() {
@@ -17,7 +15,7 @@ export default {
   },
   async mounted() {
     const { id } = this.$route.params;
-    const { data: { title, content } } = await axios.get(`/api/chapter/${id}`);
+    const { data: { title, content } } = await this.$api.get(`/api/chapter/${id}`);
 
     this.title = title;
     this.content = content;

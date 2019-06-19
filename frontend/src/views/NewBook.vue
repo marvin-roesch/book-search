@@ -5,17 +5,11 @@
 </template>
 
 <script>
-import BookWizard from '@/components/BookWizard.vue';
+import BookWizard from '@/components/management/wizard/BookWizard.vue';
 
 export default {
   name: 'new-book',
   components: { BookWizard },
-  methods: {},
-  data() {
-    return {
-      toc: null,
-    };
-  },
 };
 </script>
 
