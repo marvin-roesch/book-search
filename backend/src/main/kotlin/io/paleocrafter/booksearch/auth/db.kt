@@ -11,6 +11,7 @@ object AppUsers : UUIDTable() {
     val password = varchar("password", 255).index()
     val canManageBooks = bool("can_manage_books")
     val canManageUsers = bool("can_manage_users")
+    val hasLoggedIn = bool("has_logged_in").default(false)
 }
 
 class User(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -19,6 +20,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var username by AppUsers.username
     var canManageBooks by AppUsers.canManageBooks
     var canManageUsers by AppUsers.canManageUsers
+    var hasLoggedIn by AppUsers.hasLoggedIn
 
     val view: UserView
         get() = UserView(id.value, username, canManageBooks, canManageUsers)

@@ -15,18 +15,22 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.Route
+import io.ktor.routing.delete
 import io.ktor.routing.get
+import io.ktor.routing.patch
 import io.ktor.routing.post
+import io.ktor.routing.put
 import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.sessions.Sessions
 import io.ktor.sessions.clear
 import io.ktor.sessions.cookie
 import io.ktor.sessions.directorySessionStorage
+import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
-import io.ktor.sessions.get
 import io.ktor.util.hex
+import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
@@ -94,9 +98,11 @@ fun Application.auth() {
 
                 val request = call.receive<LoginRequest>()
 
-                val user = transaction {
-                    User.find { (AppUsers.username eq request.username) and (AppUsers.password eq hash(request.password)) }
-                        .firstOrNull()?.view
+                val (user, hasLoggedIn) = transaction {
+                    val dbUser = User.find { (AppUsers.username eq request.username) and (AppUsers.password eq hash(request.password)) }
+                        .firstOrNull() ?: return@transaction null
+
+                    dbUser.view to dbUser.hasLoggedIn
                 } ?: return@post call.respond(
                     HttpStatusCode.BadRequest,
                     mapOf(
@@ -106,7 +112,19 @@ fun Application.auth() {
 
                 call.sessions.set(UserId(user.id))
 
-                call.respond(user)
+                if (!hasLoggedIn) {
+                    transaction {
+                        User.findById(user.id)?.hasLoggedIn = true
+                    }
+                }
+
+                call.respond(
+                    mapOf(
+                        "message" to "You were successully logged in!",
+                        "user" to user,
+                        "firstLogin" to !hasLoggedIn
+                    )
+                )
             }
 
             authenticate {
@@ -136,27 +154,82 @@ fun Application.auth() {
                         call.respond(transaction { User.all().map { it.view } })
                     }
 
-                    post("/create") {
+                    patch("/{id}") {
+                        val id = UUID.fromString(call.parameters["id"])
+                        val request = call.receive<PatchUserRequest>()
+
+                        val userName = transaction {
+                            val user = User.findById(id) ?: return@transaction null
+
+                            user.canManageBooks = request.canManageBooks
+                            user.canManageUsers = request.canManageUsers
+
+                            user.username
+                        } ?: return@patch call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("message" to "User with ID '$id' does not exist!")
+                        )
+
+                        call.respond(
+                            mapOf("message" to "Permissions for user '$userName' were successfully updated!")
+                        )
+                    }
+
+                    delete("/{id}") {
+                        val id = UUID.fromString(call.parameters["id"])
+                        val userName = transaction {
+                            val user = User.findById(id) ?: return@transaction null
+                            val name = user.username
+
+                            user.delete()
+
+                            name
+                        } ?: return@delete call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("message" to "User with ID '$id' does not exist!")
+                        )
+
+                        call.respond(
+                            mapOf("message" to "User '$userName' was successfully deleted!")
+                        )
+                    }
+
+                    put("/") {
                         val request = call.receive<CreateUserRequest>()
 
-                        if (transaction { User.find { AppUsers.username eq request.username }.any() }) {
-                            return@post call.respond(
+                        if (request.username.isEmpty() || request.password.isEmpty()) {
+                            return@put call.respond(
                                 HttpStatusCode.BadRequest,
+                                mapOf("message" to "Username and password must not be empty!")
+                            )
+                        }
+
+                        if (transaction { User.find { AppUsers.username eq request.username }.any() }) {
+                            return@put call.respond(
+                                HttpStatusCode.Conflict,
                                 mapOf("message" to "User with name '${request.username}' already exists!")
                             )
                         }
 
-                        transaction {
+                        val user = transaction {
+                            val userId = UUID.randomUUID()
+
                             AppUsers.insert {
+                                it[id] = EntityID(userId, this)
                                 it[username] = request.username
                                 it[password] = hash(request.password)
                                 it[canManageBooks] = request.canManageBooks
                                 it[canManageUsers] = request.canManageUsers
                             }
+
+                            User.findById(userId)?.view
                         }
 
                         call.respond(
-                            mapOf("message" to "User '${request.username}' was successfully created!")
+                            mapOf(
+                                "message" to "User '${request.username}' was successfully created!",
+                                "user" to user
+                            )
                         )
                     }
                 }
@@ -188,5 +261,7 @@ fun Route.authorize(check: (UserView) -> Boolean, build: Route.() -> Unit): Rout
 data class LoginRequest(val username: String, val password: String)
 
 data class CreateUserRequest(val username: String, val password: String, val canManageBooks: Boolean, val canManageUsers: Boolean)
+
+data class PatchUserRequest(val canManageBooks: Boolean, val canManageUsers: Boolean)
 
 data class UserId(val id: UUID) : Principal
