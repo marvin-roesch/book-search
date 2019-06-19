@@ -23,11 +23,13 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:1.2.1")
     implementation("io.ktor:ktor-jackson:1.2.1")
     implementation("io.ktor:ktor-auth:1.2.1")
+    implementation("io.ktor:ktor-server-sessions:1.2.1")
     implementation("com.h2database:h2:1.4.199")
     implementation("org.jetbrains.exposed:exposed:0.14.2")
     implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.1.1")
     implementation("nl.siegmann.epublib:epublib-core:3.1")
     implementation("org.jsoup:jsoup:1.12.1")
+    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.11.2")
 }
 
 tasks.withType<KotlinCompile> {

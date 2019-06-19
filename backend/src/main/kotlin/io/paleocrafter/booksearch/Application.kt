@@ -63,7 +63,7 @@ fun Application.main() {
 
     routing {
         route("api") {
-            authenticate("auth") {
+            authenticate {
                 get("/book/{id}/images/{name}") {
                     val id = UUID.fromString(call.parameters["id"])
                     val name = call.parameters["name"] ?: return@get call.respond(
