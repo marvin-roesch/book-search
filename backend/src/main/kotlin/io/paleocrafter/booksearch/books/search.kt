@@ -69,7 +69,7 @@ fun Route.bookSearch(index: BookIndex) {
             ))
         }
 
-        val searchResult = index.search(request.query, request.page, filter) ?: return@post call.respond(
+        val searchResult = index.search(request.query, filter, request.page) ?: return@post call.respond(
             HttpStatusCode.BadRequest,
             mapOf("message" to "The provided query is invalid!")
         )
@@ -106,7 +106,7 @@ fun Route.bookSearch(index: BookIndex) {
             ))
         }
 
-        val searchResult = index.searchGrouped(request.query, filter) ?: return@post call.respond(
+        val searchResult = index.searchBooks(request.query, filter) ?: return@post call.respond(
             HttpStatusCode.BadRequest,
             mapOf("message" to "The provided query is invalid!")
         )
@@ -114,28 +114,16 @@ fun Route.bookSearch(index: BookIndex) {
         val results = transaction {
             searchResult.results
                 .map { bookResult ->
-                    val book = Book.findById(bookResult.bookId)!!
+                    val book = Book.findById(bookResult.id)!!
                     book to bookResult
                 }
                 .sortedWith(
-                    compareBy<Pair<Book, BookSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
+                    compareBy<Pair<Book, GroupSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
                         (it.first.series ?: "").split("\\")
-                    }.thenBy { it.first.orderInSeries }
+                    }.thenBy { it.first.orderInSeries }.thenBy { it.first.title }
                 )
                 .map { (book, bookResult) ->
-                    book.toJson() +
-                        ("chapters" to bookResult.chapters
-                            .map { chapterResult ->
-                                val chapter = Chapter.findById(chapterResult.chapterId)!!
-                                chapter to chapterResult
-                            }
-                            .sortedBy { it.first.title }
-                            .map { (chapter, chapterResult) ->
-                                chapter.toJson() +
-                                    ("totalOccurrences" to chapterResult.totalOccurrences) +
-                                    ("results" to chapterResult.results)
-                            }
-                            .toList())
+                    book.toJson() + ("totalOccurrences" to bookResult.occurrences)
                 }
                 .toList()
         }
@@ -144,6 +132,59 @@ fun Route.bookSearch(index: BookIndex) {
             "totalHits" to searchResult.totalHits,
             "results" to results
         ))
+    }
+
+    post("/{id}/grouped-search") {
+        val id = UUID.fromString(call.parameters["id"])
+        val request = call.receive<GroupedSearchRequest>()
+
+        val searchResult = index.searchChapters(id, request.query) ?: return@post call.respond(
+            HttpStatusCode.BadRequest,
+            mapOf("message" to "The provided query is invalid!")
+        )
+
+        val results = transaction {
+            searchResult.results
+                .map { chapterResult ->
+                    val chapter = Chapter.findById(chapterResult.id)!!
+                    chapter to chapterResult
+                }
+                .sortedWith(compareBy({ it.first.position }, { it.first.title }))
+                .map { (chapter, chapterResult) ->
+                    chapter.toJson() + ("totalOccurrences" to chapterResult.occurrences)
+                }
+                .toList()
+        }
+
+        call.respond(mapOf("results" to results))
+    }
+
+    post("/chapters/{id}/search") {
+        val id = UUID.fromString(call.parameters["id"])
+        val request = call.receive<GroupedSearchRequest>()
+
+        val filter = buildFilter(request.seriesFilter, request.bookFilter)
+        if (filter.isEmpty()) {
+            return@post call.respond(mapOf(
+                "totalHits" to 0,
+                "results" to emptyList<Any>()
+            ))
+        }
+
+        val searchResult = index.search(request.query, filter, chapterFilter = listOf(id)) ?: return@post call.respond(
+            HttpStatusCode.BadRequest,
+            mapOf("message" to "The provided query is invalid!")
+        )
+
+        val results = transaction {
+            searchResult.results.map {
+                mapOf(
+                    "paragraphs" to it.paragraphs
+                )
+            }
+        }
+
+        call.respond(mapOf("results" to results))
     }
 }
 

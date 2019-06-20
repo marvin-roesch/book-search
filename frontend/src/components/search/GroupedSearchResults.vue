@@ -4,20 +4,13 @@
     <h2 v-if="totalHits > 0">Displayed hits: {{ totalHits }}</h2>
   </transition>
   <transition-group tag="div" class="search-result-list" name="fade-slide-up">
-    <Expandable v-for="book in results" :key="book.id">
-      <template slot="header">
-      {{ book.title }}
-      </template>
-      <Expandable v-for="chapter in book.chapters" :key="chapter.id">
-        <template slot="header">
-        {{ chapter.title }} ({{ chapter.totalOccurrences }})
-        </template>
-        <search-result
-          :result="result" :display-metadata="false"
-          v-for="(result, index) in chapter.results" :key="index">
-        </search-result>
-      </Expandable>
-    </Expandable>
+    <BookSearchResult
+      :book="book"
+      :query="query"
+      :series-filter="seriesFilter"
+      :book-filter="bookFilter"
+      v-for="book in books" :key="book.id">
+    </BookSearchResult>
   </transition-group>
   <ErrorCard
     :message="errorMessage"
@@ -25,25 +18,23 @@
     v-if="this.errorMessage !== null">
   </ErrorCard>
   <LoadingSpinner v-if="loading"></LoadingSpinner>
-  <EmptyCard v-if="!loading && errorMessage === null && results.length === 0"></EmptyCard>
+  <EmptyCard v-if="!loading && errorMessage === null && books.length === 0"></EmptyCard>
 </div>
 </template>
 
 <script>
-import SearchResult from '@/components/search/SearchResult.vue';
-import Expandable from '@/components/Expandable.vue';
 import ErrorCard from '@/components/search/ErrorCard.vue';
 import EmptyCard from '@/components/search/EmptyCard.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
+import BookSearchResult from '@/components/search/BookSearchResult.vue';
 
 export default {
   name: 'grouped-search-results',
   components: {
+    BookSearchResult,
     LoadingSpinner,
     EmptyCard,
     ErrorCard,
-    Expandable,
-    SearchResult,
   },
   props: {
     query: String,
@@ -52,7 +43,7 @@ export default {
   },
   data() {
     return {
-      results: [],
+      books: [],
       totalHits: 0,
       errorMessage: null,
       loading: false,
@@ -63,7 +54,7 @@ export default {
   },
   methods: {
     reset() {
-      this.results = [];
+      this.books = [];
       this.errorMessage = null;
       this.search();
     },
@@ -80,27 +71,7 @@ export default {
           bookFilter: this.bookFilter,
         });
 
-        this.results = results.map(b => (
-          {
-            ...b,
-            chapters: b.chapters.map(c => (
-              {
-                ...c,
-                results: c.results.map(({ book, chapter, paragraphs }) => {
-                  const mainParagraph = paragraphs.find(p => p.main);
-                  return {
-                    book,
-                    chapter,
-                    mainParagraph,
-                    prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
-                    nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
-                    showSiblings: false,
-                  };
-                }),
-              }
-            )),
-          }
-        ));
+        this.books = results;
         this.totalHits = totalHits;
       } catch (error) {
         this.errorMessage = this.$getApiError(error);

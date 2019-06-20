@@ -27,17 +27,15 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.DeleteByQueryRequest
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation
-import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder
 import org.elasticsearch.search.aggregations.bucket.significant.SignificantTerms
-import org.elasticsearch.search.aggregations.metrics.TopHits
+import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
-import org.elasticsearch.search.sort.SortOrder
 import org.intellij.lang.annotations.Language
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.absoluteValue
 
 class BookIndex(vararg hosts: HttpHost) {
     private val client = RestHighLevelClient(RestClient.builder(*hosts))
@@ -251,7 +249,7 @@ class BookIndex(vararg hosts: HttpHost) {
         }
     }
 
-    private fun buildBaseQuery(query: String, filter: List<UUID>) =
+    private fun buildBaseQuery(query: String, bookFilter: List<UUID>, chapterFilter: List<UUID>? = null) =
         SearchSourceBuilder().query(
             QueryBuilders.boolQuery()
                 .must(QueryBuilders.queryStringQuery(query).defaultField("text.stripped").defaultOperator(Operator.AND))
@@ -259,17 +257,24 @@ class BookIndex(vararg hosts: HttpHost) {
                     QueryBuilders.boolQuery()
                         .minimumShouldMatch(1)
                         .also { qry ->
-                            filter.forEach {
+                            bookFilter.forEach {
                                 qry.should(QueryBuilders.termQuery("book", it.toString()))
+                            }
+                            if (chapterFilter !== null) {
+                                chapterFilter.forEach {
+                                    qry.must(QueryBuilders.termQuery("chapter", it.toString()))
+                                }
                             }
                         }
                 )
         )
 
-    suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults? {
-        val baseQuery = buildBaseQuery(query, filter)
-        baseQuery.size(10)
-        baseQuery.from(page * 10)
+    suspend fun search(query: String, filter: List<UUID>, page: Int? = null, chapterFilter: List<UUID>? = null): SearchResults? {
+        val baseQuery = buildBaseQuery(query, filter, chapterFilter)
+        baseQuery.size(if (page == null) 1000 else 10)
+        if (page != null) {
+            baseQuery.from(page * 10)
+        }
 
         baseQuery.highlighter(highlighter)
 
@@ -288,22 +293,18 @@ class BookIndex(vararg hosts: HttpHost) {
         return SearchResults(baseResponse.hits.totalHits.value, gatherContext(baseResponse.hits))
     }
 
-    suspend fun searchGrouped(query: String, filter: List<UUID>): GroupedSearchResults? {
+    suspend fun searchBooks(query: String, filter: List<UUID>) =
+        searchGrouped("book", query, filter)
+
+    suspend fun searchChapters(book: UUID, query: String) =
+        searchGrouped("chapter", query, listOf(book))
+
+    private suspend fun searchGrouped(field: String, query: String, filter: List<UUID>): GroupedSearchResults? {
         val baseQuery = buildBaseQuery(query, filter)
-        baseQuery.aggregation(
-            AggregationBuilders.composite(
-                "chapters",
-                listOf(
-                    TermsValuesSourceBuilder("book").field("book"),
-                    TermsValuesSourceBuilder("chapter").field("chapter")
-                )
-            ).size(1000).subAggregation(
-                AggregationBuilders.topHits("paragraphs")
-                    .size(100)
-                    .highlighter(highlighter)
-                    .sort("position", SortOrder.ASC)
+            .aggregation(
+                AggregationBuilders.terms("groups").field(field)
+                    .size(1000)
             )
-        )
 
         val baseResponse = supervisorScope {
             try {
@@ -318,37 +319,13 @@ class BookIndex(vararg hosts: HttpHost) {
         } ?: return null
 
         val totalHits = baseResponse.hits.totalHits.value
-        val chapters = baseResponse.aggregations.get<CompositeAggregation>("chapters")
-        val buckets = chapters.buckets
-
-        val chapterCounts = buckets.groupBy { it.key["chapter"] }.mapValues { (_, paragraphs) -> paragraphs.sumBy { it.docCount.toInt() } }
-
-        if (buckets.isEmpty()) {
-            return GroupedSearchResults(totalHits, emptySequence())
-        }
-
-        val hits = buckets.flatMap { it.aggregations.get<TopHits>("paragraphs").hits }
-        if (hits.none()) {
-            return GroupedSearchResults(totalHits, emptySequence())
-        }
+        val groups = baseResponse.aggregations.get<Terms>("groups").buckets
 
         return GroupedSearchResults(
             totalHits,
-            gatherContext(hits)
-                .groupBy { it.bookId }
-                .asSequence()
-                .map { (bookId, bookResults) ->
-                    BookSearchResult(
-                        bookId,
-                        bookResults
-                            .groupBy { result -> result.chapterId }
-                            .asSequence()
-                            .map { (chapterId, chapterResults) ->
-                                ChapterSearchResult(chapterId, chapterCounts[chapterId.toString()]
-                                    ?: 0, chapterResults)
-                            }
-                    )
-                }
+            groups.asSequence().map {
+                GroupSearchResult(UUID.fromString(it.keyAsString), it.docCount.absoluteValue)
+            }
         )
     }
 
@@ -448,11 +425,9 @@ class BookIndex(vararg hosts: HttpHost) {
 
 data class SearchResults(val totalHits: Long, val results: List<SearchResult>)
 
-data class GroupedSearchResults(val totalHits: Long, val results: Sequence<BookSearchResult>)
+data class GroupedSearchResults(val totalHits: Long, val results: Sequence<GroupSearchResult>)
 
-data class BookSearchResult(val bookId: UUID, val chapters: Sequence<ChapterSearchResult>)
-
-data class ChapterSearchResult(val chapterId: UUID, val totalOccurrences: Int, val results: List<SearchResult>)
+data class GroupSearchResult(val id: UUID, val occurrences: Long)
 
 data class SearchResult(val bookId: UUID, val chapterId: UUID, val mainPosition: Int, val paragraphs: List<SearchParagraph>)
 

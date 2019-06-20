@@ -41,6 +41,7 @@ export default {
   methods: {
     toggle() {
       this.expanded = !this.expanded;
+      this.$emit(this.expanded ? 'expanded' : 'closed');
     },
   },
 };

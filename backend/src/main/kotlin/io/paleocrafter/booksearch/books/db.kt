@@ -44,6 +44,7 @@ object Chapters : UUIDTable() {
     val title = varchar("title", 255)
     val content = text("content")
     val indexedContent = text("indexed_content").nullable()
+    val position = integer("position")
 }
 
 class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -54,6 +55,7 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     var tocReference by Chapters.tocReference
     var content by Chapters.content
     var indexedContent by Chapters.indexedContent
+    var position by Chapters.position
 
     fun toJson() =
         mapOf(
