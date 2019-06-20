@@ -1,6 +1,6 @@
 <template>
 <component :is="tag" class="card">
-  <h2>{{ title }}</h2>
+  <h2><slot name="title">{{ title }}</slot></h2>
   <slot></slot>
   <div class="card-footer" v-if="$slots.footer">
     <slot name="footer"></slot>

@@ -14,6 +14,7 @@ object Books : UUIDTable() {
     val author = varchar("author", 255)
     val series = varchar("series", 255).nullable()
     val orderInSeries = integer("order_in_series").default(0)
+    val searchable = bool("searchable").default(false)
 }
 
 class Book(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -24,6 +25,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var author by Books.author
     var series by Books.series
     var orderInSeries by Books.orderInSeries
+    var searchable by Books.searchable
 
     fun toJson() =
         mapOf(
@@ -31,7 +33,8 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             "title" to title,
             "author" to author,
             "series" to series,
-            "orderInSeries" to orderInSeries
+            "orderInSeries" to orderInSeries,
+            "searchable" to searchable
         )
 }
 

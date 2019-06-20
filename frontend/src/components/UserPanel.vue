@@ -7,25 +7,27 @@
       </div>
       {{ identity.username }}
     </div>
-    <ul
-      class="user-panel-menu-content"
-      v-closable="{
+    <transition name="fade">
+      <ul
+        class="user-panel-menu-content"
+        v-closable="{
         exclude: ['trigger'],
         handler: () => menuVisible = false
       }"
-      v-if="menuVisible">
-      <li>
-        <router-link :to="{name: 'account'}">Account Settings</router-link>
-      </li>
-      <li><a href="#" @click.prevent="logout">Logout</a></li>
-    </ul>
+        v-if="menuVisible">
+        <li>
+          <router-link :to="{name: 'account'}">Account Settings</router-link>
+        </li>
+        <li><a href="#" @click.prevent="logout">Logout</a></li>
+      </ul>
+    </transition>
   </div>
   <ul class="user-panel-links">
     <li>
       <router-link :to="{name: 'home'}">Search</router-link>
     </li>
     <li v-if="identity.canManageBooks">
-      <router-link :to="{name: 'book-upload'}">Books</router-link>
+      <router-link :to="{name: 'book-management'}">Books</router-link>
     </li>
     <li v-if="identity.canManageUsers">
       <router-link :to="{name: 'user-management'}">Users</router-link>

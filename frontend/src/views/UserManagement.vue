@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import UserList from '@/components/management/users/UserList.vue';
+import UserList from '@/components/management/UserList.vue';
 import UserPanel from '@/components/UserPanel.vue';
 
 export default {

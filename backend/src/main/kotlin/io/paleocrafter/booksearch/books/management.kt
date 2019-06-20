@@ -9,9 +9,12 @@ import io.ktor.request.receive
 import io.ktor.request.receiveMultipart
 import io.ktor.response.respond
 import io.ktor.routing.Route
+import io.ktor.routing.delete
 import io.ktor.routing.get
 import io.ktor.routing.patch
+import io.ktor.routing.post
 import io.ktor.routing.put
+import jdk.internal.dynalink.support.ClassMap
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.find
 import kotlinx.coroutines.channels.mapNotNull
@@ -22,6 +25,7 @@ import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -32,8 +36,8 @@ import java.util.UUID
 private val TOCReference.id: String
     get() = "$fragmentId.$resourceId"
 
-fun Route.bookManagement() {
-    get("/book/{id}") {
+fun Route.bookManagement(index: BookIndex) {
+    get("/{id}") {
         val id = UUID.fromString(call.parameters["id"])
         val book = transaction {
             Book.findById(id) ?: return@transaction null
@@ -52,7 +56,34 @@ fun Route.bookManagement() {
         )
     }
 
-    put("/book") {
+    delete("/{id}") {
+        val id = UUID.fromString(call.parameters["id"])
+        val book = transaction {
+            Book.findById(id) ?: return@transaction null
+        } ?: return@delete call.respond(
+            HttpStatusCode.NotFound,
+            mapOf("message" to "Book with ID '$id' does not exist")
+        )
+
+        index.delete(id)
+
+        val title = book.title
+
+        transaction {
+            Images.deleteWhere { Images.book eq book.id }
+            Chapters.deleteWhere { Chapters.book eq book.id }
+            ClassMappings.deleteWhere { ClassMappings.book eq book.id }
+            book.delete()
+        }
+
+        call.respond(
+            mapOf(
+                "message" to "Book $title was successfully deleted!"
+            )
+        )
+    }
+
+    put("/") {
         val multipart = call.receiveMultipart()
         val channel = Channel<PartData>()
         launch {
@@ -91,7 +122,7 @@ fun Route.bookManagement() {
         call.respond(mapOf("id" to bookId))
     }
 
-    patch("/book/{id}") {
+    patch("/{id}") {
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<BookPatchRequest>()
         transaction {
@@ -109,13 +140,13 @@ fun Route.bookManagement() {
         )
     }
 
-    get("/book/{id}/table-of-contents") {
+    get("/{id}/table-of-contents") {
         val id = UUID.fromString(call.parameters["id"])
         val epubReader = EpubReader()
-        val epub = transaction {
+        val (epub, existingChapters) = transaction {
             val book = Book.findById(id) ?: return@transaction null
 
-            epubReader.readEpub(book.content.binaryStream)
+            epubReader.readEpub(book.content.binaryStream) to Chapter.find { Chapters.book eq book.id }.map { it.tocReference }
         } ?: return@get call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -125,6 +156,7 @@ fun Route.bookManagement() {
             return mapOf(
                 "id" to toc.id,
                 "title" to toc.title,
+                "selected" to (existingChapters.contains(toc.id) || existingChapters.isEmpty()),
                 "children" to toc.children.map { serializeTableOfContents(it) }
             )
         }
@@ -137,7 +169,7 @@ fun Route.bookManagement() {
         )
     }
 
-    put("/book/{id}/chapters") {
+    put("/{id}/chapters") {
         val id = UUID.fromString(call.parameters["id"])
         val entries = call.receive<Set<String>>()
         val epubReader = EpubReader()
@@ -146,6 +178,7 @@ fun Route.bookManagement() {
 
             Chapters.deleteWhere { Chapters.book eq id }
             Images.deleteWhere { Images.book eq id }
+            book.searchable = false
 
             fun linearizeTableOfContents(toc: TOCReference): List<Pair<String, TOCReference>> {
                 return listOf(toc.id to toc) + toc.children.flatMap { linearizeTableOfContents(it) }
@@ -186,7 +219,7 @@ fun Route.bookManagement() {
         ))
     }
 
-    get("/book/{id}/available-classes") {
+    get("/{id}/available-classes") {
         val id = UUID.fromString(call.parameters["id"])
         val epubReader = EpubReader()
         val classes = transaction {
@@ -196,12 +229,16 @@ fun Route.bookManagement() {
             val chapters = Chapter.find { Chapters.book eq book.id }
                 .map { Jsoup.parse(it.content) }
 
+            val existingMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
+                it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping]).id
+            }
+
             chapters
                 .flatMap { chapter ->
                     chapter.extractClasses(epub.resources)
                 }
                 .groupBy { it.name }
-                .map { it.value.first().copy(occurrences = it.value.size) }
+                .map { it.value.first().copy(mapping = existingMappings[it.key], occurrences = it.value.size) }
         } ?: return@get call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -214,10 +251,11 @@ fun Route.bookManagement() {
         ))
     }
 
-    put("/book/{id}/class-mappings") {
+    put("/{id}/class-mappings") {
         val id = UUID.fromString(call.parameters["id"])
-        val classMappings = call.receive<Map<String, String>>().mapValues { BookStyle.fromJson(it.value)
-            ?: BookStyle.STRIP_CLASS
+        val classMappings = call.receive<Map<String, String>>().mapValues {
+            BookStyle.fromJson(it.value)
+                ?: BookStyle.STRIP_CLASS
         }
 
         transaction {
@@ -232,6 +270,8 @@ fun Route.bookManagement() {
                     it[mapping] = style.name
                 }
             }
+
+            book.searchable = false
         } ?: return@put call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -239,6 +279,68 @@ fun Route.bookManagement() {
 
         call.respond(mapOf(
             "id" to id
+        ))
+    }
+
+    put("/{id}/index") {
+        val id = UUID.fromString(call.parameters["id"])
+        val book = transaction {Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
+            HttpStatusCode.NotFound,
+            mapOf("message" to "Book with ID '$id' does not exist")
+        )
+        val normalized = transaction {
+            val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
+                it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
+            }
+            Chapter.find { Chapters.book eq book.id }.map {
+                ResolvedChapter(it.id.value, id, it.title, Jsoup.parse(it.content).body()).also { resolved ->
+                    BookNormalizer.normalize(resolved, classMappings)
+                    it.indexedContent = resolved.content.html()
+                }
+            }
+        }
+
+        index.index(id, normalized)
+
+        transaction {
+            book.searchable = true
+        }
+
+        call.respond(mapOf(
+            "id" to id,
+            "message" to "success"
+        ))
+    }
+
+    post("/reindex-all") {
+        val books = transaction {
+            Book.all().associate { book ->
+                book.id.value to transaction {
+                    val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
+                        it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
+                    }
+                    Chapter.find { Chapters.book eq book.id }.map {
+                        ResolvedChapter(it.id.value, book.id.value, it.title, Jsoup.parse(it.content).body()).also { resolved ->
+                            BookNormalizer.normalize(resolved, classMappings)
+                            it.indexedContent = resolved.content.html()
+                        }
+                    }
+                }
+            }
+        }
+
+        index.reset()
+
+        for ((id, normalized) in books) {
+            index.index(id, normalized)
+        }
+
+        transaction {
+            books.forEach { Book.findById(it.key)?.searchable = it.value.isNotEmpty() }
+        }
+
+        call.respond(mapOf(
+            "message" to "success"
         ))
     }
 }
@@ -251,7 +353,7 @@ private inline fun Document.extractImages(bookId: UUID, resources: Resources, im
         val src = img.attr("src")
         val data = resources.getByHref(src).data
         imageHandler(src, data)
-        img.attr("src", "/api/book/$bookId/images/$src")
+        img.attr("src", "/api/books/$bookId/images/$src")
     }
 }
 
@@ -268,4 +370,4 @@ private fun Document.extractClasses(resources: Resources): List<HtmlClass> {
         }
 }
 
-private data class HtmlClass(val name: String, val sample: String, val styles: String, val occurrences: Int = 0)
+private data class HtmlClass(val name: String, val sample: String, val styles: String, val mapping: String? = null, val occurrences: Int = 0)

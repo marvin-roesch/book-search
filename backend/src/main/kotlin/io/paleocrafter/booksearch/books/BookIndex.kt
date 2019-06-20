@@ -210,13 +210,7 @@ class BookIndex {
     suspend fun index(id: UUID, chapters: Iterable<ResolvedChapter>) {
         ensureElasticIndex()
 
-        suspendCoroutine {
-            client.deleteByQueryAsync(
-                DeleteByQueryRequest("chapters").setQuery(QueryBuilders.termQuery("book", id.toString())),
-                RequestOptions.DEFAULT,
-                SuspendingActionListener(it)
-            )
-        }
+        this.delete(id)
 
         val entries = chapters.flatMap { this.collectEntries(it) }
 
@@ -240,6 +234,18 @@ class BookIndex {
     private fun collectEntries(chapter: ResolvedChapter): List<IndexEntry> {
         return chapter.content.select("p").mapIndexed { position, p ->
             IndexEntry(chapter.id.toString(), position, p.html(), p.classNames())
+        }
+    }
+
+    suspend fun delete(id: UUID) {
+        ensureElasticIndex()
+
+        suspendCoroutine {
+            client.deleteByQueryAsync(
+                DeleteByQueryRequest("chapters").setQuery(QueryBuilders.termQuery("book", id.toString())),
+                RequestOptions.DEFAULT,
+                SuspendingActionListener(it)
+            )
         }
     }
 

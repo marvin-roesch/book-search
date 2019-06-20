@@ -24,14 +24,14 @@ export default {
     this.updating = true;
     const { id } = this.$route.params;
     if (!id) {
-      this.$router.replace({ name: 'book-upload' });
+      this.$router.replace({ name: 'book-management' });
       return;
     }
 
-    const { data: { toc } } = await this.$api.get(`/book/${id}/table-of-contents`);
+    const { data: { toc } } = await this.$api.get(`/books/${id}/table-of-contents`);
 
     this.bookId = id;
-    this.toc = this.mapTableOfContents(toc);
+    this.toc = toc;
     this.updating = false;
   },
   data() {
@@ -42,13 +42,6 @@ export default {
     };
   },
   methods: {
-    mapTableOfContents(toc) {
-      return toc.map(entry => ({
-        ...entry,
-        selected: true,
-        children: this.mapTableOfContents(entry.children),
-      }));
-    },
     updateTableOfContents({ id, selected }) {
       this.updateTableOfContentsEntry(this.toc, id.split('/'), selected);
     },
@@ -66,7 +59,7 @@ export default {
       this.updating = true;
       try {
         await this.$api.put(
-          `/book/${this.bookId}/chapters`,
+          `/books/${this.bookId}/chapters`,
           entries,
           {
             headers: {

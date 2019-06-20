@@ -13,64 +13,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jsoup.Jsoup
 import java.util.UUID
 
-fun Route.bookSearch() {
-    val index = BookIndex()
-
-    put("/book/{id}/index") {
-        val id = UUID.fromString(call.parameters["id"])
-        val normalized = transaction {
-            val book = Book.findById(id) ?: return@transaction null
-            val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
-                it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
-            }
-            Chapter.find { Chapters.book eq book.id }.map {
-                ResolvedChapter(it.id.value, id, it.title, Jsoup.parse(it.content).body()).also { resolved ->
-                    BookNormalizer.normalize(resolved, classMappings)
-                    it.indexedContent = resolved.content.html()
-                }
-            }
-        } ?: return@put call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-
-        index.index(id, normalized)
-
-        call.respond(mapOf(
-            "id" to id,
-            "message" to "success"
-        ))
-    }
-
-    post("/book/reindex-all") {
-        val books = transaction {
-            Book.all().associate { book ->
-                book.id.value to transaction {
-                    val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
-                        it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
-                    }
-                    Chapter.find { Chapters.book eq book.id }.map {
-                        ResolvedChapter(it.id.value, book.id.value, it.title, Jsoup.parse(it.content).body()).also { resolved ->
-                            BookNormalizer.normalize(resolved, classMappings)
-                            it.indexedContent = resolved.content.html()
-                        }
-                    }
-                }
-            }
-        }
-
-        index.reset()
-
-        for ((id, normalized) in books) {
-            index.index(id, normalized)
-        }
-
-        call.respond(mapOf(
-            "message" to "success"
-        ))
-    }
-
-    get("/book/{id}/dictionary") {
+fun Route.bookSearch(index: BookIndex) {
+    get("/{id}/dictionary") {
         val id = UUID.fromString(call.parameters["id"])
 
         call.respond(index.getDictionary(id))

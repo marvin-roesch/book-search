@@ -77,6 +77,7 @@ export default {
   }
 
   &:hover, &:active, &:focus {
+    color: #edf5fa;
     background: saturate($primary, 20%);
     outline: none;
   }

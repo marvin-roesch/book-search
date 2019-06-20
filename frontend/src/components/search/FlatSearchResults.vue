@@ -49,7 +49,7 @@ export default {
       this.lastResult = new Date();
     },
     async search() {
-      const { data: { results, totalHits } } = await this.$api.post('/search', {
+      const { data: { results, totalHits } } = await this.$api.post('/books/search', {
         query: this.query,
         page: this.page,
         seriesFilter: this.seriesFilter,

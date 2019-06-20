@@ -37,14 +37,14 @@ export default {
     this.updating = true;
     const { id } = this.$route.params;
     if (!id) {
-      this.$router.replace({ name: 'book-upload' });
+      this.$router.replace({ name: 'book-management' });
       return;
     }
 
-    const { data: { classes, mappings } } = await this.$api.get(`/book/${id}/available-classes`);
+    const { data: { classes, mappings } } = await this.$api.get(`/books/${id}/available-classes`);
 
     this.bookId = id;
-    this.classes = classes.map(cls => ({ ...cls, mapping: 'no-selection' }));
+    this.classes = classes;
     this.availableMappings = mappings;
     this.updating = false;
   },
@@ -61,18 +61,14 @@ export default {
       this.updating = true;
       try {
         await this.$api.put(
-          `/book/${this.bookId}/class-mappings`,
+          `/books/${this.bookId}/class-mappings`,
           this.classes.reduce(
             (acc, cls) => ({ ...acc, [cls.name]: cls.mapping }),
             {},
           ),
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
         );
-        await this.$api.put(`/book/${this.bookId}/index`);
+        await this.$api.put(`/books/${this.bookId}/index`);
+        this.$router.push({ name: 'book-management' });
         this.updating = false;
       } catch (error) {
         this.updating = false;

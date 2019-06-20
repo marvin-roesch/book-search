@@ -1,22 +1,22 @@
 <template>
-<div class="new-book">
+<div class="book-management">
   <UserPanel></UserPanel>
-  <BookUploader></BookUploader>
+  <BookList></BookList>
 </div>
 </template>
 
 <script>
-import BookUploader from '@/components/management/wizard/BookUploader.vue';
 import UserPanel from '@/components/UserPanel.vue';
+import BookList from '@/components/management/BookList.vue';
 
 export default {
-  name: 'new-book',
-  components: { UserPanel, BookUploader },
+  name: 'book-management',
+  components: { BookList, UserPanel },
 };
 </script>
 
 <style lang="scss">
-.new-book {
+.book-management {
   display: flex;
   align-items: center;
   width: 100%;

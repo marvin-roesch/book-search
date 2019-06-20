@@ -65,7 +65,7 @@ export default {
     },
   },
   async mounted() {
-    const { data: allSeries } = await this.$api.get('/series');
+    const { data: allSeries } = await this.$api.get('/books/series');
     const { books, series } = this.$route.query;
 
     const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;

@@ -56,42 +56,4 @@ fun Application.main() {
         jackson {
         }
     }
-
-    transaction {
-        SchemaUtils.createMissingTablesAndColumns(Books, Chapters, Images, ClassMappings)
-    }
-
-    routing {
-        route("api") {
-            authenticate {
-                get("/book/{id}/images/{name}") {
-                    val id = UUID.fromString(call.parameters["id"])
-                    val name = call.parameters["name"] ?: return@get call.respond(
-                        HttpStatusCode.BadRequest,
-                        mapOf("message" to "Image name must be provided")
-                    )
-                    val (imageType, imageData) = transaction {
-                        val book = Book.findById(id) ?: return@transaction null
-
-                        val image = Images.select { (Images.book eq book.id) and (Images.name eq name) }.firstOrNull()
-                            ?: return@transaction null
-                        val type = ContentType.fromFilePath(image[Images.name]).firstOrNull() ?: ContentType.Application.OctetStream
-
-                        type to image[Images.data].binaryStream.readBytes()
-                    } ?: return@get call.respond(
-                        HttpStatusCode.NotFound,
-                        mapOf("message" to "Image '$name' for book with ID '$id' does not exist")
-                    )
-
-                    call.respond(ByteArrayContent(imageData, imageType))
-                }
-
-                bookManagement()
-
-                bookSearch()
-
-                chapterView()
-            }
-        }
-    }
 }

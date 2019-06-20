@@ -56,7 +56,7 @@ export default {
           data: {
             totalHits, results,
           },
-        } = await this.$api.post('/grouped-search', {
+        } = await this.$api.post('/books/grouped-search', {
           query: this.query,
           seriesFilter: this.seriesFilter,
           bookFilter: this.bookFilter,

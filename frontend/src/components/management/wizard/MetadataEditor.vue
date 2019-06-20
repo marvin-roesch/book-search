@@ -28,7 +28,7 @@
     </template>
   </TextField>
   <div class="button-bar">
-    <Button slim :to="{name: 'book-upload'}" :disabled="updating">Back</Button>
+    <Button slim :to="{name: 'book-management'}" :disabled="updating">Back</Button>
     <Button slim @click="updateMetadata" :loading="updating" :disabled="updating">Next</Button>
   </div>
 </div>
@@ -46,10 +46,10 @@ export default {
     this.updating = true;
     const { id } = this.$route.params;
     if (!id) {
-      this.$router.replace({ name: 'book-upload' });
+      this.$router.replace({ name: 'book-management' });
       return;
     }
-    const { data: { title, author, series, orderInSeries } } = await this.$api.get(`/book/${id}`);
+    const { data: { title, author, series, orderInSeries } } = await this.$api.get(`/books/${id}`);
 
     this.bookId = id;
     this.title = title;
@@ -73,7 +73,7 @@ export default {
       this.updating = true;
       try {
         await this.$api.patch(
-          `/book/${this.bookId}`,
+          `/books/${this.bookId}`,
           {
             title: this.title,
             author: this.author,

@@ -1,8 +1,6 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 import Home from './views/Home.vue';
-import NewBook from '@/views/NewBook.vue';
-import BookUploader from '@/components/management/wizard/BookUploader.vue';
 import TableOfContents from '@/components/management/wizard/TableOfContents.vue';
 import MetadataEditor from '@/components/management/wizard/MetadataEditor.vue';
 import ClassMapper from '@/components/management/wizard/ClassMapper.vue';
@@ -12,6 +10,9 @@ import store from '@/store';
 import Login from '@/views/Login.vue';
 import UserManagement from '@/views/UserManagement.vue';
 import UserProfile from '@/views/UserProfile.vue';
+import BookManagement from '@/views/BookManagement.vue';
+import NewBook from '@/views/NewBook.vue';
+import EditBook from '@/views/EditBook.vue';
 
 Vue.use(Router);
 
@@ -44,32 +45,41 @@ const router = new Router({
         meta: { requiresAuth: true, requiresUserPerms: true },
       },
       {
-        path: '/new-book',
-        component: NewBook,
+        path: '/books',
+        name: 'book-management',
+        component: BookManagement,
         meta: { requiresAuth: true, requiresBookPerms: true },
-        children: [
-          {
-            path: '/',
-            name: 'book-upload',
-            component: BookUploader,
-          },
-          {
-            path: ':id/metadata',
-            name: 'book-metadata',
-            component: MetadataEditor,
-          },
-          {
-            path: ':id/table-of-contents',
-            name: 'table-of-contents',
-            component: TableOfContents,
-          },
-          {
-            path: ':id/classes',
-            name: 'book-classes',
-            component: ClassMapper,
-          },
-        ],
       },
+      ...withPrefix('/books', [
+        {
+          path: '/new',
+          name: 'book-upload',
+          component: NewBook,
+          meta: { requiresAuth: true, requiresBookPerms: true },
+        },
+        {
+          path: '/edit/:id',
+          meta: { requiresAuth: true, requiresBookPerms: true },
+          component: EditBook,
+          children: [
+            {
+              path: '/',
+              name: 'book-metadata',
+              component: MetadataEditor,
+            },
+            {
+              path: 'table-of-contents',
+              name: 'table-of-contents',
+              component: TableOfContents,
+            },
+            {
+              path: 'classes',
+              name: 'book-classes',
+              component: ClassMapper,
+            },
+          ],
+        },
+      ]),
     ]),
     {
       path: '/account',

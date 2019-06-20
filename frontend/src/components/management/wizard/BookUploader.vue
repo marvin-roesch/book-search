@@ -1,5 +1,5 @@
 <template>
-<div class="book-uploader">
+<Card class="book-uploader" title="Upload new book">
   <input
     id="book-upload-field"
     type="file"
@@ -11,20 +11,31 @@
     <clipPath id="ripple-clip">
       <circle cx="66" cy="66" r="66" class="ripple"></circle>
     </clipPath>
-    <circle cx="75" cy="75" r="68" class="upload-progress" fill="none" stroke="#4AC694" stroke-width="14" stroke-dasharray="427.257"
-            :stroke-dashoffset="427.257 * (1 - uploadProgress)"></circle>
-    <use x="10" y="10" width="130" height="130" xlink:href="@/assets/book-open-flat.svg#book" class="book"></use>
-    <use x="9" y="9" clip-path="url(#ripple-clip)" width="132" height="132" xlink:href="@/assets/book-open-flat.svg#book-color"
-         class="colored-book"></use>
+    <circle
+      class="upload-progress"
+      cx="75" cy="75" r="68" fill="none" stroke="#4AC694"
+      stroke-width="14" stroke-dasharray="427.257"
+      :stroke-dashoffset="427.257 * (1 - uploadProgress)">
+    </circle>
+    <use class="book" x="10" y="10" width="130" height="130"
+         xlink:href="@/assets/book-open-flat.svg#book">
+    </use>
+    <use class="colored-book"
+         x="9" y="9" clip-path="url(#ripple-clip)" width="132" height="132"
+         xlink:href="@/assets/book-open-flat.svg#book-color">
+    </use>
   </svg>
   <label for="book-upload-field" v-if="selectedFileName === null">Drop your .epub file here</label>
   <label for="book-upload-field" v-else>Uploading {{ selectedFileName }}...</label>
-</div>
+</Card>
 </template>
 
 <script>
+import Card from '@/components/Card.vue';
+
 export default {
   name: 'BookUploader',
+  components: { Card },
   data() {
     return {
       selectedFileName: null,
@@ -44,7 +55,7 @@ export default {
       formData.append('book', file);
       try {
         const { data: { id } } = await this.$api.put(
-          '/book',
+          '/books',
           formData,
           {
             headers: {
@@ -72,6 +83,8 @@ export default {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  margin: 0 auto;
+  min-width: 30vw;
 
   .book {
     opacity: 1;
