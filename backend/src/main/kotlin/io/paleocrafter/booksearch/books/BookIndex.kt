@@ -59,9 +59,17 @@ class BookIndex(vararg hosts: HttpHost) {
                 "text": {
                     "type": "keyword",
                     "fields": {
-                        "stripped": {
+                        "cs": {
                             "type": "text",
-                            "analyzer": "strip_html_analyzer"
+                            "analyzer": "strip_html_analyzer",
+                            "term_vector": "with_positions_offsets",
+                            "fields": {
+                                "lowercase": {
+                                    "type": "text",
+                                    "analyzer": "case_insensitive_analyzer",
+                                    "term_vector": "with_positions_offsets"
+                                }
+                            }
                         },
                         "signature": {
                             "type": "text",
@@ -79,6 +87,10 @@ class BookIndex(vararg hosts: HttpHost) {
             "analysis": {
                 "analyzer": {
                     "strip_html_analyzer": {
+                        "tokenizer": "classic",
+                        "char_filter": ["html_stripper"]
+                    },
+                    "case_insensitive_analyzer": {
                         "tokenizer": "classic",
                         "filter": ["lowercase"],
                         "char_filter": ["html_stripper"]
@@ -149,11 +161,12 @@ class BookIndex(vararg hosts: HttpHost) {
 
     private val highlighter =
         HighlightBuilder().field(
-            HighlightBuilder.Field("text.stripped")
+            HighlightBuilder.Field("text.cs")
+                .matchedFields("text.cs", "text.cs.lowercase")
                 .numOfFragments(0)
                 .preTags("<strong>")
                 .postTags("</strong>")
-        )
+        ).highlighterType("fvh")
 
     private suspend fun ensureElasticIndex() {
         if (!suspendCoroutine<Boolean> {
@@ -252,7 +265,7 @@ class BookIndex(vararg hosts: HttpHost) {
     private fun buildBaseQuery(query: String, bookFilter: List<UUID>, chapterFilter: List<UUID>? = null) =
         SearchSourceBuilder().query(
             QueryBuilders.boolQuery()
-                .must(QueryBuilders.queryStringQuery(query).defaultField("text.stripped").defaultOperator(Operator.AND))
+                .must(QueryBuilders.queryStringQuery(query).defaultField("text.cs.lowercase").defaultOperator(Operator.AND))
                 .filter(
                     QueryBuilders.boolQuery()
                         .minimumShouldMatch(1)
@@ -374,8 +387,9 @@ class BookIndex(vararg hosts: HttpHost) {
             val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
             val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
             val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-            val text = hit.highlightFields["text.stripped"]?.fragments?.first()?.string() ?: source["text"] as? String
-            ?: throw IllegalStateException("Search result must have highlight!")
+            val text = hit.highlightFields["text.cs"]?.fragments?.first()?.string()
+                ?: source["text"] as? String
+                ?: throw IllegalStateException("Search result must have highlight!")
             val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
             val paragraph = SearchParagraph(true, position, text, classes)
 
