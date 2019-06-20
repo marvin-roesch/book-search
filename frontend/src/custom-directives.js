@@ -54,7 +54,7 @@ export default {
       },
     });
 
-    Vue.prototype.$getApiError = (error) => {
+    const getApiError = (error) => {
       if (error.response) {
         const { status, data } = error.response;
         if (data.message) {
@@ -75,8 +75,10 @@ export default {
       return null;
     };
 
+    Vue.prototype.$getApiError = getApiError;
+
     Vue.prototype.$handleApiError = (error) => {
-      const message = this.$getApiError(error);
+      const message = getApiError(error);
       if (message !== null) {
         store.dispatch(
           'notifications/push',

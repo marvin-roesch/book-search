@@ -1,22 +1,26 @@
 <template>
-<div class="loading-spinner-container">
-  <div class="loading-spinner"></div>
+<div class="progress-spinner-container">
+  <div class="progress-spinner"></div>
 </div>
 </template>
 
 <style scoped lang="scss">
-.loading-spinner {
+.progress-spinner {
   color: $primary;
-  font-size: 10px;
   position: relative;
   text-indent: -9999em;
   animation-delay: -0.16s;
-  transform: translateY(-2.5em);
+  transform: translateY(-1.25rem);
+
+  &-container {
+    display: flex;
+    justify-content: center;
+  }
 
   &, &:before, &:after {
     border-radius: 50%;
-    width: 2.5em;
-    height: 2.5em;
+    width: 1.25rem;
+    height: 1.25rem;
     animation-fill-mode: both;
     animation: dot-loader 1.8s infinite ease-in-out;
   }
@@ -28,17 +32,12 @@
   }
 
   &:before {
-    left: -3.5em;
+    left: -1.75rem;
     animation-delay: -0.32s;
   }
 
   &:after {
-    left: 3.5em;
-  }
-
-  &-container {
-    display: flex;
-    justify-content: center;
+    left: 1.75rem;
   }
 }
 
@@ -46,10 +45,10 @@
   0%,
   80%,
   100% {
-    box-shadow: 0 2.5em 0 -1.3em;
+    box-shadow: 0 1.25rem 0 -0.65rem;
   }
   40% {
-    box-shadow: 0 2.5em 0 0;
+    box-shadow: 0 1.25rem 0 0;
   }
 }
 </style>

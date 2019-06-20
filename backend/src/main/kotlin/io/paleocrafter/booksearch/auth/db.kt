@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.UUIDTable
 import java.util.UUID
 
-object AppUsers : UUIDTable() {
+object Users : UUIDTable() {
     val username = varchar("username", 255).uniqueIndex()
     val password = varchar("password", 255).index()
     val canManageBooks = bool("can_manage_books")
@@ -15,13 +15,13 @@ object AppUsers : UUIDTable() {
 }
 
 class User(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<User>(AppUsers)
+    companion object : UUIDEntityClass<User>(Users)
 
-    var username by AppUsers.username
-    var password by AppUsers.password
-    var canManageBooks by AppUsers.canManageBooks
-    var canManageUsers by AppUsers.canManageUsers
-    var hasLoggedIn by AppUsers.hasLoggedIn
+    var username by Users.username
+    var password by Users.password
+    var canManageBooks by Users.canManageBooks
+    var canManageUsers by Users.canManageUsers
+    var hasLoggedIn by Users.hasLoggedIn
 
     val view: UserView
         get() = UserView(id.value, username, canManageBooks, canManageUsers)

@@ -35,10 +35,7 @@ const actions = {
       dispatch('notifications/push', { type: 'success', message }, { root: true });
       return firstLogin;
     } catch (error) {
-      if (error.response && error.response.status === 401) {
-        commit('setIdentity', null);
-        throw error;
-      }
+      throw error;
     }
     return false;
   },

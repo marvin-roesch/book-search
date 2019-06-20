@@ -40,7 +40,7 @@ import javax.crypto.spec.SecretKeySpec
 
 fun Application.auth() {
     transaction {
-        SchemaUtils.createMissingTablesAndColumns(AppUsers)
+        SchemaUtils.createMissingTablesAndColumns(Users)
     }
 
     val keyString = environment.config.propertyOrNull("crypto.key")?.getString()
@@ -97,7 +97,7 @@ fun Application.auth() {
                 val request = call.receive<LoginRequest>()
 
                 val (user, hasLoggedIn) = transaction {
-                    val dbUser = User.find { (AppUsers.username eq request.username) and (AppUsers.password eq hash(request.password)) }
+                    val dbUser = User.find { (Users.username eq request.username) and (Users.password eq hash(request.password)) }
                         .firstOrNull() ?: return@transaction null
 
                     dbUser.view to dbUser.hasLoggedIn
@@ -252,7 +252,7 @@ fun Application.auth() {
                             )
                         }
 
-                        if (transaction { User.find { AppUsers.username eq request.username }.any() }) {
+                        if (transaction { User.find { Users.username eq request.username }.any() }) {
                             return@put call.respond(
                                 HttpStatusCode.Conflict,
                                 mapOf("message" to "User with name '${request.username}' already exists!")

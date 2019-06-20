@@ -32,6 +32,7 @@ import org.jsoup.nodes.Document
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
+import javax.sql.rowset.serial.SerialBlob
 
 private val TOCReference.id: String
     get() = "$fragmentId.$resourceId"
@@ -111,10 +112,8 @@ fun Route.bookManagement(index: BookIndex) {
         val bookAuthor = epub.metadata.authors.first()
         val authorName = "${bookAuthor.firstname} ${bookAuthor.lastname}"
         transaction {
-            val blob = connection.createBlob()
-            buffer.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
             Book.new(bookId) {
-                content = blob
+                content = SerialBlob(buffer)
                 title = epub.title
                 author = authorName
             }
@@ -193,12 +192,10 @@ fun Route.bookManagement(index: BookIndex) {
             for ((position, chapter) in chapters.withIndex()) {
                 val (metadata, content) = chapter
                 content.extractImages(id, epub.resources) { name, data ->
-                    val blob = connection.createBlob()
-                    data.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
                     Images.insertIgnore {
                         it[Images.book] = book.id
                         it[Images.name] = name
-                        it[Images.data] = blob
+                        it[Images.data] = SerialBlob(data)
                     }
                 }
 
