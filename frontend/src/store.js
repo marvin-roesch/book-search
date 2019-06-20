@@ -36,13 +36,22 @@ export default new Vuex.Store({
     },
     async login({ commit }, payload) {
       try {
-        const { data: identity } = await axios.post('/api/auth/login', payload);
+        const { data: { firstLogin, user: identity } } = await axios.post('/api/auth/login', payload);
         commit('setIdentity', identity);
+        return firstLogin;
       } catch (error) {
         if (error.response && error.response.status === 401) {
           commit('setIdentity', null);
           throw error;
         }
+      }
+      return false;
+    },
+    async logout({ commit }) {
+      try {
+        const { data: { message } } = await axios.post('/api/auth/logout');
+        commit('setIdentity', null);
+      } catch (error) {
       }
     },
   },

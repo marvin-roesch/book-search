@@ -20,6 +20,7 @@ const getPosition = (node, addOffset = false) => {
   };
 };
 export default {
+  name: 'shared-element',
   props: {
     tag: {
       type: String,
@@ -103,7 +104,7 @@ export default {
     }
   },
   beforeDestroy() {
-    if (this.animating) {
+    if (this.animating && this.transformer) {
       this.transformer.teardown();
     }
   },

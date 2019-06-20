@@ -3,7 +3,7 @@
   <div class="search-bar-icon">
     <SearchIcon></SearchIcon>
   </div>
-  <input type="search" :value="query" @keyup.enter="search" ref="search">
+  <input type="search" :value="query" @keydown.enter="search" ref="search">
 </div>
 </template>
 

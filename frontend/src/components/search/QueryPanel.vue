@@ -1,5 +1,10 @@
 <template>
-<overdrive id="query-panel" class="query-panel" :duration="300" :easing="easing" @animation-end="$emit('ready')">
+<shared-element
+  id="query-panel"
+  class="query-panel"
+  :duration="300"
+  :easing="easing"
+  @animation-end="$emit('ready')">
   <SearchBar
     :toolbar="toolbar"
     :query="query"
@@ -8,11 +13,17 @@
   <div class="query-panel-options">
     <div class="query-panel-filter">
       <span class="query-panel-filter-label">Filter:</span>
-      <a href="#" @click.prevent="filterVisible = !filterVisible">
+      <a href="#" @click.prevent="filterVisible = !filterVisible" ref="filter-trigger">
         <book-filter-summary :series="series"></book-filter-summary>
       </a>
       <transition name="fade">
-        <div class="query-panel-filter-container" v-if="filterVisible">
+        <div
+          class="query-panel-filter-container"
+          v-closable="{
+            exclude: ['filter-trigger'],
+            handler: () => filterVisible = false
+          }"
+          v-if="filterVisible">
           <book-filter :root="true" :series="series" @filtered="$emit('filter', $event)">
           </book-filter>
         </div>
@@ -24,7 +35,7 @@
       </CheckBox>
     </div>
   </div>
-</overdrive>
+</shared-element>
 </template>
 
 <script>
@@ -32,12 +43,12 @@ import BookFilterSummary from '@/components/search/BookFilterSummary.vue';
 import BookFilter from '@/components/search/BookFilter.vue';
 import CheckBox from '@/components/CheckBox.vue';
 import SearchBar from '@/components/search/SearchBar.vue';
-import Overdrive from '@/components/Overdrive.vue';
+import SharedElement from '@/components/SharedElement.vue';
 import { easeInOut as easing } from 'ramjet';
 
 export default {
   name: 'QueryPanel',
-  components: { Overdrive, SearchBar, CheckBox, BookFilter, BookFilterSummary },
+  components: { SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary },
   props: {
     toolbar: Boolean,
     query: String,

@@ -23,7 +23,7 @@
       </CheckBox>
     </div>
     <div class="user-table-cell" :key="`${user.id}-actions`">
-      <a href="#" @click.prevent="deleteUser(user.id)">Delete</a>
+      <a href="#" @click.prevent="deleteUser(user.id)" v-if="user.id !== identity.id">Delete</a>
     </div>
     </template>
   </div>
@@ -71,6 +71,7 @@ import CheckBox from '@/components/CheckBox.vue';
 import TextField from '@/components/TextField.vue';
 import { LockIcon, UserIcon } from 'vue-feather-icons';
 import Button from '@/components/Button.vue';
+import { mapState } from 'vuex';
 
 export default {
   name: 'UserList',
@@ -85,6 +86,7 @@ export default {
       creating: false,
     };
   },
+  computed: mapState(['identity']),
   async mounted() {
     try {
       const { data: users } = await this.$api.get('/auth/users');

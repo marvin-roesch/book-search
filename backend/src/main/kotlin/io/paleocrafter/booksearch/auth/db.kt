@@ -18,6 +18,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<User>(AppUsers)
 
     var username by AppUsers.username
+    var password by AppUsers.password
     var canManageBooks by AppUsers.canManageBooks
     var canManageUsers by AppUsers.canManageUsers
     var hasLoggedIn by AppUsers.hasLoggedIn

@@ -1,62 +1,21 @@
 <template>
 <div class="login">
-  <Form class="login-form" title="Login" @submit.prevent="login">
-    <TextField
-      name="username"
-      v-model="username"
-      placeholder="Username"
-    >
-      <template slot="icon">
-      <UserIcon></UserIcon>
-      </template>
-    </TextField>
-    <TextField
-      type="password"
-      name="password"
-      v-model="password"
-      placeholder="Password"
-    >
-      <template slot="icon">
-      <LockIcon></LockIcon>
-      </template>
-    </TextField>
-    <template slot="footer">
-    <Button slim @click="login" :loading="verifying">Login</Button>
-    </template>
-  </Form>
+  <LoginForm @first-login="showFirstLoginForm = true" v-if="!showFirstLoginForm"></LoginForm>
+  <FirstLoginForm v-else></FirstLoginForm>
 </div>
 </template>
 
 <script>
-import TextField from '@/components/TextField.vue';
-import Button from '@/components/Button.vue';
-import Form from '@/components/Form.vue';
-import { LockIcon, UserIcon } from 'vue-feather-icons';
+import LoginForm from '@/components/LoginForm.vue';
+import FirstLoginForm from '@/components/FirstLoginForm.vue';
 
 export default {
   name: 'login',
-  components: { Form, Button, TextField, LockIcon, UserIcon },
+  components: { FirstLoginForm, LoginForm },
   data() {
     return {
-      username: '',
-      password: '',
-      verifying: false,
+      showFirstLoginForm: false,
     };
-  },
-  methods: {
-    async login() {
-      const {
-        username, password,
-      } = this;
-      this.verifying = true;
-      try {
-        await this.$store.dispatch('login', { username, password });
-        this.$router.replace(this.$route.query.redirect || '/');
-      } catch (error) {
-        console.log(error);
-      }
-      this.verifying = false;
-    },
   },
 };
 </script>
@@ -70,16 +29,5 @@ export default {
   align-items: center;
   width: 100%;
   height: 100vh;
-
-  &-content {
-    position: relative;
-
-    h1 {
-      position: absolute;
-      bottom: 100%;
-      width: 100%;
-      text-align: center;
-    }
-  }
 }
 </style>

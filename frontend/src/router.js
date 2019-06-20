@@ -121,13 +121,13 @@ router.beforeEach((to, from, next) => {
 
   const { canManageBooks, canManageUsers } = identity;
   if (to.matched.some(record => record.meta.requiresBookPerms)) {
-    if (!canManageUsers) {
+    if (!canManageBooks) {
       next(false);
     } else {
       next();
     }
   } else if (to.matched.some(record => record.meta.requiresUserPerms)) {
-    if (!canManageBooks) {
+    if (!canManageUsers) {
       next(false);
     } else {
       next();

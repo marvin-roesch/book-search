@@ -30,10 +30,8 @@ import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
 import io.ktor.util.hex
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.util.UUID
@@ -60,11 +58,11 @@ fun Application.auth() {
             val defaultPassword = environment.config.propertyOrNull("auth.admin-password")?.getString()
                 ?: throw IllegalStateException("There are no users yet and no default admin password is set! " +
                     "Either specify it as 'auth.admin-password' in config file or pass DEFAULT_PASSWORD env variable.")
-            AppUsers.insert {
-                it[username] = "admin"
-                it[password] = hash(defaultPassword)
-                it[canManageBooks] = true
-                it[canManageUsers] = true
+            User.new {
+                username = "admin"
+                password = hash(defaultPassword)
+                canManageBooks = true
+                canManageUsers = true
             }
 
             environment.log.info("Superuser 'admin' was created with the provided default password!")
@@ -120,7 +118,7 @@ fun Application.auth() {
 
                 call.respond(
                     mapOf(
-                        "message" to "You were successully logged in!",
+                        "message" to "You were successfully logged in!",
                         "user" to user,
                         "firstLogin" to !hasLoggedIn
                     )
@@ -145,6 +143,49 @@ fun Application.auth() {
                     )
 
                     call.respond(user)
+                }
+
+                patch("/password") {
+                    val user = call.user ?: return@patch call.respond(
+                        HttpStatusCode.Unauthorized,
+                        mapOf(
+                            "message" to "You need to be logged in to view this page!"
+                        )
+                    )
+                    val request = call.receive<ChangePasswordRequest>()
+
+                    if (transaction { User.findById(user.id)?.password != hash(request.oldPassword) }) {
+                        return@patch call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf(
+                                "message" to "The provided current password does not match our records!"
+                            )
+                        )
+                    }
+
+                    if (request.newPassword.isEmpty()) {
+                        return@patch call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf(
+                                "message" to "Your new password must not be empty!"
+                            )
+                        )
+                    }
+
+                    if (request.newPassword != request.newPasswordRepeat) {
+                        return@patch call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf(
+                                "message" to "The repeated password does not match your new one!"
+                            )
+                        )
+                    }
+
+                    transaction {
+                        User.findById(user.id)?.password = hash(request.newPassword)
+                    }
+
+                    call.respond(mapOf("message" to "Your password was successfully changed!"))
                 }
             }
 
@@ -177,6 +218,13 @@ fun Application.auth() {
 
                     delete("/{id}") {
                         val id = UUID.fromString(call.parameters["id"])
+
+                        if (id == call.userId) {
+                            return@delete call.respond(
+                                mapOf("message" to "You may not delete your own account!")
+                            )
+                        }
+
                         val userName = transaction {
                             val user = User.findById(id) ?: return@transaction null
                             val name = user.username
@@ -212,22 +260,17 @@ fun Application.auth() {
                         }
 
                         val user = transaction {
-                            val userId = UUID.randomUUID()
-
-                            AppUsers.insert {
-                                it[id] = EntityID(userId, this)
-                                it[username] = request.username
-                                it[password] = hash(request.password)
-                                it[canManageBooks] = request.canManageBooks
-                                it[canManageUsers] = request.canManageUsers
-                            }
-
-                            User.findById(userId)?.view
+                            User.new {
+                                username = request.username
+                                password = hash(request.password)
+                                canManageBooks = request.canManageBooks
+                                canManageUsers = request.canManageUsers
+                            }.view
                         }
 
                         call.respond(
                             mapOf(
-                                "message" to "User '${request.username}' was successfully created!",
+                                "message" to "User '${user.username}' was successfully created!",
                                 "user" to user
                             )
                         )
@@ -263,5 +306,7 @@ data class LoginRequest(val username: String, val password: String)
 data class CreateUserRequest(val username: String, val password: String, val canManageBooks: Boolean, val canManageUsers: Boolean)
 
 data class PatchUserRequest(val canManageBooks: Boolean, val canManageUsers: Boolean)
+
+data class ChangePasswordRequest(val oldPassword: String, val newPassword: String, val newPasswordRepeat: String)
 
 data class UserId(val id: UUID) : Principal
