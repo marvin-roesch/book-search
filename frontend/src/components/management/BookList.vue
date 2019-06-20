@@ -1,11 +1,15 @@
 <template>
-<Card class="book-list">
-  <template slot="title">
-  Books
-  <Button slim :to="{name: 'book-upload'}" :disabled="reindexing">Upload</Button>
-  <Button slim @click="reindexAll" :loading="reindexing" :disabled="reindexing">Reindex all</Button>
-  </template>
+<Card class="book-list" title="Books">
   <SeriesEntry :series="series" class="book-list-root" @book-deleted="refresh"></SeriesEntry>
+  <template slot="footer">
+  <a href="#" @click.prevent="$router.back()">Back</a>
+  <div>
+    <Button slim @click="reindexAll" :loading="reindexing" :disabled="reindexing">
+      Reindex all
+    </Button>
+    <Button slim :to="{name: 'book-upload'}" :disabled="reindexing">Upload</Button>
+  </div>
+  </template>
 </Card>
 </template>
 

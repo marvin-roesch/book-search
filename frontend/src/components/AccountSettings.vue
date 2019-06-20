@@ -32,7 +32,10 @@
       <RepeatIcon></RepeatIcon>
       </template>
     </TextField>
-    <Button slim @click="change" :loading="verifying">Change</Button>
+    <div class="card-footer">
+      <a href="#" @click.prevent="$router.back()">Cancel</a>
+      <Button slim @click="change" :loading="verifying">Change</Button>
+    </div>
   </form>
 </Card>
 </template>
@@ -97,11 +100,6 @@ export default {
       &:last-child {
         margin-right: 0;
       }
-    }
-
-    .button {
-      margin-top: 0.5rem;
-      align-self: flex-end;
     }
   }
 }

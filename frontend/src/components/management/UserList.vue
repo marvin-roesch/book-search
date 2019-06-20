@@ -54,13 +54,16 @@
         Can manage users
       </CheckBox>
     </div>
-    <Button
-      slim
-      :disabled="creating || newUsername.length === 0 || newPassword.length === 0"
-      @click="createUser"
-    >
-      Create
-    </Button>
+    <div class="card-footer">
+      <a href="#" @click.prevent="$router.back()">Back</a>
+      <Button
+        slim
+        :disabled="creating || newUsername.length === 0 || newPassword.length === 0"
+        @click="createUser"
+      >
+        Create
+      </Button>
+    </div>
   </form>
 </Card>
 </template>
