@@ -4,7 +4,7 @@
 </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 .loading-spinner {
   color: $primary;
   font-size: 10px;

@@ -190,7 +190,8 @@ fun Route.bookManagement(index: BookIndex) {
                 .filter { it.first in entries }
                 .map { Pair(it.first, it.second.title) to Jsoup.parse(String(it.second.resource.data)) }
 
-            for ((metadata, content) in chapters) {
+            for ((position, chapter) in chapters.withIndex()) {
+                val (metadata, content) = chapter
                 content.extractImages(id, epub.resources) { name, data ->
                     val blob = connection.createBlob()
                     data.inputStream().use { input -> blob.setBinaryStream(1).use { input.copyTo(it) } }
@@ -206,6 +207,7 @@ fun Route.bookManagement(index: BookIndex) {
                     tocReference = metadata.first
                     this.title = metadata.second
                     this.content = content.outerHtml()
+                    this.position = position
                 }
             }
         } ?: return@put call.respond(
@@ -238,7 +240,7 @@ fun Route.bookManagement(index: BookIndex) {
                     chapter.extractClasses(epub.resources)
                 }
                 .groupBy { it.name }
-                .map { it.value.first().copy(mapping = existingMappings[it.key], occurrences = it.value.size) }
+                .map { it.value.first().copy(mapping = existingMappings[it.key] ?: "no-selection", occurrences = it.value.size) }
         } ?: return@get call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
