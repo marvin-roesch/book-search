@@ -5,7 +5,7 @@
     <ChevronDownIcon class="expandable-toggle-button" @click.self="toggle"></ChevronDownIcon>
   </div>
   <collapse-transition>
-    <div class="expandable-content" v-show="expanded">
+    <div class="expandable-content" v-if="expanded">
       <slot></slot>
     </div>
   </collapse-transition>

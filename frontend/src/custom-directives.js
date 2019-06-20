@@ -54,37 +54,35 @@ export default {
       },
     });
 
-    Vue.prototype.$handleApiError = (error) => {
+    Vue.prototype.$getApiError = (error) => {
       if (error.response) {
         const { status, data } = error.response;
         if (data.message) {
-          store.dispatch(
-            'notifications/push',
-            { type: 'error', message: data.message },
-          );
-          return;
+          return data.message;
         } else {
           switch (status) {
             case 400:
-              store.dispatch(
-                'notifications/push',
-                { type: 'error', message: 'The provided data is invalid!' },
-              );
-              return;
+              return 'The provided data is invalid!';
             case 401:
-              store.dispatch(
-                'notifications/push',
-                { type: 'error', message: 'Only logged in users may do this!' },
-              );
-              return;
+              return 'Only logged in users may do this!';
             case 403:
-              store.dispatch(
-                'notifications/push',
-                { type: 'error', message: 'You do not have permission to do this!' },
-              );
-              return;
+              return 'You do not have permission to do this!';
+            default:
+              return null;
           }
         }
+      }
+      return null;
+    };
+
+    Vue.prototype.$handleApiError = (error) => {
+      const message = this.$getApiError(error);
+      if (message !== null) {
+        store.dispatch(
+          'notifications/push',
+          { type: 'error', message },
+        );
+        return;
       }
       console.error(error);
       store.dispatch(

@@ -1,6 +1,8 @@
 <template>
 <div class="search-result-container">
-  <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
+  <transition name="fade-slide-up">
+    <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
+  </transition>
   <transition-group tag="div" class="search-result-list" name="fade-slide-up"
                     @after-leave="infiniteId = (new Date()).getTime()">
     <search-result
@@ -11,6 +13,15 @@
     </search-result>
   </transition-group>
   <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
+    <LoadingSpinner slot="spinner"></LoadingSpinner>
+    <EmptyCard slot="no-results"></EmptyCard>
+    <div slot="no-more"></div>
+    <ErrorCard
+      slot="error"
+      slot-scope="{ trigger }"
+      :message="errorMessage"
+      @retry="trigger">
+    </ErrorCard>
   </infinite-loading>
 </div>
 </template>
@@ -18,10 +29,16 @@
 <script>
 import InfiniteLoading from 'vue-infinite-loading';
 import SearchResult from '@/components/search/SearchResult.vue';
+import ErrorCard from '@/components/search/ErrorCard.vue';
+import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
+import EmptyCard from '@/components/search/EmptyCard.vue';
 
 export default {
   name: 'flat-search-results',
   components: {
+    EmptyCard,
+    LoadingSpinner,
+    ErrorCard,
     SearchResult,
     InfiniteLoading,
   },
@@ -38,6 +55,7 @@ export default {
       infiniteId: (new Date()).getTime(),
       resultDelay: 0,
       lastResult: new Date(),
+      errorMessage: '',
     };
   },
   methods: {
@@ -46,6 +64,7 @@ export default {
       this.results = [];
       this.infiniteId = (new Date()).getTime();
       this.resultDelay = 0;
+      this.totalHits = 0;
       this.lastResult = new Date();
     },
     async search() {
@@ -86,16 +105,23 @@ export default {
 
         return mapped.length > 0;
       } catch (error) {
-        this.$handleApiError(error);
-        return true;
+        throw error;
       }
     },
     async infiniteHandler($state) {
-      if (await this.search()) {
-        this.page += 1;
-        $state.loaded();
-      } else {
-        $state.complete();
+      try {
+        if (await this.search()) {
+          this.page += 1;
+          $state.loaded();
+        } else {
+          $state.complete();
+        }
+      } catch (error) {
+        $state.error();
+        this.errorMessage = this.$getApiError(error);
+        if (this.errorMessage === null) {
+          this.errorMessage = 'An unknown error has occurred, please report this!';
+        }
       }
     },
   },

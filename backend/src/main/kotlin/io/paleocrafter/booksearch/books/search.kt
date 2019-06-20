@@ -7,10 +7,7 @@ import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.post
-import io.ktor.routing.put
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jsoup.Jsoup
 import java.util.UUID
 
 fun Route.bookSearch(index: BookIndex) {
@@ -72,7 +69,10 @@ fun Route.bookSearch(index: BookIndex) {
             ))
         }
 
-        val searchResult = index.search(request.query, request.page, filter)
+        val searchResult = index.search(request.query, request.page, filter) ?: return@post call.respond(
+            HttpStatusCode.BadRequest,
+            mapOf("message" to "The provided query is invalid!")
+        )
 
         val results = transaction {
             searchResult.results.map {
@@ -106,7 +106,10 @@ fun Route.bookSearch(index: BookIndex) {
             ))
         }
 
-        val searchResult = index.searchGrouped(request.query, filter)
+        val searchResult = index.searchGrouped(request.query, filter) ?: return@post call.respond(
+            HttpStatusCode.BadRequest,
+            mapOf("message" to "The provided query is invalid!")
+        )
 
         val results = transaction {
             searchResult.results

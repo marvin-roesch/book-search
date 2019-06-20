@@ -1,6 +1,8 @@
 package io.paleocrafter.booksearch.books
 
+import kotlinx.coroutines.supervisorScope
 import org.apache.http.HttpHost
+import org.elasticsearch.ElasticsearchStatusException
 import org.elasticsearch.action.ActionListener
 import org.elasticsearch.action.admin.indices.close.CloseIndexRequest
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
@@ -13,6 +15,7 @@ import org.elasticsearch.action.search.MultiSearchResponse
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.client.ResponseException
 import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
@@ -263,21 +266,29 @@ class BookIndex(vararg hosts: HttpHost) {
                 )
         )
 
-    suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults {
+    suspend fun search(query: String, page: Int, filter: List<UUID>): SearchResults? {
         val baseQuery = buildBaseQuery(query, filter)
         baseQuery.size(10)
         baseQuery.from(page * 10)
 
         baseQuery.highlighter(highlighter)
 
-        val baseResponse = suspendCoroutine<SearchResponse> {
-            client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
-        }
+        val baseResponse = supervisorScope {
+            try {
+                suspendCoroutine<SearchResponse> {
+                    client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
+                }
+            } catch (e: ResponseException) {
+                null
+            } catch (e: ElasticsearchStatusException) {
+                null
+            }
+        } ?: return null
 
         return SearchResults(baseResponse.hits.totalHits.value, gatherContext(baseResponse.hits))
     }
 
-    suspend fun searchGrouped(query: String, filter: List<UUID>): GroupedSearchResults {
+    suspend fun searchGrouped(query: String, filter: List<UUID>): GroupedSearchResults? {
         val baseQuery = buildBaseQuery(query, filter)
         baseQuery.aggregation(
             AggregationBuilders.composite(
@@ -294,9 +305,17 @@ class BookIndex(vararg hosts: HttpHost) {
             )
         )
 
-        val baseResponse = suspendCoroutine<SearchResponse> {
-            client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
-        }
+        val baseResponse = supervisorScope {
+            try {
+                suspendCoroutine<SearchResponse> {
+                    client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
+                }
+            } catch (e: ResponseException) {
+                null
+            } catch (e: ElasticsearchStatusException) {
+                null
+            }
+        } ?: return null
 
         val totalHits = baseResponse.hits.totalHits.value
         val chapters = baseResponse.aggregations.get<CompositeAggregation>("chapters")

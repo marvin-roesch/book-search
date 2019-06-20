@@ -174,12 +174,15 @@ body {
 
   .search-result-container {
     box-sizing: border-box;
-    padding: 7rem 1rem 1rem;
+    padding: 8rem 1rem 1rem;
     width: 50%;
     max-width: 960px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 
     h2 {
-      margin: 0.5rem 0 0;
+      margin: 0;
     }
 
     @media (max-width: 960px) {

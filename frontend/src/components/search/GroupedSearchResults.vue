@@ -1,30 +1,47 @@
 <template>
 <div class="search-result-container grouped-search-results">
-  <h2 v-if="totalHits > 0">Displayed hits: {{ totalHits }}</h2>
-  <Expandable v-for="book in results" :key="book.id">
-    <template slot="header">
-    {{ book.title }}
-    </template>
-    <Expandable v-for="chapter in book.chapters" :key="chapter.id">
+  <transition name="fade-slide-up">
+    <h2 v-if="totalHits > 0">Displayed hits: {{ totalHits }}</h2>
+  </transition>
+  <transition-group tag="div" class="search-result-list" name="fade-slide-up">
+    <Expandable v-for="book in results" :key="book.id">
       <template slot="header">
-      {{ chapter.title }} ({{ chapter.totalOccurrences }})
+      {{ book.title }}
       </template>
-      <search-result
-        :result="result" :display-metadata="false"
-        v-for="(result, index) in chapter.results" :key="index">
-      </search-result>
+      <Expandable v-for="chapter in book.chapters" :key="chapter.id">
+        <template slot="header">
+        {{ chapter.title }} ({{ chapter.totalOccurrences }})
+        </template>
+        <search-result
+          :result="result" :display-metadata="false"
+          v-for="(result, index) in chapter.results" :key="index">
+        </search-result>
+      </Expandable>
     </Expandable>
-  </Expandable>
+  </transition-group>
+  <ErrorCard
+    :message="errorMessage"
+    @retry="reset"
+    v-if="this.errorMessage !== null">
+  </ErrorCard>
+  <LoadingSpinner v-if="loading"></LoadingSpinner>
+  <EmptyCard v-if="!loading && errorMessage === null && results.length === 0"></EmptyCard>
 </div>
 </template>
 
 <script>
 import SearchResult from '@/components/search/SearchResult.vue';
 import Expandable from '@/components/Expandable.vue';
+import ErrorCard from '@/components/search/ErrorCard.vue';
+import EmptyCard from '@/components/search/EmptyCard.vue';
+import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 
 export default {
   name: 'grouped-search-results',
   components: {
+    LoadingSpinner,
+    EmptyCard,
+    ErrorCard,
     Expandable,
     SearchResult,
   },
@@ -35,10 +52,10 @@ export default {
   },
   data() {
     return {
-      resultLookup: {},
       results: [],
-      chapterPage: 0,
       totalHits: 0,
+      errorMessage: null,
+      loading: false,
     };
   },
   mounted() {
@@ -46,11 +63,12 @@ export default {
   },
   methods: {
     reset() {
-      this.resultLookup = {};
       this.results = [];
+      this.errorMessage = null;
       this.search();
     },
     async search() {
+      this.loading = true;
       try {
         const {
           data: {
@@ -85,8 +103,12 @@ export default {
         ));
         this.totalHits = totalHits;
       } catch (error) {
-        this.$handleApiError(error);
+        this.errorMessage = this.$getApiError(error);
+        if (this.errorMessage === null) {
+          this.errorMessage = 'An unknown error has occurred, please report this!';
+        }
       }
+      this.loading = false;
     },
   },
   watch: {
