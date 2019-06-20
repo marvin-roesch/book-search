@@ -36,10 +36,9 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
 
-class BookIndex {
-    private val client = RestHighLevelClient(
-        RestClient.builder(HttpHost("localhost", 9200, "http"))
-    )
+class BookIndex(vararg hosts: HttpHost) {
+    private val client = RestHighLevelClient(RestClient.builder(*hosts))
+
     @Language("JSON")
     private val chapterMapping = """
         {

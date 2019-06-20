@@ -1,11 +1,11 @@
 FROM gradle:5.4.1-jdk8 AS builder
 WORKDIR /app
 
-COPY ./src /app
+COPY ./src /app/src
 COPY ./build.gradle.kts /app
 COPY ./gradle.properties /app
 
-RUN gradle shadowJar
+RUN gradle build shadowJar
 
 FROM openjdk:8-jre-alpine
 
@@ -20,4 +20,6 @@ USER $APPLICATION_USER
 COPY --from=builder /app/build/libs/book-search.jar /app/book-search.jar
 WORKDIR /app
 
-CMD ["java", "-server", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-XX:InitialRAMFraction=2", "-XX:MinRAMFraction=2", "-XX:MaxRAMFraction=2", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100", "-XX:+UseStringDeduplication", "-jar", "my-application.jar"]
+EXPOSE 3080
+
+CMD ["java", "-server", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-XX:InitialRAMFraction=2", "-XX:MinRAMFraction=2", "-XX:MaxRAMFraction=2", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100", "-XX:+UseStringDeduplication", "-jar", "book-search.jar"]
