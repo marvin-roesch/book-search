@@ -11,6 +11,7 @@ import Chapter from '@/views/Chapter.vue';
 import store from '@/store';
 import Login from '@/views/Login.vue';
 import UserManagement from '@/views/UserManagement.vue';
+import UserProfile from '@/views/UserProfile.vue';
 
 Vue.use(Router);
 
@@ -70,6 +71,12 @@ const router = new Router({
         ],
       },
     ]),
+    {
+      path: '/account',
+      name: 'account',
+      component: UserProfile,
+      meta: { requiresAuth: true },
+    },
     {
       path: '/search',
       name: 'search',

@@ -2,7 +2,10 @@
 <div class="user-panel" v-if="identity !== null">
   <div class="user-panel-menu">
     <div class="user-panel-menu-trigger" @click="menuVisible = !menuVisible" ref="trigger">
-      <UserIcon width="28" height="28"></UserIcon>
+      <div class="user-panel-menu-trigger-icon">
+        <UserIcon width="28" height="28"></UserIcon>
+      </div>
+      {{ identity.username }}
     </div>
     <ul
       class="user-panel-menu-content"
@@ -11,7 +14,9 @@
         handler: () => menuVisible = false
       }"
       v-if="menuVisible">
-      <li><a href="#">Account Settings</a></li>
+      <li>
+        <router-link :to="{name: 'account'}">Account Settings</router-link>
+      </li>
       <li><a href="#" @click.prevent="logout">Logout</a></li>
     </ul>
   </div>
@@ -63,22 +68,30 @@ export default {
 
   &-menu {
     box-sizing: border-box;
-    width: 32px;
-    height: 32px;
     position: relative;
 
     &-trigger {
       box-sizing: border-box;
-      width: 32px;
-      height: 32px;
-      border-radius: 100%;
-      border: 2px solid $base-text-color;
+      display: flex;
+      align-items: center;
       cursor: pointer;
-      position: relative;
+
+      &-icon {
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        border-radius: 100%;
+        border: 2px solid $base-text-color;
+        position: relative;
+        margin-right: 0.5rem;
+      }
 
       &:hover {
         color: lighten($base-text-color, 10%);
-        border-color: lighten($base-text-color, 10%);
+
+        &-icon {
+          border-color: lighten($base-text-color, 10%);
+        }
       }
     }
 

@@ -1,22 +1,23 @@
 <template>
-<div class="user-management">
+<div class="user-profile">
   <UserPanel></UserPanel>
-  <UserList></UserList>
+  <AccountSettings></AccountSettings>
 </div>
 </template>
 
 <script>
 import UserList from '@/components/management/users/UserList.vue';
 import UserPanel from '@/components/UserPanel.vue';
+import AccountSettings from '@/components/AccountSettings.vue';
 
 export default {
-  name: 'user-management',
-  components: { UserPanel, UserList },
+  name: 'user-profile',
+  components: { AccountSettings, UserPanel },
 };
 </script>
 
 <style lang="scss">
-.user-management {
+.user-profile {
   display: flex;
   align-items: center;
   width: 100%;
