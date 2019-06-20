@@ -49,13 +49,19 @@ export default {
       this.$router.replace({ name: 'book-management' });
       return;
     }
-    const { data: { title, author, series, orderInSeries } } = await this.$api.get(`/books/${id}`);
 
-    this.bookId = id;
-    this.title = title;
-    this.author = author;
-    this.series = series;
-    this.orderInSeries = orderInSeries.toString();
+    try {
+      const { data: { title, author, series, orderInSeries } } = await this.$api.get(`/books/${id}`);
+
+      this.bookId = id;
+      this.title = title;
+      this.author = author;
+      this.series = series;
+      this.orderInSeries = orderInSeries.toString();
+    } catch (error) {
+      this.$handleApiError(error);
+    }
+
     this.updating = false;
   },
   data() {
@@ -88,6 +94,7 @@ export default {
         );
         this.$router.push({ name: 'table-of-contents', params: { id: this.bookId } });
       } catch (error) {
+        this.$handleApiError(error);
         this.updating = false;
       }
     },

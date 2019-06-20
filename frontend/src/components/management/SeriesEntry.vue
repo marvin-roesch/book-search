@@ -45,7 +45,9 @@ export default {
       try {
         const { data: { message } } = await this.$api.delete(`/books/${bookId}`);
         this.$emit('book-deleted');
+        this.$notifications.success(message);
       } catch (error) {
+        this.$handleApiError(error);
       }
     },
   },

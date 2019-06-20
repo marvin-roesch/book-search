@@ -65,8 +65,9 @@ export default {
           '/auth/password',
           { oldPassword, newPassword, newPasswordRepeat },
         );
-        this.$router.replace(this.$route.query.redirect || '/');
+        this.$notifications.success(message);
       } catch (error) {
+        this.$handleApiError(error);
       }
       this.verifying = false;
     },

@@ -3,8 +3,32 @@
   <transition name="fade">
     <router-view/>
   </transition>
+  <div class="notification-container" v-if="notifications !== null">
+    <transition-group name="notification-slide" tag="div" class="notification-group">
+      <Notification
+        v-for="notification in notifications"
+        :type="notification.type"
+        :key="notification.id"
+      >
+        {{ notification.message }}
+      </Notification>
+    </transition-group>
+  </div>
 </div>
 </template>
+
+<script>
+import Notification from '@/components/Notification.vue';
+import { mapState } from 'vuex';
+
+export default {
+  name: 'app',
+  components: { Notification },
+  computed: mapState('notifications', {
+    notifications: 'activeNotifications',
+  }),
+};
+</script>
 
 <style lang="scss">
 body {
@@ -24,5 +48,37 @@ body {
   align-items: center;
   width: 100%;
   height: 100vh;
+}
+
+.notification-container {
+  width: 25vw;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -12.5vw;
+}
+
+.notification-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  .notification {
+    z-index: 3001;
+  }
+}
+
+.notification-slide {
+  &-leave-active {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 3000;
+  }
+
+  &-enter, &-leave-to {
+    transform: translateY(-100%);
+  }
 }
 </style>

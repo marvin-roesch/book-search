@@ -15,10 +15,14 @@ export default {
   },
   async mounted() {
     const { id } = this.$route.params;
-    const { data: { title, content } } = await this.$api.get(`/books/chapter/${id}`);
+    try {
+      const { data: { title, content } } = await this.$api.get(`/books/chapter/${id}`);
 
-    this.title = title;
-    this.content = content;
+      this.title = title;
+      this.content = content;
+    } catch (error) {
+      this.$handleApiError(error);
+    }
   },
 };
 </script>

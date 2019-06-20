@@ -41,11 +41,15 @@ export default {
       return;
     }
 
-    const { data: { classes, mappings } } = await this.$api.get(`/books/${id}/available-classes`);
+    try {
+      const { data: { classes, mappings } } = await this.$api.get(`/books/${id}/available-classes`);
 
-    this.bookId = id;
-    this.classes = classes;
-    this.availableMappings = mappings;
+      this.bookId = id;
+      this.classes = classes;
+      this.availableMappings = mappings;
+    } catch (error) {
+      this.$handleApiError(error);
+    }
     this.updating = false;
   },
   data() {
@@ -67,10 +71,14 @@ export default {
             {},
           ),
         );
-        await this.$api.put(`/books/${this.bookId}/index`);
+
+        const { data: { message } } = await this.$api.put(`/books/${this.bookId}/index`);
+        this.$notifications.success(message);
+
         this.$router.push({ name: 'book-management' });
         this.updating = false;
       } catch (error) {
+        this.$handleApiError(error);
         this.updating = false;
       }
     },

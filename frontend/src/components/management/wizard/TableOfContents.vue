@@ -28,10 +28,15 @@ export default {
       return;
     }
 
-    const { data: { toc } } = await this.$api.get(`/books/${id}/table-of-contents`);
+    try {
+      const { data: { toc } } = await this.$api.get(`/books/${id}/table-of-contents`);
 
-    this.bookId = id;
-    this.toc = toc;
+      this.bookId = id;
+      this.toc = toc;
+    } catch (error) {
+      this.$handleApiError(error);
+    }
+
     this.updating = false;
   },
   data() {
@@ -69,6 +74,7 @@ export default {
         );
         this.$router.push({ name: 'book-classes', params: { id: this.bookId } });
       } catch (error) {
+        this.$handleApiError(error);
         this.updating = false;
       }
     },

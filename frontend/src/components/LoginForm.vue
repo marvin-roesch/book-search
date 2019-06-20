@@ -48,12 +48,13 @@ export default {
       } = this;
       this.verifying = true;
       try {
-        if (await this.$store.dispatch('login', { username, password })) {
+        if (await this.$store.dispatch('auth/login', { username, password })) {
           this.$emit('first-login');
         } else {
           this.$router.replace(this.$route.query.redirect || '/');
         }
       } catch (error) {
+        this.$handleApiError(error);
       }
       this.verifying = false;
     },

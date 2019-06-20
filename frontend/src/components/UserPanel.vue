@@ -48,13 +48,14 @@ export default {
       menuVisible: false,
     };
   },
-  computed: mapState(['identity']),
+  computed: mapState('auth', ['identity']),
   methods: {
     async logout() {
       try {
-        await this.$store.dispatch('logout');
+        await this.$store.dispatch('auth/logout');
         this.$router.replace({ name: 'login' });
       } catch (error) {
+        this.$handleApiError(error);
       }
     },
   },

@@ -38,19 +38,23 @@ export default {
     };
   },
   async mounted() {
-    const { data: allSeries } = await this.$api.get('/books/series');
-    const { q, books, series, grouped } = { ...this.oldQuery, ...this.$route.query };
+    try {
+      const { data: allSeries } = await this.$api.get('/books/series');
+      const { q, books, series, grouped } = { ...this.oldQuery, ...this.$route.query };
 
-    this.query = q || '';
-    this.groupResults = grouped === true || grouped === 'true';
-    const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
-    const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
+      this.query = q || '';
+      this.groupResults = grouped === true || grouped === 'true';
+      const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
+      const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
 
-    const seriesRegex = seriesFilter === null ? null : seriesFilter.map(
-      f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
-    );
+      const seriesRegex = seriesFilter === null ? null : seriesFilter.map(
+        f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
+      );
 
-    this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesRegex, bookFilter));
+      this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesRegex, bookFilter));
+    } catch (error) {
+      this.$handleApiError(error);
+    }
   },
   beforeRouteEnter(to, from, next) {
     if (from.name === 'search') {

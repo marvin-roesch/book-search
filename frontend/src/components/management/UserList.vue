@@ -86,12 +86,13 @@ export default {
       creating: false,
     };
   },
-  computed: mapState(['identity']),
+  computed: mapState('auth', ['identity']),
   async mounted() {
     try {
       const { data: users } = await this.$api.get('/auth/users');
       this.users = users;
     } catch (error) {
+      this.$handleApiError(error);
     }
   },
   methods: {
@@ -105,7 +106,9 @@ export default {
           },
         );
         user.canManageBooks = canManageBooks;
+        this.$notifications.success(message);
       } catch (error) {
+        this.$handleApiError(error);
       }
     },
     async updateUserPermissions(user, canManageUsers) {
@@ -118,14 +121,18 @@ export default {
           },
         );
         user.canManageUsers = canManageUsers;
+        this.$notifications.success(message);
       } catch (error) {
+        this.$handleApiError(error);
       }
     },
     async deleteUser(userId) {
       try {
         const { data: { message } } = await this.$api.delete(`/auth/users/${userId}`);
         this.users = this.users.filter(u => u.id !== userId);
+        this.$notifications.success(message);
       } catch (error) {
+        this.$handleApiError(error);
       }
     },
     async createUser() {
@@ -141,7 +148,9 @@ export default {
           },
         );
         this.users.push(user);
+        this.$notifications.success(message);
       } catch (error) {
+        this.$handleApiError(error);
       }
       this.creating = false;
     },

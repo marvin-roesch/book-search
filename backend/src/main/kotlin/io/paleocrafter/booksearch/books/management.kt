@@ -78,7 +78,7 @@ fun Route.bookManagement(index: BookIndex) {
 
         call.respond(
             mapOf(
-                "message" to "Book $title was successfully deleted!"
+                "message" to "Book '$title' was successfully deleted!"
             )
         )
     }
@@ -136,7 +136,7 @@ fun Route.bookManagement(index: BookIndex) {
             mapOf("message" to "Book with ID '$id' does not exist")
         )
         call.respond(
-            mapOf("message" to "Success")
+            mapOf("message" to "Book information was successfully updated")
         )
     }
 
@@ -215,7 +215,7 @@ fun Route.bookManagement(index: BookIndex) {
 
         call.respond(mapOf(
             "id" to id,
-            "message" to "Success"
+            "message" to "Table of contents for book was successfully updated"
         ))
     }
 
@@ -308,7 +308,7 @@ fun Route.bookManagement(index: BookIndex) {
 
         call.respond(mapOf(
             "id" to id,
-            "message" to "success"
+            "message" to "Book '${book.title}' was successfully indexed and is now searchable!"
         ))
     }
 
@@ -340,7 +340,7 @@ fun Route.bookManagement(index: BookIndex) {
         }
 
         call.respond(mapOf(
-            "message" to "success"
+            "message" to "All books were successfully re-indexed!"
         ))
     }
 }

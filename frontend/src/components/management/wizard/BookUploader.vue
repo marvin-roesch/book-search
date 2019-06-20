@@ -68,7 +68,7 @@ export default {
         );
         this.$router.push({ name: 'book-metadata', params: { id } });
       } catch (error) {
-
+        this.$handleApiError(error);
       }
     },
   },

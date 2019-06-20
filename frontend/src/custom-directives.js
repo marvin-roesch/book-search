@@ -1,5 +1,6 @@
 import hljs from 'highlight.js/lib/highlight';
 import hljsCss from 'highlight.js/lib/languages/css';
+import store from '@/store';
 
 export default {
   install(Vue) {
@@ -50,6 +51,58 @@ export default {
             hljs.highlightBlock(target);
           }
         });
+      },
+    });
+
+    Vue.prototype.$handleApiError = (error) => {
+      if (error.response) {
+        const { status, data } = error.response;
+        if (data.message) {
+          store.dispatch(
+            'notifications/push',
+            { type: 'error', message: data.message },
+          );
+          return;
+        } else {
+          switch (status) {
+            case 400:
+              store.dispatch(
+                'notifications/push',
+                { type: 'error', message: 'The provided data is invalid!' },
+              );
+              return;
+            case 401:
+              store.dispatch(
+                'notifications/push',
+                { type: 'error', message: 'Only logged in users may do this!' },
+              );
+              return;
+            case 403:
+              store.dispatch(
+                'notifications/push',
+                { type: 'error', message: 'You do not have permission to do this!' },
+              );
+              return;
+          }
+        }
+      }
+      console.error(error);
+      store.dispatch(
+        'notifications/push',
+        { type: 'error', message: 'An unknown error occurred. Please report this!' },
+      );
+    };
+
+    Object.defineProperty(Vue.prototype, '$notifications', {
+      get() {
+        return {
+          success(message) {
+            store.dispatch('notifications/push', { type: 'success', message });
+          },
+          error(message) {
+            store.dispatch('notifications/push', { type: 'error', message });
+          },
+        };
       },
     });
   },

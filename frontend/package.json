@@ -15,6 +15,7 @@
     "highlight.js": "^9.15.8",
     "ramjet": "^0.5.0",
     "resize-observer-lite": "^0.2.3",
+    "uuid": "^3.3.2",
     "vue": "^2.6.10",
     "vue-content-loader": "^0.2.2",
     "vue-feather-icons": "^4.22.0",

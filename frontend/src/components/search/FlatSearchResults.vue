@@ -49,41 +49,46 @@ export default {
       this.lastResult = new Date();
     },
     async search() {
-      const { data: { results, totalHits } } = await this.$api.post('/books/search', {
-        query: this.query,
-        page: this.page,
-        seriesFilter: this.seriesFilter,
-        bookFilter: this.bookFilter,
-      });
-      const mapped = results.map(({ book, chapter, paragraphs }) => {
-        const mainParagraph = paragraphs.find(p => p.main);
+      try {
+        const { data: { results, totalHits } } = await this.$api.post('/books/search', {
+          query: this.query,
+          page: this.page,
+          seriesFilter: this.seriesFilter,
+          bookFilter: this.bookFilter,
+        });
+        const mapped = results.map(({ book, chapter, paragraphs }) => {
+          const mainParagraph = paragraphs.find(p => p.main);
 
-        const resultDate = new Date();
-        if ((resultDate.getTime() - this.lastResult.getTime()) <= 500) {
-          this.resultDelay += 100;
-        } else {
-          this.resultDelay = 0;
-        }
+          const resultDate = new Date();
+          if ((resultDate.getTime() - this.lastResult.getTime()) <= 500) {
+            this.resultDelay += 100;
+          } else {
+            this.resultDelay = 0;
+          }
 
-        this.lastResult = resultDate;
+          this.lastResult = resultDate;
 
-        return {
-          book,
-          chapter,
-          mainParagraph,
-          prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
-          nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
-          showSiblings: false,
-          delay: this.resultDelay,
-        };
-      });
+          return {
+            book,
+            chapter,
+            mainParagraph,
+            prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
+            nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
+            showSiblings: false,
+            delay: this.resultDelay,
+          };
+        });
 
-      this.results.push(
-        ...mapped,
-      );
-      this.totalHits = totalHits;
+        this.results.push(
+          ...mapped,
+        );
+        this.totalHits = totalHits;
 
-      return mapped.length > 0;
+        return mapped.length > 0;
+      } catch (error) {
+        this.$handleApiError(error);
+        return true;
+      }
     },
     async infiniteHandler($state) {
       if (await this.search()) {

@@ -103,12 +103,16 @@ const router = new Router({
 });
 
 router.beforeEach(async (to, from, next) => {
-  let auth = store.getters.authorized;
+  let auth = store.getters['auth/authorized'];
   if (!auth) {
-    auth = await store.dispatch('checkIdentity');
+    auth = await store.dispatch('auth/checkIdentity');
   }
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!auth) {
+      store.dispatch(
+        'notifications/push',
+        { type: 'error', message: 'You have to be logged in to view this page!' },
+      );
       next(
         {
           path: '/login',
@@ -120,6 +124,10 @@ router.beforeEach(async (to, from, next) => {
     }
   } else if (to.matched.some(record => record.meta.requiresUnauthorized)) {
     if (auth) {
+      store.dispatch(
+        'notifications/push',
+        { type: 'error', message: 'You must not be logged in to view this page!' },
+      );
       next(from.name === null ? '/' : false);
     } else {
       next();
@@ -130,7 +138,7 @@ router.beforeEach(async (to, from, next) => {
 });
 
 router.beforeEach((to, from, next) => {
-  const { identity } = store.state;
+  const { identity } = store.state.auth;
   if (identity === null) {
     next();
     return;
@@ -139,18 +147,26 @@ router.beforeEach((to, from, next) => {
   const { canManageBooks, canManageUsers } = identity;
   if (to.matched.some(record => record.meta.requiresBookPerms)) {
     if (!canManageBooks) {
-      next(false);
+      store.dispatch(
+        'notifications/push',
+        { type: 'error', message: 'You are not authorized to view the requested page!' },
+      );
+      next(from.name === null ? '/' : false);
     } else {
       next();
     }
   } else if (to.matched.some(record => record.meta.requiresUserPerms)) {
     if (!canManageUsers) {
-      next(false);
+      store.dispatch(
+        'notifications/push',
+        { type: 'error', message: 'You are not authorized to view the requested page!' },
+      );
+      next(from.name === null ? '/' : false);
     } else {
       next();
     }
   } else {
-    next(); // make sure to always call next()!
+    next();
   }
 });
 
