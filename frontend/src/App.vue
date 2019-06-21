@@ -31,15 +31,15 @@ export default {
 </script>
 
 <style lang="scss">
-body {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100vh;
+  height: 100%;
 }
 
 #app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  font-family: 'Nunito Sans', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: $base-text-color;
@@ -47,7 +47,7 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100vh;
+  height: 100%;
 }
 
 .notification-container {
@@ -56,6 +56,16 @@ body {
   top: 0;
   left: 50%;
   margin-left: -12.5vw;
+
+  @media (max-width: 1200px) {
+    width: 40vw;
+    margin-left: -20vw;
+  }
+
+  @media (max-width: 640px) {
+    width: 80vw;
+    margin-left: -40vw;
+  }
 }
 
 .notification-group {

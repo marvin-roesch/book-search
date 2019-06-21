@@ -70,6 +70,7 @@ export default {
   display: inline-block;
   box-sizing: border-box;
   height: 3.125rem;
+  line-height: 1rem;
 
   &:hover {
     cursor: pointer;

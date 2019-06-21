@@ -1,31 +1,15 @@
 <template>
-<div class="user-management">
-  <UserPanel></UserPanel>
+<Fullscreen user-panel>
   <UserList></UserList>
-</div>
+</Fullscreen>
 </template>
 
 <script>
 import UserList from '@/components/management/UserList.vue';
-import UserPanel from '@/components/UserPanel.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'user-management',
-  components: { UserPanel, UserList },
+  components: { Fullscreen, UserList },
 };
 </script>
-
-<style lang="scss">
-.user-management {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  .user-panel {
-    position: absolute;
-    top: 19.5px;
-    left: 32px;
-  }
-}
-</style>

@@ -145,7 +145,7 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100vh;
+  height: 100%;
 
   .search-results-toolbar-container {
     box-sizing: border-box;
@@ -158,13 +158,28 @@ body {
     align-items: center;
     z-index: 2000;
 
+    @media (max-width: 1200px) {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
     .user-panel {
       position: absolute;
       left: 2rem;
+
+      @media (max-width: 1200px) {
+        position: relative;
+        left: 0;
+      }
     }
 
     .search-results-toolbar {
       width: 50%;
+
+      @media (max-width: 1200px) {
+        width: 70%;
+        padding-top: 0;
+      }
 
       @media (max-width: 960px) {
         width: 100%;
@@ -183,6 +198,11 @@ body {
 
     h2 {
       margin: 0;
+    }
+
+    @media (max-width: 1200px) {
+      width: 70%;
+      padding-top: 11rem;
     }
 
     @media (max-width: 960px) {

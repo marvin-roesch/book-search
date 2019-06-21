@@ -19,12 +19,17 @@ export default {
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
-  width: 40vw;
+  width: 50vw;
   display: flex;
   flex-direction: column;
   position: relative;
   max-height: 80vh;
   margin: 0 auto;
+  box-sizing: border-box;
+
+  @media (max-width: 960px) {
+    width: 100%;
+  }
 
   h2 {
     font-weight: 400;

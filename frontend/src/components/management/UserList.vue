@@ -164,11 +164,12 @@ export default {
 <style scoped lang="scss">
 .user-list {
   margin: 0 auto;
-  width: 30vw;
+  width: 50vw;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  box-sizing: border-box;
 
   .user-table {
     padding: 0;
@@ -249,6 +250,10 @@ export default {
       margin-top: 0.5rem;
       align-self: flex-end;
     }
+  }
+
+  @media (max-width: 960px) {
+    width: 100%;
   }
 }
 </style>

@@ -80,6 +80,16 @@ export default {
 
 <style lang="scss">
 .first-login-form {
-  max-width: 20vw;
+  width: 35vw;
+  box-sizing: border-box;
+  margin: 0 auto;
+
+  @media (max-width: 960px) {
+    width: 50vw;
+  }
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
 }
 </style>

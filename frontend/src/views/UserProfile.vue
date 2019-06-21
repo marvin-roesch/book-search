@@ -1,32 +1,15 @@
 <template>
-<div class="user-profile">
-  <UserPanel></UserPanel>
+<Fullscreen user-panel>
   <AccountSettings></AccountSettings>
-</div>
+</Fullscreen>
 </template>
 
 <script>
-import UserList from '@/components/management/UserList.vue';
-import UserPanel from '@/components/UserPanel.vue';
 import AccountSettings from '@/components/AccountSettings.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'user-profile',
-  components: { AccountSettings, UserPanel },
+  components: { Fullscreen, AccountSettings },
 };
 </script>
-
-<style lang="scss">
-.user-profile {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  .user-panel {
-    position: absolute;
-    top: 19.5px;
-    left: 32px;
-  }
-}
-</style>

@@ -49,5 +49,9 @@ export default {
       }
     }
   }
+
+  &-button-group {
+    display: flex;
+  }
 }
 </style>

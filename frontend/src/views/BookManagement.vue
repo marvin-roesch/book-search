@@ -1,31 +1,15 @@
 <template>
-<div class="book-management">
-  <UserPanel></UserPanel>
+<Fullscreen user-panel>
   <BookList></BookList>
-</div>
+</Fullscreen>
 </template>
 
 <script>
-import UserPanel from '@/components/UserPanel.vue';
 import BookList from '@/components/management/BookList.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'book-management',
-  components: { BookList, UserPanel },
+  components: { Fullscreen, BookList },
 };
 </script>
-
-<style lang="scss">
-.book-management {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  .user-panel {
-    position: absolute;
-    top: 19.5px;
-    left: 32px;
-  }
-}
-</style>

@@ -4,15 +4,19 @@
   <div class="class-mapper-list">
     <Expandable v-for="cls in classes" :key="cls.name">
       <template slot="header">
-      <label :for="`class-mapping-${cls.name}`">{{ cls.name }} ({{ cls.occurrences }} Occurrences):</label>
-      <select :id="`class-mapping-${cls.name}`" v-model="cls.mapping">
-        <option value="no-selection" disabled selected>Choose style</option>
-        <optgroup :label="group" v-for="(mappings, group) in availableMappings" :key="group">
-          <option :value="mapping.id" v-for="mapping in mappings" :key="mapping.id">
-            {{ mapping.description }}
-          </option>
-        </optgroup>
-      </select>
+      <div class="class-mapping-header">
+        <label :for="`class-mapping-${cls.name}`">
+          {{ cls.name }} ({{ cls.occurrences }} Occurrences):
+        </label>
+        <select :id="`class-mapping-${cls.name}`" v-model="cls.mapping">
+          <option value="no-selection" disabled selected>Choose style</option>
+          <optgroup :label="group" v-for="(mappings, group) in availableMappings" :key="group">
+            <option :value="mapping.id" v-for="mapping in mappings" :key="mapping.id">
+              {{ mapping.description }}
+            </option>
+          </optgroup>
+        </select>
+      </div>
       </template>
       <ClassPreview :cls="cls">
       </ClassPreview>
@@ -96,13 +100,27 @@ export default {
     overflow-y: auto;
     flex-grow: 1;
     max-height: 100%;
+  }
+
+  .class-mapping-header {
+    display: flex;
+    align-self: stretch;
+    align-items: center;
+    width: 100%;
+    margin-right: 1rem;
+    pointer-events: none;
+
+    label {
+      margin-right: 0.5rem;
+    }
 
     select {
-      margin-left: auto;
       border: 1px solid rgba(0, 0, 0, 0.1);
       padding: 0.5rem;
       border-radius: 3px;
       background: none;
+      margin-left: auto;
+      pointer-events: auto;
     }
   }
 }

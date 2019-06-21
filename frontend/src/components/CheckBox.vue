@@ -54,15 +54,9 @@ export default {
 .checkbox {
   position: relative;
 
-  .checkbox {
-    display: flex;
-    align-items: stretch;
-    flex-direction: row;
-    margin-bottom: 0.25rem;
-  }
-
   .checkbox-content {
     display: flex;
+    align-items: center;
   }
 
   .checkbox-input {

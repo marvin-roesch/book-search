@@ -113,7 +113,7 @@ export default {
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100vh;
+  height: 100%;
 
   .user-panel {
     position: absolute;
@@ -123,12 +123,32 @@ export default {
 
   &-content {
     position: relative;
+    box-sizing: border-box;
 
     h1 {
       position: absolute;
       bottom: 100%;
       width: 100%;
       text-align: center;
+    }
+  }
+
+  @media (max-width: 960px) {
+    justify-content: flex-start;
+    align-items: stretch;
+
+    .user-panel {
+      position: relative;
+      top: 0;
+      left: 0;
+    }
+
+    &-content {
+      h1 {
+        position: relative;
+        bottom: initial;
+        margin: 0;
+      }
     }
   }
 }

@@ -84,7 +84,11 @@ export default {
   justify-content: center;
   box-sizing: border-box;
   margin: 0 auto;
-  min-width: 30vw;
+  min-width: 50vw;
+
+  @media (max-width: 960px) {
+    width: 100%;
+  }
 
   .book {
     opacity: 1;

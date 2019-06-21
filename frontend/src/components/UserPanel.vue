@@ -68,7 +68,6 @@ export default {
   align-items: center;
   padding: 1rem 2rem 1rem 1rem;
 
-
   &-menu {
     box-sizing: border-box;
     position: relative;
@@ -115,6 +114,7 @@ export default {
       flex-direction: column;
       align-items: stretch;
       font-size: 0.9rem;
+      z-index: 3000;
 
       li {
         position: relative;

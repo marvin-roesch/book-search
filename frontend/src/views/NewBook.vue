@@ -1,31 +1,15 @@
 <template>
-<div class="new-book">
-  <UserPanel></UserPanel>
+<Fullscreen user-panel="">
   <BookUploader></BookUploader>
-</div>
+</Fullscreen>
 </template>
 
 <script>
 import BookUploader from '@/components/management/wizard/BookUploader.vue';
-import UserPanel from '@/components/UserPanel.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'new-book',
-  components: { UserPanel, BookUploader },
+  components: { Fullscreen, BookUploader },
 };
 </script>
-
-<style lang="scss">
-.new-book {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  .user-panel {
-    position: absolute;
-    top: 19.5px;
-    left: 32px;
-  }
-}
-</style>

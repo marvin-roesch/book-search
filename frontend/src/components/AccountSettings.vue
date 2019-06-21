@@ -81,6 +81,8 @@ export default {
 <style lang="scss">
 .account-settings {
   margin: 0 auto;
+  width: 50vw;
+  box-sizing: border-box;
 
   form {
     display: flex;
@@ -101,6 +103,10 @@ export default {
         margin-right: 0;
       }
     }
+  }
+
+  @media (max-width: 640px) {
+    width: 100%;
   }
 }
 </style>

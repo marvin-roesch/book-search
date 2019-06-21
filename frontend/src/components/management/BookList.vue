@@ -3,7 +3,7 @@
   <SeriesEntry :series="series" class="book-list-root" @book-deleted="refresh"></SeriesEntry>
   <template slot="footer">
   <a href="#" @click.prevent="$router.back()">Back</a>
-  <div>
+  <div class="card-button-group">
     <Button slim @click="reindexAll" :loading="reindexing" :disabled="reindexing">
       Reindex all
     </Button>
@@ -57,11 +57,12 @@ export default {
 <style lang="scss">
 .book-list {
   margin: 0 auto;
-  width: 30vw;
+  width: 50vw;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  box-sizing: border-box;
 
   h2 {
     display: flex;
@@ -77,6 +78,10 @@ export default {
     overflow-y: auto;
     flex-grow: 1;
     max-height: 100%;
+  }
+
+  @media (max-width: 960px) {
+    width: 100%;
   }
 }
 </style>

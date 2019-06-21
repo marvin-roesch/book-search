@@ -1,31 +1,15 @@
 <template>
-<div class="new-book">
-  <UserPanel></UserPanel>
+<Fullscreen user-panel>
   <BookWizard></BookWizard>
-</div>
+</Fullscreen>
 </template>
 
 <script>
-import UserPanel from '@/components/UserPanel.vue';
 import BookWizard from '@/components/management/wizard/BookWizard.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'edit-book',
-  components: { BookWizard, UserPanel },
+  components: { Fullscreen, BookWizard },
 };
 </script>
-
-<style lang="scss">
-.edit-book {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  .user-panel {
-    position: absolute;
-    top: 19.5px;
-    left: 32px;
-  }
-}
-</style>

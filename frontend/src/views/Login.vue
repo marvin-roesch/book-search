@@ -1,17 +1,18 @@
 <template>
-<div class="login">
+<Fullscreen>
   <LoginForm @first-login="showFirstLoginForm = true" v-if="!showFirstLoginForm"></LoginForm>
   <FirstLoginForm v-else></FirstLoginForm>
-</div>
+</Fullscreen>
 </template>
 
 <script>
 import LoginForm from '@/components/LoginForm.vue';
 import FirstLoginForm from '@/components/FirstLoginForm.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'login',
-  components: { FirstLoginForm, LoginForm },
+  components: { Fullscreen, FirstLoginForm, LoginForm },
   data() {
     return {
       showFirstLoginForm: false,
@@ -20,14 +21,8 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
-.login {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100vh;
+<style lang="scss">
+.fullscreen {
+  padding-top: 1rem;
 }
 </style>

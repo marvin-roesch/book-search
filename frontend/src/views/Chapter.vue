@@ -49,7 +49,7 @@ export default {
     position: relative;
     margin: 0;
     padding: 0;
-    font-family: 'Avenir', sans-serif;
+    font-family: 'Nunito Sans', sans-serif;
     font-size: 1.25rem;
     z-index: 1001;
     text-align: center;

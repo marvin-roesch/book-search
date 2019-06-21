@@ -36,6 +36,10 @@ export default {
   width: 50vw;
   z-index: 2500;
 
+  @media (max-width: 960px) {
+    width: 100%;
+  }
+
   &-icon {
     display: flex;
     align-items: center;
