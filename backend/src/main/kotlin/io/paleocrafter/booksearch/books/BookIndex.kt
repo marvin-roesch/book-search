@@ -23,11 +23,17 @@ import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.intellij.lang.annotations.Language
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
 
 class BookIndex(vararg hosts: HttpHost) {
-    private val client = RestHighLevelClient(RestClient.builder(*hosts))
+    private val client = RestHighLevelClient(
+        RestClient.builder(*hosts)
+            .setHttpClientConfigCallback {
+                it.setKeepAliveStrategy { _, _ -> TimeUnit.MINUTES.toMillis(10) }
+            }
+    )
 
     @Language("JSON")
     private val chapterMapping = """
@@ -288,6 +294,7 @@ class BookIndex(vararg hosts: HttpHost) {
                 )
             ))
         }
+
         suspendCoroutine<BulkResponse> {
             client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
         }
@@ -314,7 +321,7 @@ class BookIndex(vararg hosts: HttpHost) {
     private data class ParagraphIndexEntry(val chapter: String, val position: Int, val text: String, val classes: Set<String>)
 
     open class Search {
-        protected val highlighter =
+        protected fun buildHighlighter() =
             HighlightBuilder().field(
                 HighlightBuilder.Field("text.cs")
                     .matchedFields("text.cs", "text.cs.lowercase")

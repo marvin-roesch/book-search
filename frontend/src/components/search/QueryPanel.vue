@@ -1,7 +1,7 @@
 <template>
 <shared-element
   id="query-panel"
-  class="query-panel"
+  :class="{ 'query-panel': true, 'query-panel-toolbar': toolbar }"
   :duration="300"
   :easing="easing"
   @animation-end="$emit('ready')">
@@ -10,6 +10,16 @@
     :query="query"
     @search="$emit('search', $event)">
   </SearchBar>
+  <div class="query-panel-quick-help">
+    <ul>
+      <li>Exact phrase: <code>"quote it"</code></li>
+      <li>Case sensitive: <code>text.cs:Wit</code></li>
+      <li>Match 0+: <code>Kala*</code></li>
+      <li>Match 1: <code>Dalina?</code></li>
+      <li>Boolean: <code>AND</code> (default), <code>OR</code></li>
+      <li>Negation: <code>-knot</code></li>
+    </ul>
+  </div>
   <div class="query-panel-options">
     <div class="query-panel-filter">
       <span class="query-panel-filter-label">Filter:</span>
@@ -83,15 +93,62 @@ export default {
 
 <style lang="scss">
 .query-panel {
-  padding: 1rem;
   box-sizing: border-box;
   margin: 0 auto;
   display: flex;
   align-items: stretch;
   flex-direction: column;
+  padding: 1rem 1rem 0.5rem;
 
   @media (max-width: 960px) {
     margin: 0;
+  }
+
+  &-quick-help {
+    box-sizing: border-box;
+    flex-grow: 1;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.5);
+
+    code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 0.125rem;
+    }
+
+    ul {
+      list-style-type: none;
+      display: flex;
+      padding: 0;
+      margin: 0;
+      flex-wrap: wrap;
+
+      li {
+        margin-right: 0.25rem;
+
+        &:after {
+          display: inline-block;
+          content: '·';
+          margin-left: 0.25rem;
+        }
+
+        &:last-child {
+          margin-right: 0;
+
+          &:after {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 640px) {
+    &.query-panel-toolbar {
+      .query-panel-quick-help {
+        display: none;
+      }
+    }
   }
 
   &-options {
@@ -143,17 +200,11 @@ export default {
       position: relative;
       display: flex;
       align-items: center;
-      color: #42B983;
-      text-decoration: none;
       z-index: 2001;
       flex-grow: 1;
       min-width: 0;
       margin-left: 0.25rem;
       line-height: 1rem;
-
-      &:hover, &:active, &:focus {
-        color: saturate(#42B983, 10%);
-      }
     }
 
     &-container {
@@ -166,6 +217,7 @@ export default {
       border-radius: 3px;
       padding: 2rem 0.5rem 0.5rem;
       border: 1px solid rgba(0, 0, 0, 0.1);
+      z-index: 2000;
     }
   }
 }

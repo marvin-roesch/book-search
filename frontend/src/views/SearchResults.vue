@@ -1,6 +1,9 @@
 <template>
 <div class="search-results">
-  <div class="search-results-toolbar-container">
+  <div :class="{
+    'search-results-toolbar-container': true,
+    'search-results-toolbar-container-hidden': scrolledDown
+  }">
     <UserPanel></UserPanel>
     <QueryPanel
       class="search-results-toolbar"
@@ -39,9 +42,11 @@ import FlatSearchResults from '@/components/search/FlatSearchResults.vue';
 import GroupedSearchResults from '@/components/search/GroupedSearchResults.vue';
 import QueryPanel from '@/components/search/QueryPanel.vue';
 import UserPanel from '@/components/UserPanel.vue';
+import { scrollAware } from '@/custom-directives';
 
 export default {
   name: 'search-results',
+  mixins: [scrollAware],
   components: {
     UserPanel,
     QueryPanel,
@@ -184,19 +189,37 @@ body.chapter-preview {
     display: flex;
     align-items: center;
     z-index: 2000;
+    transform: translate3d(0, 0, 0);
+    transition: 0.1s all ease-out;
 
     @media (max-width: 1200px) {
       flex-direction: column;
       align-items: flex-start;
     }
 
+    @media (max-height: 960px) {
+      &-hidden {
+        box-shadow: none;
+        transform: translate3d(0, -3rem, 0);
+      }
+    }
+
+    @media (max-height: 640px) {
+      &-hidden {
+        box-shadow: none;
+        transform: translate3d(0, -100%, 0);
+      }
+    }
+
     .user-panel {
       position: absolute;
+      top: 0.5rem;
       left: 2rem;
 
       @media (max-width: 1200px) {
         position: relative;
         left: 0;
+        top: 0;
       }
     }
 
@@ -216,7 +239,7 @@ body.chapter-preview {
 
   .search-result-container {
     box-sizing: border-box;
-    padding: 8rem 1rem 1rem;
+    padding: 9rem 1rem 1rem;
     width: 50%;
     max-width: 960px;
     display: flex;
@@ -229,7 +252,7 @@ body.chapter-preview {
 
     @media (max-width: 1200px) {
       width: 70%;
-      padding-top: 11rem;
+      padding-top: 12rem;
     }
 
     @media (max-width: 960px) {
@@ -238,7 +261,7 @@ body.chapter-preview {
 
     @media (max-width: 640px) {
       margin-top: 0.25rem;
-      padding-top: 12rem;
+      padding-top: 14rem;
     }
   }
 }

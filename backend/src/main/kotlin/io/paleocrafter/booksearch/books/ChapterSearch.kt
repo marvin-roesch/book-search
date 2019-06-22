@@ -2,8 +2,6 @@ package io.paleocrafter.booksearch.books
 
 import kotlinx.coroutines.supervisorScope
 import org.elasticsearch.ElasticsearchStatusException
-import org.elasticsearch.action.search.MultiSearchRequest
-import org.elasticsearch.action.search.MultiSearchResponse
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
@@ -11,9 +9,7 @@ import org.elasticsearch.client.ResponseException
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.index.query.Operator
 import org.elasticsearch.index.query.QueryBuilders
-import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.aggregations.bucket.significant.SignificantTerms
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.util.UUID
@@ -49,11 +45,12 @@ class ChapterSearch(private val client: RestHighLevelClient) : BookIndex.Search(
     }
 
     suspend fun getContent(id: UUID, query: String): String? {
-        val source = SearchSourceBuilder().query(
-            QueryBuilders.boolQuery()
-                .must(QueryBuilders.queryStringQuery(query).defaultField("text.cs.lowercase").defaultOperator(Operator.AND))
-                .filter(QueryBuilders.idsQuery().addIds(id.toString()))
-        ).highlighter(highlighter)
+        val source = SearchSourceBuilder().query(QueryBuilders.idsQuery().addIds(id.toString()))
+            .highlighter(
+                buildHighlighter().highlightQuery(
+                    QueryBuilders.queryStringQuery(query).defaultField("text.cs.lowercase").defaultOperator(Operator.AND)
+                )
+            )
 
         val response = supervisorScope {
             try {
@@ -67,7 +64,9 @@ class ChapterSearch(private val client: RestHighLevelClient) : BookIndex.Search(
             }
         } ?: return null
 
-        return response.hits.firstOrNull()?.highlightFields?.get("text.cs")?.fragments?.first()?.string()
+        val hit = response.hits.firstOrNull() ?: return null
+
+        return hit.highlightFields?.get("text.cs")?.fragments?.first()?.string() ?: hit.sourceAsMap["text"] as? String
     }
 
     suspend fun searchBooks(query: String, filter: List<UUID>) =

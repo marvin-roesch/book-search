@@ -1,12 +1,15 @@
 <template>
 <div class="chapter">
-  <div class="chapter-header">
+  <div :class="{
+    'chapter-header': true,
+    'chapter-header-hidden': scrolledDown
+  }">
     <UserPanel></UserPanel>
     <div class="chapter-title">
       <h2>{{ bookTitle }} - {{ title }}</h2>
     </div>
   </div>
-  <div class="chapter-content-container" @click.self.stop="close">
+  <div class="chapter-content-container">
     <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
     <Card class="chapter-content" v-else>
       <BookText :content="content" ref="text"></BookText>
@@ -20,9 +23,11 @@ import Card from '@/components/Card.vue';
 import BookText from '@/components/BookText.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import UserPanel from '@/components/UserPanel.vue';
+import { scrollAware } from '@/custom-directives';
 
 export default {
   name: 'chapter',
+  mixins: [scrollAware],
   components: { UserPanel, BookText, Card, LoadingSpinner },
   data() {
     return {
@@ -79,23 +84,33 @@ export default {
     z-index: 2000;
     cursor: initial;
     padding: 0 1rem;
+    transform: translate3d(0, 0, 0);
+    transition: 0.1s all ease-out;
 
     @media (max-width: 1200px) {
       flex-direction: column;
       align-items: flex-start;
     }
 
+    @media (max-height: 960px) {
+      &-hidden {
+        box-shadow: none;
+        transform: translate3d(0, -3rem, 0);
+      }
+    }
+
     .user-panel {
       position: absolute;
       left: 2rem;
+      top: 0.5rem;
 
       @media (max-width: 1200px) {
         position: relative;
         left: 0;
+        top: 0;
       }
 
       @media (max-width: 960px) {
-        top: 0;
         left: 0;
         padding-left: 0;
       }
@@ -105,7 +120,7 @@ export default {
       box-sizing: border-box;
       position: relative;
       margin: 0 auto;
-      padding: 1rem 0;
+      padding: 1.5rem 0;
       font-size: 1.25rem;
       z-index: 1001;
       width: 50%;
@@ -119,6 +134,7 @@ export default {
 
       @media (max-width: 960px) {
         width: 100%;
+        padding-bottom: 1rem;
       }
 
       h2 {
@@ -153,7 +169,7 @@ export default {
     }
 
     &-container {
-      padding: 5rem 1rem 1rem;
+      padding: 6rem 1rem 1rem;
 
       @media (max-width: 1200px) {
         padding-top: 8rem;

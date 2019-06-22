@@ -99,13 +99,13 @@ export default {
       this.$emit('reset-infinite');
     },
     async loadMore() {
+      this.loading = true;
       try {
         if (await this.search()) {
           this.page += 1;
         } else {
           this.noMore = true;
         }
-        this.loading = false;
       } catch (error) {
         if (axios.isCancel(error)) {
           return;
@@ -116,9 +116,9 @@ export default {
           this.errorMessage = 'An unknown error has occurred, please report this!';
         }
       }
+      this.loading = false;
     },
     async search() {
-      this.loading = true;
       if (this.cancelToken !== null) {
         this.cancelToken.cancel();
       }

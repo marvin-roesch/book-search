@@ -1,6 +1,5 @@
 <template>
-<div class="home">
-  <UserPanel></UserPanel>
+<Fullscreen user-panel class="home">
   <div class="home-content">
     <h1>Book Search</h1>
     <QueryPanel
@@ -16,16 +15,18 @@
       @chapter-scope="onChapterScope">
     </QueryPanel>
   </div>
-</div>
+</Fullscreen>
 </template>
 
 <script>
 import QueryPanel from '@/components/search/QueryPanel.vue';
 import UserPanel from '@/components/UserPanel.vue';
+import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'home',
   components: {
+    Fullscreen,
     UserPanel,
     QueryPanel,
   },
@@ -114,24 +115,10 @@ export default {
 
 <style scoped lang="scss">
 .home {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-
-  .user-panel {
-    position: absolute;
-    top: 19.5px;
-    left: 32px;
-  }
-
   &-content {
     position: relative;
     box-sizing: border-box;
+    margin: 0 auto;
 
     h1 {
       position: absolute;
@@ -145,13 +132,9 @@ export default {
     justify-content: flex-start;
     align-items: stretch;
 
-    .user-panel {
-      position: relative;
-      top: 0;
-      left: 0;
-    }
-
     &-content {
+      margin: 0;
+
       h1 {
         position: relative;
         bottom: initial;

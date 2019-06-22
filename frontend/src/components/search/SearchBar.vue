@@ -30,7 +30,7 @@
                 Putting terms in quotes will search for exactly the quoted phrase, disregarding
                 punctuation. Only paragraphs containing every word from the phrase in consecutive
                 order will be displayed.<br>
-                Example: <code>"Foo Bar"</code>
+                Example: <code>"quote it"</code>
               </li>
               <li>
                 <strong>Wildcards:</strong>
@@ -38,13 +38,13 @@
                 a term only appears within another word, you can use wildcards.
                 An asterisk (<code>*</code>) will match any number of characters, including none,
                 while a question mark (<code>?</code>) will match exactly one character.<br>
-                Examples: <code>Foo*bar</code>, <code>ba?</code>
+                Examples: <code>Kal*</code>, <code>Dalina?</code>
               </li>
               <li>
                 <strong>Case Sensitivity:</strong>
                 Prefixing any term or quoted phrase with <code>text.cs:</code> will only yield
                 results where the casing matches your query exactly.<br>
-                Examples: <code>text.cs:Foo</code>, <code>text.cs:"foo bar"</code>
+                Examples: <code>text.cs:Wit</code>, <code>text.cs:"invested art"</code>
               </li>
               <li>
                 <strong>Boolean expressions and grouping:</strong>
@@ -52,8 +52,16 @@
                 paragraphs containing one of several alternatives. The operators <em>must</em>
                 be written in capital letters. Leaving out an operator defaults to <code>AND</code>.
                 If you want to group several expressions into subqueries, you can put them in
-                parentheses. <br>
-                Examples: <code>(foo AND bar) OR baz</code>, <code>(foo baz) OR (bar foo)</code>
+                parentheses.<br>
+                Examples: <code>(shallan AND pattern) OR lightweaver</code>,
+                <code>(melaan wayne) OR (wax* steris)</code>
+              </li>
+              <li>
+                <strong>Negation:</strong> Individual terms or entire groups can be excluded
+                from the search using <code>NOT</code>, <code>!</code> or <code>-</code> as a
+                prefix. Note that only negated terms will lead to large result sets that may
+                be cut off.<br>
+                Examples: <code>vin -elend</code>, <code>silence !(shade OR silver)</code>
               </li>
             </ul>
           </div>

@@ -27,7 +27,7 @@ class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Searc
             baseQuery.from(page * 10)
         }
 
-        baseQuery.highlighter(highlighter)
+        baseQuery.highlighter(buildHighlighter())
 
         val baseResponse = supervisorScope {
             try {

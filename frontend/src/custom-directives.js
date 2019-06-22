@@ -3,6 +3,31 @@ import hljsCss from 'highlight.js/lib/languages/css';
 import store from '@/store';
 import axios from 'axios';
 
+export const scrollAware = {
+  data() {
+    return {
+      scrolledDown: false,
+      lastScrollPosition: 0,
+    };
+  },
+  mounted() {
+    window.addEventListener('scroll', this.onScroll);
+  },
+  beforeDestroy() {
+    window.removeEventListener('scroll', this.onScroll);
+  },
+  methods: {
+    onScroll() {
+      const currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      if (currentScrollPosition < 0) {
+        return;
+      }
+      this.scrolledDown = currentScrollPosition >= this.lastScrollPosition;
+      this.lastScrollPosition = currentScrollPosition;
+    },
+  },
+};
+
 export default {
   install(Vue) {
     hljs.registerLanguage('css', hljsCss);
@@ -15,7 +40,7 @@ export default {
           const clickedOnExcludedEl = (exclude || [])
             .reduce(
               (acc, refName) => acc || vnode.context.$refs[refName].contains(e.target),
-              false
+              false,
             );
           if (!element.contains(e.target) && !clickedOnExcludedEl) {
             handler();
