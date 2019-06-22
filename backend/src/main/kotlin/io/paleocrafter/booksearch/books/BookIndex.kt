@@ -7,6 +7,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest
 import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.bulk.BulkResponse
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestClient
@@ -39,7 +40,7 @@ class BookIndex(vararg hosts: HttpHost) {
                     "type": "integer"
                 },
                 "text": {
-                    "type": "keyword",
+                    "type": "text",
                     "fields": {
                         "cs": {
                             "type": "text",
@@ -80,7 +81,7 @@ class BookIndex(vararg hosts: HttpHost) {
                     "type": "keyword"
                 },
                 "text": {
-                    "type": "keyword",
+                    "type": "text",
                     "fields": {
                         "cs": {
                             "type": "text",
@@ -287,7 +288,7 @@ class BookIndex(vararg hosts: HttpHost) {
                 )
             ))
         }
-        suspendCoroutine<Any> {
+        suspendCoroutine<BulkResponse> {
             client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
         }
     }
