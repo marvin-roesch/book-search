@@ -69,7 +69,7 @@ export default {
     },
     async search() {
       try {
-        const { data: { results, totalHits } } = await this.$api.post('/books/search', {
+        const { data: { results, totalHits } } = await this.$api.post('/books/paragraph-search', {
           query: this.query,
           page: this.page,
           seriesFilter: this.seriesFilter,

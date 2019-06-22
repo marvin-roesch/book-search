@@ -65,7 +65,7 @@ fun Route.bookManagement(index: BookIndex) {
             mapOf("message" to "Book with ID '$id' does not exist")
         )
 
-        index.delete(id)
+        index.deleteBook(id)
 
         val title = book.title
 
@@ -291,7 +291,7 @@ fun Route.bookManagement(index: BookIndex) {
                 it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
             }
             Chapter.find { Chapters.book eq book.id }.map {
-                ResolvedChapter(it.id.value, id, it.title, Jsoup.parse(it.content).body()).also { resolved ->
+                ResolvedChapter(it.id.value, id, it.title, it.position, Jsoup.parse(it.content).body()).also { resolved ->
                     BookNormalizer.normalize(resolved, classMappings)
                     it.indexedContent = resolved.content.html()
                 }
@@ -318,7 +318,7 @@ fun Route.bookManagement(index: BookIndex) {
                         it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
                     }
                     Chapter.find { Chapters.book eq book.id }.map {
-                        ResolvedChapter(it.id.value, book.id.value, it.title, Jsoup.parse(it.content).body()).also { resolved ->
+                        ResolvedChapter(it.id.value, book.id.value, it.title, it.position, Jsoup.parse(it.content).body()).also { resolved ->
                             BookNormalizer.normalize(resolved, classMappings)
                             it.indexedContent = resolved.content.html()
                         }

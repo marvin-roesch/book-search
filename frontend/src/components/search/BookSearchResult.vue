@@ -51,7 +51,7 @@ export default {
 
       try {
         const { data: { results } } = await this.$api.post(
-          `/books/${this.book.id}/grouped-search`,
+          `/books/${this.book.id}/paragraph-search/grouped`,
           {
             query: this.query,
             seriesFilter: this.seriesFilter,

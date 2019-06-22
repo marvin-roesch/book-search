@@ -1,8 +1,6 @@
 package io.paleocrafter.booksearch.books
 
-import kotlinx.coroutines.supervisorScope
 import org.apache.http.HttpHost
-import org.elasticsearch.ElasticsearchStatusException
 import org.elasticsearch.action.ActionListener
 import org.elasticsearch.action.admin.indices.close.CloseIndexRequest
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
@@ -10,39 +8,63 @@ import org.elasticsearch.action.admin.indices.open.OpenIndexRequest
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest
 import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.index.IndexRequest
-import org.elasticsearch.action.search.MultiSearchRequest
-import org.elasticsearch.action.search.MultiSearchResponse
-import org.elasticsearch.action.search.SearchRequest
-import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
-import org.elasticsearch.client.ResponseException
 import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
-import org.elasticsearch.client.indices.CreateIndexResponse
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.indices.PutMappingRequest
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.Operator
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.DeleteByQueryRequest
-import org.elasticsearch.search.SearchHit
-import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.aggregations.bucket.significant.SignificantTerms
-import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder
 import org.intellij.lang.annotations.Language
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.suspendCoroutine
-import kotlin.math.absoluteValue
 
 class BookIndex(vararg hosts: HttpHost) {
     private val client = RestHighLevelClient(RestClient.builder(*hosts))
 
     @Language("JSON")
     private val chapterMapping = """
+        {
+            "properties": {
+                "book": {
+                    "type": "keyword"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "keyword",
+                    "fields": {
+                        "cs": {
+                            "type": "text",
+                            "analyzer": "strip_html_analyzer",
+                            "term_vector": "with_positions_offsets",
+                            "fields": {
+                                "lowercase": {
+                                    "type": "text",
+                                    "analyzer": "case_insensitive_analyzer",
+                                    "term_vector": "with_positions_offsets"
+                                }
+                            }
+                        },
+                        "signature": {
+                            "type": "text",
+                            "analyzer": "signature_analyzer"
+                        }
+                    }
+                }
+            }
+        }
+    """.trimIndent()
+
+    @Language("JSON")
+    private val paragraphMapping = """
         {
             "properties": {
                 "book": {
@@ -81,6 +103,7 @@ class BookIndex(vararg hosts: HttpHost) {
             }
         }
     """.trimIndent()
+
     @Language("JSON")
     private val indexSettings = """
         {
@@ -160,46 +183,57 @@ class BookIndex(vararg hosts: HttpHost) {
         }
     """.trimIndent()
 
-    private val highlighter =
-        HighlightBuilder().field(
-            HighlightBuilder.Field("text.cs")
-                .matchedFields("text.cs", "text.cs.lowercase")
-                .numOfFragments(0)
-                .preTags("<strong>")
-                .postTags("</strong>")
-        ).highlighterType("fvh")
+    val paragraphs = ParagraphSearch(client)
+    val chapters = ChapterSearch(client)
 
-    private suspend fun ensureElasticIndex() {
+    private suspend fun ensureElasticIndices() {
+        ensureElasticIndex("chapters", chapterMapping)
+        ensureElasticIndex("paragraphs", paragraphMapping)
+    }
+
+    private suspend fun ensureElasticIndex(index: String, mapping: String) {
         if (!suspendCoroutine<Boolean> {
-                client.indices().existsAsync(GetIndexRequest("chapters"), RequestOptions.DEFAULT, SuspendingActionListener(it))
+                client.indices().existsAsync(
+                    GetIndexRequest(index),
+                    RequestOptions.DEFAULT,
+                    SuspendingActionListener(it)
+                )
             }) {
             suspendCoroutine<Any> {
                 client.indices().createAsync(
-                    CreateIndexRequest("chapters"),
+                    CreateIndexRequest(index),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
+            }
 
+            suspendCoroutine<Any> {
                 client.indices().closeAsync(
-                    CloseIndexRequest("chapters"),
+                    CloseIndexRequest(index),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
+            }
 
+            suspendCoroutine<Any> {
                 client.indices().putSettingsAsync(
-                    UpdateSettingsRequest("chapters").settings(indexSettings, XContentType.JSON),
+                    UpdateSettingsRequest(index).settings(indexSettings, XContentType.JSON),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
+            }
 
+            suspendCoroutine<Any> {
                 client.indices().putMappingAsync(
-                    PutMappingRequest("chapters").source(chapterMapping, XContentType.JSON),
+                    PutMappingRequest(index).source(mapping, XContentType.JSON),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
+            }
 
+            suspendCoroutine<Any> {
                 client.indices().openAsync(
-                    OpenIndexRequest("chapters"),
+                    OpenIndexRequest(index),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
@@ -215,18 +249,35 @@ class BookIndex(vararg hosts: HttpHost) {
                 client.indices().deleteAsync(DeleteIndexRequest("chapters"), RequestOptions.DEFAULT, SuspendingActionListener(it))
             }
         }
+        if (suspendCoroutine {
+                client.indices().existsAsync(GetIndexRequest("paragraphs"), RequestOptions.DEFAULT, SuspendingActionListener(it))
+            }) {
+            suspendCoroutine<Any> {
+                client.indices().deleteAsync(DeleteIndexRequest("paragraphs"), RequestOptions.DEFAULT, SuspendingActionListener(it))
+            }
+        }
     }
 
     suspend fun index(id: UUID, chapters: Iterable<ResolvedChapter>) {
-        ensureElasticIndex()
+        ensureElasticIndices()
 
-        this.delete(id)
+        this.deleteBook(id)
 
-        val entries = chapters.flatMap { this.collectEntries(it) }
+        val bulkRequest = BulkRequest()
+        for (chapter in chapters) {
+            bulkRequest.add(IndexRequest("chapters").id(chapter.id.toString()).source(
+                mapOf(
+                    "book" to id.toString(),
+                    "position" to chapter.position,
+                    "text" to chapter.content.html()
+                )
+            ))
+        }
 
-        val bulkRequest = BulkRequest("chapters")
-        for (entry in entries) {
-            bulkRequest.add(IndexRequest().id(UUID.randomUUID().toString()).source(
+        val paragraphs = chapters.flatMap { this.collectEntries(it) }
+
+        for (entry in paragraphs) {
+            bulkRequest.add(IndexRequest("paragraphs").id(UUID.randomUUID().toString()).source(
                 mapOf(
                     "book" to id.toString(),
                     "chapter" to entry.chapter,
@@ -241,207 +292,64 @@ class BookIndex(vararg hosts: HttpHost) {
         }
     }
 
-    private fun collectEntries(chapter: ResolvedChapter): List<IndexEntry> {
+    private fun collectEntries(chapter: ResolvedChapter): List<ParagraphIndexEntry> {
         return chapter.content.select("p").mapIndexed { position, p ->
-            IndexEntry(chapter.id.toString(), position, p.html(), p.classNames())
+            ParagraphIndexEntry(chapter.id.toString(), position, p.html(), p.classNames())
         }
     }
 
-    suspend fun delete(id: UUID) {
-        ensureElasticIndex()
+    suspend fun deleteBook(id: UUID) {
+        ensureElasticIndices()
 
         suspendCoroutine<Any> {
             client.deleteByQueryAsync(
-                DeleteByQueryRequest("chapters").setQuery(QueryBuilders.termQuery("book", id.toString())),
+                DeleteByQueryRequest("chapters", "paragraphs").setQuery(QueryBuilders.termQuery("book", id.toString())),
                 RequestOptions.DEFAULT,
                 SuspendingActionListener(it)
             )
         }
     }
 
-    private fun buildBaseQuery(query: String, bookFilter: List<UUID>, chapterFilter: List<UUID>? = null) =
-        SearchSourceBuilder().query(
-            QueryBuilders.boolQuery()
-                .must(QueryBuilders.queryStringQuery(query).defaultField("text.cs.lowercase").defaultOperator(Operator.AND))
-                .filter(
-                    QueryBuilders.boolQuery()
-                        .minimumShouldMatch(1)
-                        .also { qry ->
-                            bookFilter.forEach {
-                                qry.should(QueryBuilders.termQuery("book", it.toString()))
-                            }
-                            if (chapterFilter !== null) {
-                                chapterFilter.forEach {
-                                    qry.must(QueryBuilders.termQuery("chapter", it.toString()))
+    private data class ParagraphIndexEntry(val chapter: String, val position: Int, val text: String, val classes: Set<String>)
+
+    open class Search {
+        protected val highlighter =
+            HighlightBuilder().field(
+                HighlightBuilder.Field("text.cs")
+                    .matchedFields("text.cs", "text.cs.lowercase")
+                    .numOfFragments(0)
+                    .preTags("<strong>")
+                    .postTags("</strong>")
+            ).highlighterType("fvh")
+
+        protected fun buildBaseQuery(query: String, bookFilter: List<UUID>, chapterFilter: List<UUID>? = null) =
+            SearchSourceBuilder().query(
+                QueryBuilders.boolQuery()
+                    .must(QueryBuilders.queryStringQuery(query).defaultField("text.cs.lowercase").defaultOperator(Operator.AND))
+                    .filter(
+                        QueryBuilders.boolQuery()
+                            .minimumShouldMatch(1)
+                            .also { qry ->
+                                bookFilter.forEach {
+                                    qry.should(QueryBuilders.termQuery("book", it.toString()))
+                                }
+                                if (chapterFilter !== null) {
+                                    chapterFilter.forEach {
+                                        qry.must(QueryBuilders.termQuery("chapter", it.toString()))
+                                    }
                                 }
                             }
-                        }
-                )
-        )
-
-    suspend fun search(query: String, filter: List<UUID>, page: Int? = null, chapterFilter: List<UUID>? = null): SearchResults? {
-        val baseQuery = buildBaseQuery(query, filter, chapterFilter)
-        baseQuery.size(if (page == null) 1000 else 10)
-        if (page != null) {
-            baseQuery.from(page * 10)
-        }
-
-        baseQuery.highlighter(highlighter)
-
-        val baseResponse = supervisorScope {
-            try {
-                suspendCoroutine<SearchResponse> {
-                    client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
-                }
-            } catch (e: ResponseException) {
-                null
-            } catch (e: ElasticsearchStatusException) {
-                null
-            }
-        } ?: return null
-
-        return SearchResults(baseResponse.hits.totalHits.value, gatherContext(baseResponse.hits))
-    }
-
-    suspend fun searchBooks(query: String, filter: List<UUID>) =
-        searchGrouped("book", query, filter)
-
-    suspend fun searchChapters(book: UUID, query: String) =
-        searchGrouped("chapter", query, listOf(book))
-
-    private suspend fun searchGrouped(field: String, query: String, filter: List<UUID>): GroupedSearchResults? {
-        val baseQuery = buildBaseQuery(query, filter)
-            .aggregation(
-                AggregationBuilders.terms("groups").field(field)
-                    .size(1000)
-            )
-
-        val baseResponse = supervisorScope {
-            try {
-                suspendCoroutine<SearchResponse> {
-                    client.searchAsync(SearchRequest("chapters").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
-                }
-            } catch (e: ResponseException) {
-                null
-            } catch (e: ElasticsearchStatusException) {
-                null
-            }
-        } ?: return null
-
-        val totalHits = baseResponse.hits.totalHits.value
-        val groups = baseResponse.aggregations.get<Terms>("groups").buckets
-
-        return GroupedSearchResults(
-            totalHits,
-            groups.asSequence().map {
-                GroupSearchResult(UUID.fromString(it.keyAsString), it.docCount.absoluteValue)
-            }
-        )
-    }
-
-    private suspend fun gatherContext(hits: Iterable<SearchHit>): List<SearchResult> {
-        val contextRequest = MultiSearchRequest()
-        for (hit in hits) {
-            val source = hit.sourceAsMap
-            val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
-            val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
-            val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-            val contextQuery = SearchSourceBuilder()
-            contextQuery.query(
-                QueryBuilders.boolQuery()
-                    .should(
-                        QueryBuilders.boolQuery()
-                            .must(QueryBuilders.termQuery("book", bookId))
-                            .must(QueryBuilders.termQuery("chapter", chapter))
-                            .must(QueryBuilders.rangeQuery("position").from(position - 2).to(position + 2))
-                    )
-                    .mustNot(
-                        QueryBuilders.termQuery("position", position)
                     )
             )
-            contextRequest.add(SearchRequest("chapters").source(contextQuery))
-        }
-        val contextResponses = if (hits.any()) {
-            suspendCoroutine<MultiSearchResponse> {
-                client.msearchAsync(contextRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
-            }.responses
-        } else {
-            emptyArray()
-        }
-
-        return hits.mapIndexed { index, hit ->
-            val context = contextResponses[index].response.hits.map {
-                val source = it.sourceAsMap
-                val position = source["position"] as? Int
-                    ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-                val text = source["text"] as? String ?: throw IllegalStateException("Indexed paragraph must have text!")
-                val classes = source["classes"] as? List<String>
-                    ?: throw IllegalStateException("Indexed paragraph must have class array!")
-
-                SearchParagraph(false, position, text, classes)
-            }
-            val source = hit.sourceAsMap
-            val bookId = source["book"] as? String ?: throw IllegalStateException("Indexed paragraph must have book id!")
-            val chapter = source["chapter"] as? String ?: throw IllegalStateException("Indexed paragraph must have chapter!")
-            val position = source["position"] as? Int ?: throw IllegalStateException("Indexed paragraph must have position in chapter!")
-            val text = hit.highlightFields["text.cs"]?.fragments?.first()?.string()
-                ?: source["text"] as? String
-                ?: throw IllegalStateException("Search result must have highlight!")
-            val classes = source["classes"] as? List<String> ?: throw IllegalStateException("Indexed paragraph must have class array!")
-            val paragraph = SearchParagraph(true, position, text, classes)
-
-            SearchResult(
-                UUID.fromString(bookId),
-                UUID.fromString(chapter),
-                paragraph.position,
-                (context + paragraph).sortedBy { it.position }
-            )
-        }
-    }
-
-    suspend fun getDictionary(bookId: UUID): List<DictionaryEntry> {
-        val query = SearchSourceBuilder().query(
-            QueryBuilders.termQuery("book", bookId.toString())
-        )
-        query.aggregation(
-            AggregationBuilders.significantText(
-                "dictionary",
-                "text.signature"
-            ).size(1000)
-        )
-
-        val response = suspendCoroutine<SearchResponse> {
-            client.searchAsync(SearchRequest("chapters").source(query), RequestOptions.DEFAULT, SuspendingActionListener(it))
-        }
-
-        return response.aggregations.get<SignificantTerms>("dictionary").buckets
-            .map {
-                DictionaryEntry(it.key.toString(), it.docCount)
-            }
-            .sortedByDescending { it.occurrences }
-    }
-
-    private data class IndexEntry(val chapter: String, val position: Int, val text: String, val classes: Set<String>)
-
-    private class SuspendingActionListener<T>(private val continuation: Continuation<T>) : ActionListener<T> {
-        override fun onFailure(e: Exception) {
-            continuation.resumeWith(Result.failure(e))
-        }
-
-        override fun onResponse(response: T) {
-            continuation.resumeWith(Result.success(response))
-        }
     }
 }
 
-data class SearchResults(val totalHits: Long, val results: List<SearchResult>)
+class SuspendingActionListener<T>(private val continuation: Continuation<T>) : ActionListener<T> {
+    override fun onFailure(e: Exception) {
+        continuation.resumeWith(Result.failure(e))
+    }
 
-data class GroupedSearchResults(val totalHits: Long, val results: Sequence<GroupSearchResult>)
-
-data class GroupSearchResult(val id: UUID, val occurrences: Long)
-
-data class SearchResult(val bookId: UUID, val chapterId: UUID, val mainPosition: Int, val paragraphs: List<SearchParagraph>)
-
-class SearchParagraph(val main: Boolean, val position: Int, val text: String, val classes: List<String>)
-
-data class DictionaryEntry(val word: String, val occurrences: Long)
+    override fun onResponse(response: T) {
+        continuation.resumeWith(Result.success(response))
+    }
+}

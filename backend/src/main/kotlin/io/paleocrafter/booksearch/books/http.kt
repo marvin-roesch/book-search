@@ -32,6 +32,37 @@ fun Application.books() {
     routing {
         route("/api/books") {
             authenticate {
+                data class Series(val name: String, val books: MutableList<Book>, val children: MutableMap<String, Series>) {
+                    fun toJson(): Map<String, Any> =
+                        mapOf(
+                            "name" to name,
+                            "books" to books.sortedBy { it.orderInSeries }.map { it.toJson() },
+                            "children" to children.map { it.value.toJson() }
+                        )
+                }
+
+                get("/series") {
+                    call.respond(
+                        transaction {
+                            val series = mutableMapOf<String, Series>()
+                            for (book in Book.all()) {
+                                val seriesHierarchy = book.series?.split("\\") ?: listOf("No Series")
+
+                                var destinationSeries: Series? = null
+                                var seriesMap = series
+                                for (seriesName in seriesHierarchy) {
+                                    val s = seriesMap.computeIfAbsent(seriesName) { Series(seriesName, mutableListOf(), mutableMapOf()) }
+                                    destinationSeries = s
+                                    seriesMap = s.children
+                                }
+
+                                destinationSeries?.books?.add(book)
+                            }
+                            series.map { it.value.toJson() }
+                        }
+                    )
+                }
+
                 bookSearch(index)
 
                 authorize({ it.canManageBooks }) {

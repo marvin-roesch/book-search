@@ -64,7 +64,7 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
         )
 }
 
-data class ResolvedChapter(val id: UUID, val bookId: UUID, val title: String, val content: Element)
+data class ResolvedChapter(val id: UUID, val bookId: UUID, val title: String, val position: Int, val content: Element)
 
 object Images : Table() {
     val book = reference("book", Books).primaryKey(0)
