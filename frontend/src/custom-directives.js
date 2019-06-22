@@ -6,29 +6,27 @@ export default {
   install(Vue) {
     hljs.registerLanguage('css', hljsCss);
     Vue.directive('closable', {
-      bind(el, binding, vnode) {
-        el.handleOutsideClick = (e) => {
+      bind(element, binding, vnode) {
+        element.handleOutsideClick = (e) => {
           e.stopPropagation();
           const { handler, exclude } = binding.value;
 
-          let clickedOnExcludedEl = false;
-          exclude.forEach((refName) => {
-            if (!clickedOnExcludedEl) {
-              const excludedEl = vnode.context.$refs[refName];
-              clickedOnExcludedEl = excludedEl.contains(e.target);
-            }
-          });
-          if (!el.contains(e.target) && !clickedOnExcludedEl) {
+          const clickedOnExcludedEl = (exclude || [])
+            .reduce(
+              (acc, refName) => acc || vnode.context.$refs[refName].contains(e.target),
+              false
+            );
+          if (!element.contains(e.target) && !clickedOnExcludedEl) {
             handler();
           }
         };
 
-        document.addEventListener('click', el.handleOutsideClick);
-        document.addEventListener('touchstart', el.handleOutsideClick);
+        document.addEventListener('click', element.handleOutsideClick);
+        document.addEventListener('touchstart', element.handleOutsideClick);
       },
-      unbind(el) {
-        document.removeEventListener('click', el.handleOutsideClick);
-        document.removeEventListener('touchstart', el.handleOutsideClick);
+      unbind(element) {
+        document.removeEventListener('click', element.handleOutsideClick);
+        document.removeEventListener('touchstart', element.handleOutsideClick);
       },
     });
 

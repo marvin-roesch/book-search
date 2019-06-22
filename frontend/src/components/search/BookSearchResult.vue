@@ -3,7 +3,7 @@
   <template slot="header">
   {{ book.title }} ({{ book.totalOccurrences }})
   </template>
-  <transition-group tag="div" class="search-result-list" name="fade-slide-up">
+  <transition-group tag="div" class="search-result-list" name="search-slide">
     <ChapterSearchResult
       :chapter="chapter"
       :query="query"

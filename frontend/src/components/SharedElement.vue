@@ -69,12 +69,16 @@ export default {
       const a = document.querySelector(`[data-clone="${this.id}"]`);
       const b = this.$el.firstChild;
       this.animating = true;
+      a.classList.add('shared-element-transition');
+      b.classList.add('shared-element-transition');
       this.transformer = ramjet.transform(a, b, {
         duration: this.duration,
         easing: this.easing,
         appendToBody: true,
         done: () => {
           cb(a, b);
+          a.classList.remove('shared-element-transition');
+          b.classList.remove('shared-element-transition');
           this.animating = false;
           this.$emit('animation-end');
         },

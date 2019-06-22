@@ -14,7 +14,7 @@
   }
 }
 
-.fade-slide-up {
+.search-slide {
   &-enter, &-enter-active {
     transition: all 0.8s;
     transition-delay: var(--delay);
@@ -32,5 +32,30 @@
   &-leave-to {
     opacity: 0;
     transform: translateX(30px);
+  }
+}
+
+.fade-slide-up {
+  &-enter, &-enter-active {
+    transition: all 0.8s;
+    transition-delay: var(--delay);
+  }
+
+  &-enter, &-leave-to {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  &-leave, &-leave-active {
+    transition: all 0.8s;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(30px);
+  }
+  to {
+    transform: translateY(0);
   }
 }

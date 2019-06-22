@@ -1,9 +1,9 @@
 <template>
 <div class="search-result-container grouped-search-results">
-  <transition name="fade-slide-up">
+  <transition name="search-slide">
     <h2 v-if="totalHits > 0">Displayed hits: {{ totalHits }}</h2>
   </transition>
-  <transition-group tag="div" class="search-result-list" name="fade-slide-up">
+  <transition-group tag="div" class="search-result-list" name="search-slide">
     <BookSearchResult
       :book="book"
       :query="query"

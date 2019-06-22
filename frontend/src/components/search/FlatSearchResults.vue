@@ -1,9 +1,9 @@
 <template>
 <div class="search-result-container">
-  <transition name="fade-slide-up">
+  <transition name="search-slide">
     <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
   </transition>
-  <transition-group tag="div" class="search-result-list" name="fade-slide-up"
+  <transition-group tag="div" class="search-result-list" name="search-slide"
                     @after-leave="infiniteId = (new Date()).getTime()">
     <search-result
       :result="result"

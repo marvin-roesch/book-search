@@ -21,7 +21,7 @@
           class="query-panel-filter-container"
           v-closable="{
             exclude: ['filter-trigger'],
-            handler: () => filterVisible = false
+            handler() { filterVisible = false; }
           }"
           v-if="filterVisible">
           <book-filter :root="true" :series="series" @filtered="$emit('filter', $event)">

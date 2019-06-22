@@ -28,6 +28,7 @@ export default {
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 
   h2 {
     font-weight: 400;

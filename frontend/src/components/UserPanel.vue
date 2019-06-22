@@ -12,7 +12,7 @@
         class="user-panel-menu-content"
         v-closable="{
         exclude: ['trigger'],
-        handler: () => menuVisible = false
+        handler() { menuVisible = false; }
       }"
         v-if="menuVisible">
         <li>

@@ -3,7 +3,7 @@
   <template slot="header">
   {{ chapter.title }} ({{ chapter.totalOccurrences }})
   </template>
-  <transition-group tag="div" class="search-result-list" name="fade-slide-up">
+  <transition-group tag="div" class="search-result-list" name="search-slide">
     <search-result
       :result="result" :display-metadata="false"
       v-for="(result, index) in results" :key="index">
