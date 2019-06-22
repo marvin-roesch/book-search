@@ -3,7 +3,13 @@
   <div class="chapter-header">
     <div class="chapter-title">
       <h2>{{ bookTitle }} - {{ title }}</h2>
-      <XIcon @click.prevent.stop="close"></XIcon>
+      <Share2Icon
+        class="chapter-header-share-icon"
+        :width="20"
+        :height="20"
+        @click.prevent.stop="share">
+      </Share2Icon>
+      <XIcon class="chapter-header-close-icon" @click.prevent.stop="close"></XIcon>
     </div>
   </div>
   <div class="chapter-content-container" @click.self.stop="close">
@@ -17,13 +23,13 @@
 
 <script>
 import Card from '@/components/Card.vue';
-import { XIcon } from 'vue-feather-icons';
+import { Share2Icon, XIcon } from 'vue-feather-icons';
 import BookText from '@/components/BookText.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 
 export default {
   name: 'chapter-overlay',
-  components: { BookText, XIcon, Card, LoadingSpinner },
+  components: { Share2Icon, BookText, XIcon, Card, LoadingSpinner },
   props: {
     id: String,
     query: String,
@@ -71,6 +77,20 @@ export default {
     close() {
       this.$emit('close');
     },
+    share() {
+      const baseUrl = window.location.origin;
+      const link = `${baseUrl}/chapters/${this.id}?q=${encodeURIComponent(this.query)}`;
+
+      const el = document.createElement('textarea');
+      el.value = link;
+      document.body.appendChild(el);
+      el.select();
+
+      document.execCommand('copy');
+
+      document.body.removeChild(el);
+      this.$notifications.success('A link to this chapter has been copied to your clipboard!');
+    },
   },
 };
 </script>
@@ -91,6 +111,9 @@ export default {
 
   &.fade-slide-up-enter-active, &.fade-slide-up-leave-active {
     overflow-y: hidden;
+  }
+
+  &-link {
   }
 
   &-header {
@@ -132,11 +155,16 @@ export default {
         margin: 0;
         padding: 0;
       }
+    }
 
-      .feather {
-        margin-left: auto;
-        cursor: pointer;
-      }
+    &-share-icon {
+      margin-left: 0.5rem;
+      cursor: pointer;
+    }
+
+    &-close-icon {
+      margin-left: auto;
+      cursor: pointer;
     }
   }
 

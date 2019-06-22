@@ -1,25 +1,54 @@
 <template>
 <div class="chapter">
-  <div class="chapter-content" v-html="content"></div>
+  <div class="chapter-header">
+    <UserPanel></UserPanel>
+    <div class="chapter-title">
+      <h2>{{ bookTitle }} - {{ title }}</h2>
+    </div>
+  </div>
+  <div class="chapter-content-container" @click.self.stop="close">
+    <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
+    <Card class="chapter-content" v-else>
+      <BookText :content="content" ref="text"></BookText>
+    </Card>
+  </div>
 </div>
 </template>
 
 <script>
+import Card from '@/components/Card.vue';
+import BookText from '@/components/BookText.vue';
+import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
+import UserPanel from '@/components/UserPanel.vue';
+
 export default {
   name: 'chapter',
+  components: { UserPanel, BookText, Card, LoadingSpinner },
   data() {
     return {
+      bookTitle: '',
       title: '',
       content: '',
+      contentLoaded: false,
     };
   },
   async mounted() {
+    const query = this.$route.query.q;
     const { id } = this.$route.params;
     try {
-      const { data: { title, content } } = await this.$api.get(`/books/chapter/${id}`);
+      const { data: { book, chapter, content } } = await this.$api.post(
+        `/books/chapters/${id}/search`,
+        {
+          query,
+          seriesFilter: null,
+          bookFilter: null,
+        },
+      );
 
-      this.title = title;
+      this.bookTitle = book.title;
+      this.title = chapter.title;
       this.content = content;
+      this.contentLoaded = true;
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -30,86 +59,90 @@ export default {
 <style scoped lang="scss">
 .chapter {
   box-sizing: border-box;
-  background: white;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
-  padding: 4rem;
-  font-family: 'Lora', serif;
-  margin: 1rem 0;
-  position: relative;
-  width: 50%;
-  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
 
-  @media (max-width: 960px) {
+  &-header {
+    box-sizing: border-box;
     width: 100%;
-  }
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: white;
+    display: flex;
+    align-items: center;
+    z-index: 2000;
+    cursor: initial;
+    padding: 0 1rem;
 
-  h2 {
-    position: relative;
-    margin: 0;
-    padding: 0;
-    font-family: 'Nunito Sans', sans-serif;
-    font-size: 1.25rem;
-    z-index: 1001;
-    text-align: center;
-  }
+    .user-panel {
+      position: absolute;
+      left: 2rem;
 
-  p {
-    margin: 0.5rem 0;
-
-    &:first-child {
-      margin-top: 0;
+      @media (max-width: 1200px) {
+        position: relative;
+        left: 0;
+      }
     }
 
-    &:last-child {
-      margin-bottom: 0;
+    .chapter-title {
+      box-sizing: border-box;
+      position: relative;
+      margin: 0 auto;
+      padding: 1rem 0;
+      font-size: 1.25rem;
+      z-index: 1001;
+      width: 50%;
+      display: flex;
+      align-items: center;
+
+      @media (max-width: 1200px) {
+        width: 70%;
+      }
+
+      @media (max-width: 960px) {
+        width: 100%;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+        margin: 0;
+        padding: 0;
+      }
+    }
+
+    &-share-icon {
+      margin-left: 0.5rem;
+      cursor: pointer;
+    }
+
+    &-close-icon {
+      margin-left: auto;
+      cursor: pointer;
     }
   }
 
-  .chapterText {
-    text-align: justify;
-    text-indent: 1rem;
-  }
+  &-content {
+    width: 50%;
+    margin: 0 auto;
+    cursor: initial;
 
-  img {
-    display: inline-block;
-    max-width: 100%;
-  }
-
-  .centeredImage {
-    text-align: center;
-
-    img {
-      max-width: 80%;
+    @media (max-width: 1200px) {
+      width: 70%;
     }
-  }
 
-  .epigraphText {
-    width: 60%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: justify;
-  }
+    @media (max-width: 960px) {
+      width: 100%;
+    }
 
-  .epigraphCitation {
-    width: 60%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: right;
-  }
-
-  .italic {
-    font-style: italic;
-  }
-
-  .bold {
-    font-weight: bold;
-  }
-
-  .reset {
-    font-style: normal;
-    font-weight: normal;
+    &-container {
+      padding: 5rem 1rem 1rem;
+    }
   }
 }
 </style>

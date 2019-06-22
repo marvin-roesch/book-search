@@ -69,8 +69,6 @@ fun Application.books() {
                     bookManagement(index)
                 }
 
-                chapterView()
-
                 get("/{id}/images/{name}") {
                     val id = UUID.fromString(call.parameters["id"])
                     val name = call.parameters["name"] ?: return@get call.respond(

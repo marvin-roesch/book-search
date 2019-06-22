@@ -94,7 +94,7 @@ const router = new Router({
       meta: { requiresAuth: true },
     },
     {
-      path: '/chapter/:id',
+      path: '/chapters/:id',
       name: 'chapter',
       component: Chapter,
       meta: { requiresAuth: true },
