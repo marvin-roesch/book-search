@@ -52,10 +52,11 @@ html, body {
 
 .notification-container {
   width: 25vw;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 50%;
   margin-left: -12.5vw;
+  z-index: 4000;
 
   @media (max-width: 1200px) {
     width: 40vw;
@@ -75,7 +76,7 @@ html, body {
   align-items: stretch;
 
   .notification {
-    z-index: 3001;
+    z-index: 4001;
   }
 }
 
@@ -84,7 +85,7 @@ html, body {
     position: absolute;
     left: 0;
     right: 0;
-    z-index: 3000;
+    z-index: 4000;
   }
 
   &-enter, &-leave-to {

@@ -1,5 +1,5 @@
 <template>
-<div class="chapter">
+<div class="chapter" ref="container">
   <div class="chapter-header">
     <div class="chapter-title">
       <h2>{{ bookTitle }} - {{ title }}</h2>
@@ -9,7 +9,7 @@
   <div class="chapter-content-container" @click.self.stop="close">
     <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
     <Card class="chapter-content" v-else>
-      <BookText :content="content"></BookText>
+      <BookText :content="content" ref="text"></BookText>
     </Card>
   </div>
 </div>
@@ -29,6 +29,7 @@ export default {
     query: String,
     bookTitle: String,
     title: String,
+    position: Number,
   },
   data() {
     return {
@@ -49,6 +50,19 @@ export default {
 
       this.content = content;
       this.contentLoaded = true;
+
+      if (this.position !== undefined) {
+        this.$nextTick(() => {
+          const paragraphs = this.$refs.text.$el.querySelectorAll('p');
+
+          if (this.position >= paragraphs.length) {
+            return;
+          }
+
+          const paragraph = paragraphs[this.position];
+          this.$refs.container.scrollTop = paragraph.offsetTop - 70;
+        });
+      }
     } catch (error) {
       this.$handleApiError(error);
     }

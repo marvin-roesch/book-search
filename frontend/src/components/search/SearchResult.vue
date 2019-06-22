@@ -27,6 +27,7 @@
       :query="query"
       :book-title="result.book.title"
       :title="result.chapter.title"
+      :position="result.mainParagraph.position"
       @close="showContent = false"
       v-if="showContent">
     </ChapterOverlay>
