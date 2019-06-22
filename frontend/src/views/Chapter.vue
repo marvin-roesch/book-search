@@ -80,6 +80,11 @@ export default {
     cursor: initial;
     padding: 0 1rem;
 
+    @media (max-width: 1200px) {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
     .user-panel {
       position: absolute;
       left: 2rem;
@@ -87,6 +92,12 @@ export default {
       @media (max-width: 1200px) {
         position: relative;
         left: 0;
+      }
+
+      @media (max-width: 960px) {
+        top: 0;
+        left: 0;
+        padding-left: 0;
       }
     }
 
@@ -103,6 +114,7 @@ export default {
 
       @media (max-width: 1200px) {
         width: 70%;
+        padding-top: 0;
       }
 
       @media (max-width: 960px) {
@@ -142,6 +154,10 @@ export default {
 
     &-container {
       padding: 5rem 1rem 1rem;
+
+      @media (max-width: 1200px) {
+        padding-top: 8rem;
+      }
     }
   }
 }

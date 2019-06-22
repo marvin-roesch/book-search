@@ -1,5 +1,5 @@
 <template>
-<Expandable @expanded="onExpand" @closed="onClose">
+<Expandable class="book-search-result" @expanded="onExpand" @closed="onClose">
   <template slot="header">
   <span class="book-search-result-title">
     {{ book.title }}
@@ -113,6 +113,21 @@ export default {
   &-title {
     font-size: 1.25rem;
     font-weight: bold;
+  }
+
+  .expandable-content .expandable:first-child > .expandable-header {
+    padding-top: 0;
+  }
+
+  @media (max-width: 960px) {
+    .expandable-header {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .expandable-content {
+      padding: 0;
+    }
   }
 }
 </style>
