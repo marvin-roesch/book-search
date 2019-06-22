@@ -19,6 +19,7 @@ import org.elasticsearch.client.ResponseException
 import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
+import org.elasticsearch.client.indices.CreateIndexResponse
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.indices.PutMappingRequest
 import org.elasticsearch.common.xcontent.XContentType
@@ -172,35 +173,31 @@ class BookIndex(vararg hosts: HttpHost) {
         if (!suspendCoroutine<Boolean> {
                 client.indices().existsAsync(GetIndexRequest("chapters"), RequestOptions.DEFAULT, SuspendingActionListener(it))
             }) {
-            suspendCoroutine {
+            suspendCoroutine<Any> {
                 client.indices().createAsync(
                     CreateIndexRequest("chapters"),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
-            }
-            suspendCoroutine {
+
                 client.indices().closeAsync(
                     CloseIndexRequest("chapters"),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
-            }
-            suspendCoroutine {
+
                 client.indices().putSettingsAsync(
                     UpdateSettingsRequest("chapters").settings(indexSettings, XContentType.JSON),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
-            }
-            suspendCoroutine {
+
                 client.indices().putMappingAsync(
                     PutMappingRequest("chapters").source(chapterMapping, XContentType.JSON),
                     RequestOptions.DEFAULT,
                     SuspendingActionListener(it)
                 )
-            }
-            suspendCoroutine {
+
                 client.indices().openAsync(
                     OpenIndexRequest("chapters"),
                     RequestOptions.DEFAULT,
@@ -214,7 +211,7 @@ class BookIndex(vararg hosts: HttpHost) {
         if (suspendCoroutine {
                 client.indices().existsAsync(GetIndexRequest("chapters"), RequestOptions.DEFAULT, SuspendingActionListener(it))
             }) {
-            suspendCoroutine {
+            suspendCoroutine<Any> {
                 client.indices().deleteAsync(DeleteIndexRequest("chapters"), RequestOptions.DEFAULT, SuspendingActionListener(it))
             }
         }
@@ -239,7 +236,7 @@ class BookIndex(vararg hosts: HttpHost) {
                 )
             ))
         }
-        suspendCoroutine {
+        suspendCoroutine<Any> {
             client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
         }
     }
@@ -253,7 +250,7 @@ class BookIndex(vararg hosts: HttpHost) {
     suspend fun delete(id: UUID) {
         ensureElasticIndex()
 
-        suspendCoroutine {
+        suspendCoroutine<Any> {
             client.deleteByQueryAsync(
                 DeleteByQueryRequest("chapters").setQuery(QueryBuilders.termQuery("book", id.toString())),
                 RequestOptions.DEFAULT,

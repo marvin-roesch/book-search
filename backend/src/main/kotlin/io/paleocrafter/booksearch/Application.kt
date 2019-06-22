@@ -16,6 +16,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
 import io.ktor.response.respond
 import org.jetbrains.exposed.sql.Database
+import java.util.concurrent.TimeUnit
 
 fun Application.db() {
     val connection = environment.config.propertyOrNull("db.connection")?.getString()
@@ -26,7 +27,7 @@ fun Application.db() {
     val config = HikariConfig()
     config.jdbcUrl = connection
     config.driverClassName = driver
-    config.maximumPoolSize = 3
+    config.maxLifetime = TimeUnit.MINUTES.toMillis(10)
     config.isAutoCommit = false
     config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
 
