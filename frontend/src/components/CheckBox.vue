@@ -60,6 +60,8 @@ export default {
   }
 
   .checkbox-input {
+    margin: 0 0.125rem 0 0;
+
     & + .checkbox-label:hover {
       cursor: pointer;
     }

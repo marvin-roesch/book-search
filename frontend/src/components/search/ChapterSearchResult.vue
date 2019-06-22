@@ -1,92 +1,70 @@
 <template>
-<Expandable @expanded="onExpand" @closed="onClose">
-  <template slot="header">
-  {{ chapter.title }} ({{ chapter.totalOccurrences }})
-  </template>
-  <transition-group tag="div" class="search-result-list" name="search-slide">
-    <search-result
-      :result="result" :display-metadata="false"
-      v-for="(result, index) in results" :key="index">
-    </search-result>
-  </transition-group>
-  <ErrorMessage v-if="errorMessage !== null" :message="errorMessage"></ErrorMessage>
-  <LoadingSpinner v-if="!resultsLoaded && errorMessage === null"></LoadingSpinner>
-</Expandable>
+<div class="chapter-end-result" @click="showContent = true">
+  <h2>{{ result.book.title }} - {{ result.chapter.title }}</h2>
+  <transition
+    name="fade-slide-up"
+    @after-enter="addBodyClass"
+    @leave="removeBodyClass">
+    <ChapterOverlay
+      :id="result.chapter.id"
+      :query="query"
+      :book-title="result.book.title"
+      :title="result.chapter.title"
+      @close="showContent = false"
+      v-if="showContent">
+    </ChapterOverlay>
+  </transition>
+</div>
 </template>
 
 <script>
-import axios from 'axios';
-import Expandable from '@/components/Expandable.vue';
-import ErrorMessage from '@/components/search/ErrorCard.vue';
-import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
-import SearchResult from '@/components/search/SearchResult.vue';
+import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 
 export default {
-  name: 'ChapterSearchResult',
-  components: { SearchResult, ErrorMessage, Expandable, LoadingSpinner },
+  name: 'chapter-search-result',
+  components: { ChapterOverlay },
   props: {
-    chapter: Object,
     query: String,
-    seriesFilter: Array,
-    bookFilter: Array,
+    result: Object,
+    displayBook: {
+      type: Boolean,
+      default: true,
+    },
   },
   data() {
     return {
-      results: [],
-      resultsLoaded: false,
-      cancelToken: null,
-      errorMessage: null,
+      showContent: false,
     };
   },
   methods: {
-    async onExpand() {
-      if (this.cancelToken !== null) {
-        this.cancelToken.cancel();
-      }
-      this.cancelToken = axios.CancelToken.source();
-      this.resultsLoaded = false;
-
-      try {
-        const { data: { results } } = await this.$api.post(
-          `/books/chapters/${this.chapter.id}/paragraph-search`,
-          {
-            query: this.query,
-            seriesFilter: this.seriesFilter,
-            bookFilter: this.bookFilter,
-          },
-          {
-            cancelToken: this.cancelToken.token,
-          },
-        );
-
-        this.results = results.map(({ paragraphs }) => {
-          const mainParagraph = paragraphs.find(p => p.main);
-          return {
-            mainParagraph,
-            prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
-            nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
-            showSiblings: false,
-          };
-        });
-      } catch (error) {
-        if (!axios.isCancel(error)) {
-          this.errorMessage = this.$getApiError(error);
-          if (this.errorMessage === null) {
-            this.errorMessage = 'An unknown error occurred, please report this!';
-          }
-        }
-      }
-
-      this.resultsLoaded = true;
+    addBodyClass() {
+      document.body.classList.add('chapter-preview');
     },
-    async onClose() {
-      this.results = [];
-      this.errorMessage = null;
-      if (this.cancelToken !== null) {
-        this.cancelToken.cancel();
-        this.cancelToken = null;
-      }
+    removeBodyClass() {
+      document.body.classList.remove('chapter-preview');
     },
   },
 };
 </script>
+
+<style lang="scss">
+.chapter-end-result {
+  box-sizing: border-box;
+  background: white;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin: 1rem 0 0;
+  position: relative;
+  cursor: pointer;
+
+  h2 {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    font-size: 1.25rem;
+    z-index: 1001;
+  }
+}
+</style>

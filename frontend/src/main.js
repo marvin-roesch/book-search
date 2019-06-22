@@ -5,10 +5,12 @@ import router from '@/router';
 import store from '@/store';
 import Api from '@/api';
 import CustomDirectives from '@/custom-directives';
+import InfiniteScroll from 'vue-infinite-scroll';
 
 Vue.use(Api);
 Vue.use(CustomDirectives);
 Vue.use(shadow);
+Vue.use(InfiniteScroll);
 
 Vue.config.productionTip = false;
 

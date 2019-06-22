@@ -2,7 +2,7 @@
 <div :class="{ 'search-result': true, 'search-result-with-siblings': showSiblings }"
      @click="toggleSiblings">
   <h2 v-if="displayMetadata">{{ result.book.title }} - {{ result.chapter.title }}</h2>
-  <BidirectionalExpandable :expanded="showSiblings" :visible-height="24">
+  <BidirectionalExpandable class="book-text" :expanded="showSiblings" :visible-height="24">
     <template slot="start">
     <p :class="paragraph.classes" v-html="paragraph.text"
        v-for="paragraph in result.prevParagraphs" :key="paragraph.position">
@@ -13,23 +13,39 @@
     <p :class="paragraph.classes" v-html="paragraph.text"
        v-for="paragraph in result.nextParagraphs" :key="paragraph.position">
     </p>
-    <router-link :to="{name: 'chapter', params: { id: result.chapter.id }}" v-if="displayMetadata">
+    <a href="#" @click.prevent.stop="showContent = true" v-if="displayMetadata">
       Read Chapter
-    </router-link>
+    </a>
     </template>
   </BidirectionalExpandable>
+  <transition
+    name="fade-slide-up"
+    @after-enter="addBodyClass"
+    @leave="removeBodyClass">
+    <ChapterOverlay
+      :id="result.chapter.id"
+      :query="query"
+      :book-title="result.book.title"
+      :title="result.chapter.title"
+      @close="showContent = false"
+      v-if="showContent">
+    </ChapterOverlay>
+  </transition>
 </div>
 </template>
 
 <script>
 import BidirectionalExpandable from '@/components/BidirectionalExpandable.vue';
+import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 
 export default {
   name: 'search-result',
   components: {
+    ChapterOverlay,
     BidirectionalExpandable,
   },
   props: {
+    query: String,
     result: Object,
     displayMetadata: {
       type: Boolean,
@@ -39,6 +55,7 @@ export default {
   data() {
     return {
       showSiblings: false,
+      showContent: false,
     };
   },
   methods: {
@@ -46,6 +63,12 @@ export default {
       if (window.getSelection().type !== 'Range') {
         this.showSiblings = !this.showSiblings;
       }
+    },
+    addBodyClass() {
+      document.body.classList.add('chapter-preview');
+    },
+    removeBodyClass() {
+      document.body.classList.remove('chapter-preview');
     },
   },
 };
@@ -59,74 +82,18 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
   padding: 1rem;
-  font-family: 'Lora', serif;
   margin: 1rem 0;
   position: relative;
   cursor: pointer;
 
   h2 {
-    position: relative;
     margin: 0;
-    padding: 0;
-    font-family: 'Nunito Sans', sans-serif;
-    font-size: 1.25rem;
-    z-index: 1001;
   }
 
-  p {
-    margin: 0.5rem 0;
-
-    &:first-child {
-      margin-top: 0;
+  & > .book-text {
+    .chapterText {
+      text-indent: 0;
     }
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  .chapterText {
-    text-align: justify;
-  }
-
-  img {
-    display: inline-block;
-    max-width: 100%;
-  }
-
-  .centeredImage {
-    text-align: center;
-
-    img {
-      max-width: 80%;
-    }
-  }
-
-  .epigraphText {
-    width: 60%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: justify;
-  }
-
-  .epigraphCitation {
-    width: 60%;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: right;
-  }
-
-  .italic {
-    font-style: italic;
-  }
-
-  .bold {
-    font-weight: bold;
-  }
-
-  .reset {
-    font-style: normal;
-    font-weight: normal;
   }
 }
 </style>

@@ -9,6 +9,7 @@
       :query="query"
       :series-filter="seriesFilter"
       :book-filter="bookFilter"
+      :chapter-scope="chapterScope"
       v-for="book in books" :key="book.id">
     </BookSearchResult>
   </transition-group>
@@ -23,6 +24,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 import ErrorCard from '@/components/search/ErrorCard.vue';
 import EmptyCard from '@/components/search/EmptyCard.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
@@ -40,6 +42,7 @@ export default {
     query: String,
     seriesFilter: Array,
     bookFilter: Array,
+    chapterScope: Boolean,
   },
   data() {
     return {
@@ -47,6 +50,7 @@ export default {
       totalHits: 0,
       errorMessage: null,
       loading: false,
+      cancelToken: null,
     };
   },
   mounted() {
@@ -60,20 +64,36 @@ export default {
     },
     async search() {
       this.loading = true;
+      if (this.cancelToken !== null) {
+        this.cancelToken.cancel();
+      }
+      this.cancelToken = axios.CancelToken.source();
+
       try {
+        const endpoint = this.chapterScope ? 'chapter' : 'paragraph';
         const {
           data: {
             totalHits, results,
           },
-        } = await this.$api.post('/books/paragraph-search/grouped', {
-          query: this.query,
-          seriesFilter: this.seriesFilter,
-          bookFilter: this.bookFilter,
-        });
+        } = await this.$api.post(
+          `/books/${endpoint}-search/grouped`,
+          {
+            query: this.query,
+            seriesFilter: this.seriesFilter,
+            bookFilter: this.bookFilter,
+          },
+          {
+            cancelToken: this.cancelToken.token,
+          },
+        );
 
         this.books = results;
         this.totalHits = totalHits;
       } catch (error) {
+        if (axios.isCancel(error)) {
+          return;
+        }
+
         this.errorMessage = this.$getApiError(error);
         if (this.errorMessage === null) {
           this.errorMessage = 'An unknown error has occurred, please report this!';
@@ -92,13 +112,16 @@ export default {
     bookFilter() {
       this.reset();
     },
+    chapterScope() {
+      this.reset();
+    },
   },
 };
 </script>
 
 <style lang="scss">
 .grouped-search-results {
-  .search-result {
+  .search-result, .chapter-end-result:first-child {
     margin-top: 0;
   }
 }

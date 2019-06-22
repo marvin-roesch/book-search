@@ -1,6 +1,7 @@
 import hljs from 'highlight.js/lib/highlight';
 import hljsCss from 'highlight.js/lib/languages/css';
 import store from '@/store';
+import axios from 'axios';
 
 export default {
   install(Vue) {
@@ -76,6 +77,10 @@ export default {
     Vue.prototype.$getApiError = getApiError;
 
     Vue.prototype.$handleApiError = (error) => {
+      if (axios.isCancel(error)) {
+        return;
+      }
+
       const message = getApiError(error);
       if (message !== null) {
         store.dispatch(

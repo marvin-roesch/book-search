@@ -1,16 +1,35 @@
 <template>
 <Expandable @expanded="onExpand" @closed="onClose">
   <template slot="header">
-  {{ book.title }} ({{ book.totalOccurrences }})
+  <span class="book-search-result-title">
+    {{ book.title }}
+    <small>({{ book.totalOccurrences }})</small>
+  </span>
   </template>
-  <transition-group tag="div" class="search-result-list" name="search-slide">
+  <transition-group
+    tag="div"
+    class="search-result-list"
+    name="search-slide"
+    v-if="chapterScope">
     <ChapterSearchResult
+      :result="{ book, chapter }"
+      :query="query"
+      v-for="chapter in chapters" :key="chapter.id">
+    </ChapterSearchResult>
+  </transition-group>
+  <transition-group
+    tag="div"
+    class="search-result-list"
+    name="search-slide"
+    v-else>
+    <ChapterSubResult
+      :book-title="book.title"
       :chapter="chapter"
       :query="query"
       :series-filter="seriesFilter"
       :book-filter="bookFilter"
       v-for="chapter in chapters" :key="chapter.id">
-    </ChapterSearchResult>
+    </ChapterSubResult>
   </transition-group>
   <ErrorMessage v-if="errorMessage !== null" :message="errorMessage"></ErrorMessage>
   <LoadingSpinner v-if="!chaptersLoaded && errorMessage === null"></LoadingSpinner>
@@ -20,18 +39,20 @@
 <script>
 import axios from 'axios';
 import Expandable from '@/components/Expandable.vue';
-import ChapterSearchResult from '@/components/search/ChapterSearchResult.vue';
+import ChapterSubResult from '@/components/search/ChapterSubResult.vue';
 import ErrorMessage from '@/components/search/ErrorCard.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
+import ChapterSearchResult from '@/components/search/ChapterSearchResult.vue';
 
 export default {
   name: 'BookSearchResult',
-  components: { ErrorMessage, ChapterSearchResult, Expandable, LoadingSpinner },
+  components: { ChapterSearchResult, ErrorMessage, ChapterSubResult, Expandable, LoadingSpinner },
   props: {
     book: Object,
     query: String,
     seriesFilter: Array,
     bookFilter: Array,
+    chapterScope: Boolean,
   },
   data() {
     return {
@@ -50,14 +71,17 @@ export default {
       this.chaptersLoaded = false;
 
       try {
+        const endpoint = this.chapterScope ? 'chapter' : 'paragraph';
         const { data: { results } } = await this.$api.post(
-          `/books/${this.book.id}/paragraph-search/grouped`,
+          `/books/${this.book.id}/${endpoint}-search/grouped`,
           {
             query: this.query,
             seriesFilter: this.seriesFilter,
             bookFilter: this.bookFilter,
           },
-          {},
+          {
+            cancelToken: this.cancelToken.token,
+          },
         );
 
         this.chapters = results;
@@ -83,3 +107,12 @@ export default {
   },
 };
 </script>
+
+<style lang="scss">
+.book-search-result {
+  &-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+}
+</style>

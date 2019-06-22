@@ -3,126 +3,212 @@
   <transition name="search-slide">
     <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
   </transition>
-  <transition-group tag="div" class="search-result-list" name="search-slide"
-                    @after-leave="infiniteId = (new Date()).getTime()">
+  <transition-group
+    v-infinite-scroll="loadMore"
+    infinite-scroll-disabled="mayNotLoad"
+    infinite-scroll-distance="100"
+    infinite-scroll-listen-for-event="reset-infinite"
+    tag="div" class="search-result-list" name="search-slide"
+    @after-leave="reset"
+    v-if="chapterScope">
+    <ChapterSearchResult
+      :query="query"
+      :result="result"
+      :style="{'--delay': `${result.delay}ms`}"
+      v-for="(result, index) in results"
+      :key="`$route.fullPath` + index">
+    </ChapterSearchResult>
+  </transition-group>
+  <transition-group
+    v-infinite-scroll="loadMore"
+    infinite-scroll-disabled="mayNotLoad"
+    infinite-scroll-distance="100"
+    infinite-scroll-listen-for-event="reset-infinite"
+    tag="div" class="search-result-list" name="search-slide"
+    @after-leave="reset"
+    v-else>
     <search-result
+      :query="query"
       :result="result"
       :style="{'--delay': `${result.delay}ms`}"
       v-for="(result, index) in results"
       :key="`$route.fullPath` + index">
     </search-result>
   </transition-group>
-  <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
-    <LoadingSpinner slot="spinner"></LoadingSpinner>
-    <EmptyCard slot="no-results"></EmptyCard>
-    <div slot="no-more"></div>
-    <ErrorCard
-      slot="error"
-      slot-scope="{ trigger }"
-      :message="errorMessage"
-      @retry="trigger">
-    </ErrorCard>
-  </infinite-loading>
+  <LoadingSpinner v-if="loading"></LoadingSpinner>
+  <EmptyCard v-if="noMore && results.length === 0"></EmptyCard>
+  <ErrorCard
+    :message="errorMessage"
+    @retry="reset"
+    v-if="errorMessage !== null">
+  </ErrorCard>
 </div>
 </template>
 
 <script>
-import InfiniteLoading from 'vue-infinite-loading';
+import axios from 'axios';
 import SearchResult from '@/components/search/SearchResult.vue';
 import ErrorCard from '@/components/search/ErrorCard.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import EmptyCard from '@/components/search/EmptyCard.vue';
+import ChapterSearchResult from '@/components/search/ChapterSearchResult.vue';
 
 export default {
   name: 'flat-search-results',
   components: {
+    ChapterSearchResult,
     EmptyCard,
     LoadingSpinner,
     ErrorCard,
     SearchResult,
-    InfiniteLoading,
   },
   props: {
     query: String,
     seriesFilter: Array,
     bookFilter: Array,
+    chapterScope: Boolean,
   },
   data() {
     return {
       results: [],
       page: 0,
       totalHits: 0,
-      infiniteId: (new Date()).getTime(),
       resultDelay: 0,
       lastResult: new Date(),
-      errorMessage: '',
+      errorMessage: null,
+      cancelToken: null,
+      loading: false,
+      noMore: false,
     };
   },
+  computed: {
+    mayNotLoad() {
+      return this.loading || this.noMore || this.errorMessage !== null;
+    },
+  },
   methods: {
-    reset() {
+    async reset() {
       this.page = 0;
       this.results = [];
-      this.infiniteId = (new Date()).getTime();
       this.resultDelay = 0;
       this.totalHits = 0;
       this.lastResult = new Date();
+      this.loading = false;
+      this.noMore = false;
+      this.errorMessage = null;
+      this.$emit('reset-infinite');
     },
-    async search() {
-      try {
-        const { data: { results, totalHits } } = await this.$api.post('/books/paragraph-search', {
-          query: this.query,
-          page: this.page,
-          seriesFilter: this.seriesFilter,
-          bookFilter: this.bookFilter,
-        });
-        const mapped = results.map(({ book, chapter, paragraphs }) => {
-          const mainParagraph = paragraphs.find(p => p.main);
-
-          const resultDate = new Date();
-          if ((resultDate.getTime() - this.lastResult.getTime()) <= 500) {
-            this.resultDelay += 100;
-          } else {
-            this.resultDelay = 0;
-          }
-
-          this.lastResult = resultDate;
-
-          return {
-            book,
-            chapter,
-            mainParagraph,
-            prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
-            nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
-            showSiblings: false,
-            delay: this.resultDelay,
-          };
-        });
-
-        this.results.push(
-          ...mapped,
-        );
-        this.totalHits = totalHits;
-
-        return mapped.length > 0;
-      } catch (error) {
-        throw error;
-      }
-    },
-    async infiniteHandler($state) {
+    async loadMore() {
       try {
         if (await this.search()) {
           this.page += 1;
-          $state.loaded();
         } else {
-          $state.complete();
+          this.noMore = true;
         }
+        this.loading = false;
       } catch (error) {
-        $state.error();
+        if (axios.isCancel(error)) {
+          return;
+        }
+
         this.errorMessage = this.$getApiError(error);
         if (this.errorMessage === null) {
           this.errorMessage = 'An unknown error has occurred, please report this!';
         }
       }
+    },
+    async search() {
+      this.loading = true;
+      if (this.cancelToken !== null) {
+        this.cancelToken.cancel();
+      }
+      this.cancelToken = axios.CancelToken.source();
+
+      if (this.chapterScope) {
+        return this.searchChapters();
+      }
+
+      return this.searchParagraphs();
+    },
+    async searchParagraphs() {
+      const { data: { results, totalHits } } = await this.$api.post(
+        '/books/paragraph-search',
+        {
+          query: this.query,
+          page: this.page,
+          seriesFilter: this.seriesFilter,
+          bookFilter: this.bookFilter,
+        },
+        {
+          cancelToken: this.cancelToken.token,
+        },
+      );
+      const mapped = results.map(({ book, chapter, paragraphs }) => {
+        const mainParagraph = paragraphs.find(p => p.main);
+
+        const resultDate = new Date();
+        if ((resultDate.getTime() - this.lastResult.getTime()) <= 500) {
+          this.resultDelay += 100;
+        } else {
+          this.resultDelay = 0;
+        }
+
+        this.lastResult = resultDate;
+
+        return {
+          book,
+          chapter,
+          mainParagraph,
+          prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
+          nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
+          showSiblings: false,
+          delay: this.resultDelay,
+        };
+      });
+
+      this.results.push(
+        ...mapped,
+      );
+      this.totalHits = totalHits;
+
+      return mapped.length > 0;
+    },
+    async searchChapters() {
+      const { data: { results, totalHits } } = await this.$api.post(
+        '/books/chapter-search',
+        {
+          query: this.query,
+          page: this.page,
+          seriesFilter: this.seriesFilter,
+          bookFilter: this.bookFilter,
+        },
+        {
+          cancelToken: this.cancelToken.token,
+        },
+      );
+      const mapped = results.map(({ book, chapter }) => {
+        const resultDate = new Date();
+        if ((resultDate.getTime() - this.lastResult.getTime()) <= 500) {
+          this.resultDelay += 100;
+        } else {
+          this.resultDelay = 0;
+        }
+
+        this.lastResult = resultDate;
+
+        return {
+          book,
+          chapter,
+          delay: this.resultDelay,
+        };
+      });
+
+      this.results.push(
+        ...mapped,
+      );
+      this.totalHits = totalHits;
+
+      return mapped.length > 0;
     },
   },
   watch: {
@@ -133,6 +219,9 @@ export default {
       this.reset();
     },
     bookFilter() {
+      this.reset();
+    },
+    chapterScope() {
       this.reset();
     },
   },

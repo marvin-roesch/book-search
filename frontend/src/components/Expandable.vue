@@ -9,6 +9,7 @@
       <slot></slot>
     </div>
   </collapse-transition>
+  <slot name="footer"></slot>
 </div>
 </template>
 

@@ -1,49 +1,20 @@
 <template>
-<div class="chapter">
-  <div class="chapter-content" v-html="content"></div>
+<div class="book-text" v-html="content">
 </div>
 </template>
 
 <script>
 export default {
-  name: 'chapter',
-  data() {
-    return {
-      title: '',
-      content: '',
-    };
-  },
-  async mounted() {
-    const { id } = this.$route.params;
-    try {
-      const { data: { title, content } } = await this.$api.get(`/books/chapter/${id}`);
-
-      this.title = title;
-      this.content = content;
-    } catch (error) {
-      this.$handleApiError(error);
-    }
+  name: 'BookText',
+  props: {
+    content: String,
   },
 };
 </script>
 
-<style scoped lang="scss">
-.chapter {
-  box-sizing: border-box;
-  background: white;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
-  padding: 4rem;
+<style lang="scss">
+.book-text {
   font-family: 'Lora', serif;
-  margin: 1rem 0;
-  position: relative;
-  width: 50%;
-  max-width: 960px;
-
-  @media (max-width: 960px) {
-    width: 100%;
-  }
 
   h2 {
     position: relative;
@@ -97,6 +68,31 @@ export default {
     margin-left: auto;
     margin-right: auto;
     text-align: right;
+  }
+
+  * + .embed {
+    margin-top: 1rem;
+  }
+
+  .embed {
+    font-family: 'Nunito Sans', sans-serif;
+    box-sizing: border-box;
+    display: block;
+    padding: 0 1.5rem;
+
+    & + * {
+      margin-top: 1rem;
+    }
+
+    & + .embed {
+      margin-top: 0;
+    }
+  }
+
+  samp {
+    font-family: 'Nunito Sans', sans-serif;
+    text-align: justify;
+    display: block;
   }
 
   .italic {

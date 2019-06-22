@@ -30,8 +30,19 @@
       </transition>
     </div>
     <div class="query-panel-grouping">
-      <CheckBox :value="groupResults" @input="$emit('group-results', $event.target.checked)">
-        Group by chapter
+      <CheckBox
+        name="chapter-scope"
+        :value="chapterScope"
+        @input="$emit('chapter-scope', $event.target.checked)">
+        Search full chapter
+      </CheckBox>
+      <CheckBox
+        name="group-results"
+        :value="groupResults"
+        @input="$emit('group-results', $event.target.checked)">
+        Group by
+        <template v-if="chapterScope">book</template>
+        <template v-else>chapter</template>
       </CheckBox>
     </div>
   </div>
@@ -53,6 +64,7 @@ export default {
     toolbar: Boolean,
     query: String,
     series: Array,
+    chapterScope: Boolean,
     groupResults: Boolean,
   },
   data() {
@@ -78,25 +90,39 @@ export default {
   align-items: stretch;
   flex-direction: column;
 
+  @media (max-width: 960px) {
+    margin: 0;
+  }
+
   &-options {
     box-sizing: border-box;
     flex-grow: 1;
     margin-top: 0.5rem;
     display: flex;
     align-items: center;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 
   &-grouping {
     margin-left: auto;
     flex-shrink: 0;
+    display: flex;
 
-    select {
-      margin-left: 0.5rem;
-      font-size: 1rem;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      padding: 0.5rem 0.5rem;
-      border-radius: 3px;
-      background: none;
+    .checkbox {
+      margin-right: 0.5rem;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      margin-top: 0.25rem;
+      margin-left: 0;
     }
   }
 
@@ -141,10 +167,6 @@ export default {
       padding: 2rem 0.5rem 0.5rem;
       border: 1px solid rgba(0, 0, 0, 0.1);
     }
-  }
-
-  @media (max-width: 960px) {
-    margin: 0;
   }
 }
 </style>

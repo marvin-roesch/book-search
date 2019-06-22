@@ -7,11 +7,13 @@
       class="search-results-toolbar"
       :query="query"
       :series="series"
+      :chapter-scope="chapterScope"
       :group-results="groupResults"
 
       @search="onSearch"
       @filter="onFilter"
-      @group-results="onGroupResults">
+      @group-results="onGroupResults"
+      @chapter-scope="onChapterScope">
     </QueryPanel>
   </div>
 </div>
@@ -33,6 +35,7 @@ export default {
       series: [],
       bookFilter: undefined,
       seriesFilter: undefined,
+      chapterScope: false,
       groupResults: false,
       oldQuery: {},
     };
@@ -40,9 +43,10 @@ export default {
   async mounted() {
     try {
       const { data: allSeries } = await this.$api.get('/books/series');
-      const { q, books, series, grouped } = { ...this.oldQuery, ...this.$route.query };
+      const { q, books, series, scope, grouped } = { ...this.oldQuery, ...this.$route.query };
 
       this.query = q || '';
+      this.chapterScope = scope === 'chapters';
       this.groupResults = grouped === true || grouped === 'true';
       const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
       const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
@@ -89,6 +93,7 @@ export default {
           q: this.query,
           series: this.seriesFilter === undefined ? undefined : this.seriesFilter.join('+'),
           books: this.bookFilter === undefined ? undefined : this.bookFilter.join('+'),
+          scope: this.chapterScope ? 'chapters' : undefined,
           grouped: this.groupResults || undefined,
         },
       });
@@ -96,6 +101,9 @@ export default {
     onFilter({ series, books }) {
       this.seriesFilter = series;
       this.bookFilter = books;
+    },
+    onChapterScope(chapterScope) {
+      this.chapterScope = chapterScope;
     },
     onGroupResults(grouped) {
       this.groupResults = grouped;

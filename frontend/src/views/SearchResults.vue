@@ -7,11 +7,13 @@
       toolbar
       :query="$route.query.q"
       :series="series"
+      :chapter-scope="chapterScope"
       :group-results="groupResults"
 
       @ready="displayResults = true"
       @search="onSearch"
       @filter="onFilter"
+      @chapter-scope="onChapterScope"
       @group-results="onGroupResults">
     </QueryPanel>
   </div>
@@ -19,12 +21,14 @@
     :query="$route.query.q"
     :series-filter="seriesFilter"
     :book-filter="bookFilter"
+    :chapter-scope="chapterScope"
     v-if="groupResults && displayResults">
   </grouped-search-results>
   <flat-search-results
     :query="$route.query.q"
     :series-filter="seriesFilter"
     :book-filter="bookFilter"
+    :chapter-scope="chapterScope"
     v-else-if="displayResults">
   </flat-search-results>
 </div>
@@ -62,6 +66,10 @@ export default {
     groupResults() {
       const { grouped } = this.$route.query;
       return grouped === true || grouped === 'true';
+    },
+    chapterScope() {
+      const { scope } = this.$route.query;
+      return scope === 'chapters';
     },
   },
   async mounted() {
@@ -104,6 +112,7 @@ export default {
           q: query,
           series: this.$route.query.series,
           books: this.$route.query.books,
+          scope: this.$route.query.scope,
           grouped: this.$route.query.grouped,
         },
       });
@@ -115,6 +124,19 @@ export default {
           q: this.$route.query.q,
           series: series === undefined ? undefined : series.join('+'),
           books: books === undefined ? undefined : books.join('+'),
+          scope: this.$route.query.scope,
+          grouped: this.$route.query.grouped,
+        },
+      });
+    },
+    onChapterScope(chapterScope) {
+      this.$router.replace({
+        name: 'search',
+        query: {
+          q: this.$route.query.q,
+          series: this.$route.query.series,
+          books: this.$route.query.books,
+          scope: chapterScope ? 'chapters' : undefined,
           grouped: this.$route.query.grouped,
         },
       });
@@ -126,6 +148,7 @@ export default {
           q: this.$route.query.q,
           series: this.$route.query.series,
           books: this.$route.query.books,
+          scope: this.$route.query.scope,
           grouped: grouped || undefined,
         },
       });
@@ -137,6 +160,10 @@ export default {
 <style lang="scss">
 body {
   overflow-y: scroll;
+}
+
+body.chapter-preview {
+  overflow: hidden !important;
 }
 
 .search-results {
@@ -196,7 +223,7 @@ body {
     flex-direction: column;
     align-items: stretch;
 
-    h2 {
+    & > h2 {
       margin: 0;
     }
 
@@ -207,6 +234,11 @@ body {
 
     @media (max-width: 960px) {
       width: 100%;
+    }
+
+    @media (max-width: 640px) {
+      margin-top: 0.25rem;
+      padding-top: 12rem;
     }
   }
 }

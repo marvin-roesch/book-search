@@ -12,6 +12,10 @@ export default {
     client.interceptors.response.use(
       response => response,
       (error) => {
+        if (axios.isCancel(error)) {
+          return Promise.reject(error);
+        }
+
         const { response: { status } } = error;
 
         if (status === 401) {
