@@ -1,5 +1,10 @@
 <template>
-<Card class="user-list" title="Users">
+<Card class="user-list">
+  <template slot="title">
+  <router-link :to="{name: 'book-management'}" v-if="identity.canManageBooks">Books</router-link>
+  <span v-if="identity.canManageBooks">&middot;</span>
+  Users
+  </template>
   <div class="user-table">
     <div class="user-table-header">Username</div>
     <div class="user-table-header">Permissions</div>
@@ -171,6 +176,19 @@ export default {
   flex-direction: column;
   align-items: stretch;
   box-sizing: border-box;
+
+  h2 {
+    display: flex;
+    align-items: center;
+
+    span {
+      margin-left: 0.25rem;
+    }
+
+    a {
+      margin-left: 0.25rem;
+    }
+  }
 
   .user-table {
     padding: 0;

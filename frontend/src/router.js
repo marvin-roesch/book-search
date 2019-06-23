@@ -14,6 +14,7 @@ import BookManagement from '@/views/BookManagement.vue';
 import NewBook from '@/views/NewBook.vue';
 import EditBook from '@/views/EditBook.vue';
 import NotFound from '@/views/NotFound.vue';
+import Read from '@/views/Read.vue';
 
 Vue.use(Router);
 
@@ -98,6 +99,12 @@ const router = new Router({
       path: '/chapters/:id',
       name: 'chapter',
       component: Chapter,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/read',
+      name: 'read',
+      component: Read,
       meta: { requiresAuth: true },
     },
     {

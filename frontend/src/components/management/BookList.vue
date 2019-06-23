@@ -1,5 +1,10 @@
 <template>
-<Card class="book-list" title="Books">
+<Card class="book-list">
+  <template slot="title">
+    Books
+    <span v-if="identity.canManageUsers">&middot;</span>
+    <router-link :to="{name: 'user-management'}" v-if="identity.canManageUsers">Users</router-link>
+  </template>
   <SeriesEntry :series="series" class="book-list-root" @book-deleted="refresh"></SeriesEntry>
   <template slot="footer">
   <a href="#" @click.prevent="$router.back()">Back</a>
@@ -17,6 +22,7 @@
 import Card from '@/components/Card.vue';
 import SeriesEntry from '@/components/management/SeriesEntry.vue';
 import Button from '@/components/Button.vue';
+import { mapState } from 'vuex';
 
 export default {
   name: 'BookList',
@@ -27,6 +33,7 @@ export default {
       reindexing: false,
     };
   },
+  computed: mapState('auth', ['identity']),
   async mounted() {
     await this.refresh();
   },
@@ -69,9 +76,12 @@ export default {
     display: flex;
     align-items: center;
 
-    .button {
-      display: block;
-      margin-left: 0.5rem;
+    span {
+      margin-left: 0.25rem;
+    }
+
+    a {
+      margin-left: 0.25rem;
     }
   }
 

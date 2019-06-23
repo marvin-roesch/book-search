@@ -26,11 +26,11 @@
     <li>
       <router-link :to="{name: 'home'}">Search</router-link>
     </li>
-    <li v-if="identity.canManageBooks">
-      <router-link :to="{name: 'book-management'}">Books</router-link>
+    <li>
+      <router-link :to="{name: 'read'}">Read</router-link>
     </li>
-    <li v-if="identity.canManageUsers">
-      <router-link :to="{name: 'user-management'}">Users</router-link>
+    <li v-if="identity.canManageBooks">
+      <router-link :to="{name: 'book-management'}">Manage</router-link>
     </li>
   </ul>
 </div>
