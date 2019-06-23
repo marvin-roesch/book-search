@@ -20,6 +20,7 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
   width: 50vw;
+  max-width: $max-content-width;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -27,7 +28,7 @@ export default {
   margin: 0 auto;
   box-sizing: border-box;
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     width: 100%;
   }
 

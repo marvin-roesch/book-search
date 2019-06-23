@@ -10,16 +10,7 @@
     :query="query"
     @search="$emit('search', $event)">
   </SearchBar>
-  <div class="query-panel-quick-help">
-    <ul>
-      <li>Exact phrase: <code>"quote it"</code></li>
-      <li>Case sensitive: <code>text.cs:Wit</code></li>
-      <li>Match 0+: <code>Kala*</code></li>
-      <li>Match 1: <code>Dalina?</code></li>
-      <li>Boolean: <code>AND</code> (default), <code>OR</code></li>
-      <li>Negation: <code>-knot</code></li>
-    </ul>
-  </div>
+  <QuickHelp></QuickHelp>
   <div class="query-panel-options">
     <div class="query-panel-filter">
       <span class="query-panel-filter-label">Filter:</span>
@@ -66,10 +57,11 @@ import CheckBox from '@/components/CheckBox.vue';
 import SearchBar from '@/components/search/SearchBar.vue';
 import SharedElement from '@/components/SharedElement.vue';
 import { easeInOut as easing } from 'ramjet';
+import QuickHelp from '@/components/search/QuickHelp.vue';
 
 export default {
   name: 'QueryPanel',
-  components: { SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary },
+  components: { QuickHelp, SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary },
   props: {
     toolbar: Boolean,
     query: String,
@@ -98,54 +90,22 @@ export default {
   display: flex;
   align-items: stretch;
   flex-direction: column;
-  padding: 1rem 1rem 0.5rem;
+  padding: 1rem 0 0.5rem;
+  width: 50vw;
+  max-width: $max-content-width;
 
-  @media (max-width: 960px) {
-    margin: 0;
+  &.query-panel-toolbar {
+    width: auto;
   }
 
-  &-quick-help {
-    box-sizing: border-box;
-    flex-grow: 1;
-    margin-top: 0.5rem;
-    font-size: 0.8rem;
-    color: rgba(0, 0, 0, 0.5);
-
-    code {
-      background: rgba(0, 0, 0, 0.05);
-      padding: 0.125rem;
-    }
-
-    ul {
-      list-style-type: none;
-      display: flex;
-      padding: 0;
-      margin: 0;
-      flex-wrap: wrap;
-
-      li {
-        margin-right: 0.25rem;
-
-        &:after {
-          display: inline-block;
-          content: '·';
-          margin-left: 0.25rem;
-        }
-
-        &:last-child {
-          margin-right: 0;
-
-          &:after {
-            display: none;
-          }
-        }
-      }
-    }
+  @media (max-width: $max-content-width) {
+    margin: 0;
+    width: auto;
   }
 
   @media (max-width: 640px) {
     &.query-panel-toolbar {
-      .query-panel-quick-help {
+      .quick-help {
         display: none;
       }
     }

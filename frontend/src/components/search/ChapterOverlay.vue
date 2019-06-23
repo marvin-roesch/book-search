@@ -1,20 +1,20 @@
 <template>
-<div class="chapter" ref="container">
-  <div class="chapter-header">
-    <div class="chapter-title">
+<div class="chapter-overlay" ref="container">
+  <div class="chapter-overlay-header">
+    <div class="chapter-overlay-title">
       <h2>{{ bookTitle }} - {{ title }}</h2>
       <Share2Icon
-        class="chapter-header-share-icon"
+        class="chapter-overlay-header-share-icon"
         :width="20"
         :height="20"
         @click.prevent.stop="share">
       </Share2Icon>
-      <XIcon class="chapter-header-close-icon" @click.prevent.stop="close"></XIcon>
+      <XIcon class="chapter-overlay-header-close-icon" @click.prevent.stop="close"></XIcon>
     </div>
   </div>
-  <div class="chapter-content-container" @click.self.stop="close">
+  <div class="chapter-overlay-content-container" @click.self.stop="close">
     <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
-    <Card class="chapter-content" v-else>
+    <Card class="chapter-overlay-content" v-else>
       <BookText :content="content" ref="text"></BookText>
     </Card>
   </div>
@@ -96,7 +96,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.chapter {
+.chapter-overlay {
   position: fixed;
   box-sizing: border-box;
   top: 0;
@@ -131,7 +131,7 @@ export default {
     cursor: initial;
     padding: 0 1rem;
 
-    .chapter-title {
+    .chapter-overlay-title {
       box-sizing: border-box;
       position: relative;
       margin: 0 auto;
@@ -139,6 +139,7 @@ export default {
       font-size: 1.25rem;
       z-index: 1001;
       width: 50%;
+      max-width: $max-content-width;
       display: flex;
       align-items: center;
 
@@ -146,7 +147,7 @@ export default {
         width: 70%;
       }
 
-      @media (max-width: 960px) {
+      @media (max-width: $max-content-width) {
         width: 100%;
       }
 
@@ -170,6 +171,7 @@ export default {
 
   &-content {
     width: 50%;
+    max-width: $max-content-width;
     margin: 0 auto;
     cursor: initial;
 
@@ -177,7 +179,7 @@ export default {
       width: 70%;
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: $max-content-width) {
       width: 100%;
     }
 

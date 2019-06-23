@@ -165,6 +165,7 @@ export default {
 .user-list {
   margin: 0 auto;
   width: 50vw;
+  max-width: $max-content-width;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
@@ -252,7 +253,7 @@ export default {
     }
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     width: 100%;
   }
 }

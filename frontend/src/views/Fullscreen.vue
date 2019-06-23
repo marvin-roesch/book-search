@@ -31,7 +31,14 @@ export default {
     left: 32px;
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 1200px) {
+    .user-panel {
+      left: 0;
+      top: 0;
+    }
+  }
+
+  @media (max-width: $max-content-width) {
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
@@ -39,8 +46,6 @@ export default {
 
     .user-panel {
       position: relative;
-      top: 0;
-      left: 0;
       padding-left: 0;
       padding-top: 0;
     }

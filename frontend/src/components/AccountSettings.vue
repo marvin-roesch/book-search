@@ -82,6 +82,7 @@ export default {
 .account-settings {
   margin: 0 auto;
   width: 50vw;
+  max-width: $max-content-width;
   box-sizing: border-box;
 
   form {

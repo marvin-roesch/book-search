@@ -54,5 +54,9 @@ export default {
   &-button-group {
     display: flex;
   }
+
+  @media (max-width: 640px) {
+    padding: 1rem;
+  }
 }
 </style>

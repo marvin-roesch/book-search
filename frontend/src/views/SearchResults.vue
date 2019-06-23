@@ -114,11 +114,8 @@ export default {
       this.$router.replace({
         name: 'search',
         query: {
+          ...this.$route.query,
           q: query,
-          series: this.$route.query.series,
-          books: this.$route.query.books,
-          scope: this.$route.query.scope,
-          grouped: this.$route.query.grouped,
         },
       });
     },
@@ -126,11 +123,9 @@ export default {
       this.$router.replace({
         name: 'search',
         query: {
-          q: this.$route.query.q,
+          ...this.$route.query,
           series: series === undefined ? undefined : series.join('+'),
           books: books === undefined ? undefined : books.join('+'),
-          scope: this.$route.query.scope,
-          grouped: this.$route.query.grouped,
         },
       });
     },
@@ -138,11 +133,8 @@ export default {
       this.$router.replace({
         name: 'search',
         query: {
-          q: this.$route.query.q,
-          series: this.$route.query.series,
-          books: this.$route.query.books,
+          ...this.$route.query,
           scope: chapterScope ? 'chapters' : undefined,
-          grouped: this.$route.query.grouped,
         },
       });
     },
@@ -150,10 +142,7 @@ export default {
       this.$router.replace({
         name: 'search',
         query: {
-          q: this.$route.query.q,
-          series: this.$route.query.series,
-          books: this.$route.query.books,
-          scope: this.$route.query.scope,
+          ...this.$route.query,
           grouped: grouped || undefined,
         },
       });
@@ -197,7 +186,7 @@ body.chapter-preview {
       align-items: flex-start;
     }
 
-    @media (max-width: 960px) and (max-height: 960px) {
+    @media (max-width: $max-content-width) and (max-height: $max-content-width) {
       &-hidden {
         box-shadow: none;
         top: -3rem;
@@ -225,13 +214,16 @@ body.chapter-preview {
 
     .search-results-toolbar {
       width: 50%;
+      max-width: $max-content-width;
+      padding-left: 1rem;
+      padding-right: 1rem;
 
       @media (max-width: 1200px) {
         width: 70%;
         padding-top: 0;
       }
 
-      @media (max-width: 960px) {
+      @media (max-width: $max-content-width) {
         width: 100%;
       }
     }
@@ -241,7 +233,7 @@ body.chapter-preview {
     box-sizing: border-box;
     padding: 9rem 1rem 1rem;
     width: 50%;
-    max-width: 960px;
+    max-width: $max-content-width;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -255,7 +247,7 @@ body.chapter-preview {
       padding-top: 12rem;
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: $max-content-width) {
       width: 100%;
     }
 

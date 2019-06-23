@@ -126,9 +126,13 @@ export default {
       width: 100%;
       text-align: center;
     }
+
+    .query-panel {
+      max-width: $max-content-width;
+    }
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     justify-content: flex-start;
     align-items: stretch;
 

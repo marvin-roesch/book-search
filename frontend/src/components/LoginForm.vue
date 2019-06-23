@@ -65,10 +65,11 @@ export default {
 <style lang="scss">
 .login-form {
   width: 35vw;
+  max-width: $max-content-width * 0.7;
   box-sizing: border-box;
   margin: 0 auto;
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     width: 50vw;
   }
 

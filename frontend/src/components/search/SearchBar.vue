@@ -109,9 +109,10 @@ export default {
 .search-bar {
   position: relative;
   width: 50vw;
+  max-width: $max-content-width;
   z-index: 2500;
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     width: 100%;
   }
 
@@ -188,7 +189,7 @@ export default {
       animation-name: slide-up;
       animation-timing-function: ease-in-out;
       animation-duration: 0.2s;
-      max-width: 50%;
+      max-width: $max-content-width;
       display: flex;
       flex-direction: column;
       align-items: stretch;
@@ -229,8 +230,12 @@ export default {
         padding: 0.125rem;
       }
 
-      @media (max-width: 960px) {
+      @media (max-width: 1200px) {
         max-width: 70%;
+      }
+
+      @media (max-width: $max-content-width) {
+        max-width: 90%;
       }
 
       @media (max-width: 640px) {

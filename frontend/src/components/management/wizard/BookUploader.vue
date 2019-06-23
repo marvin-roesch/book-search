@@ -86,7 +86,7 @@ export default {
   margin: 0 auto;
   min-width: 50vw;
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     width: 100%;
   }
 

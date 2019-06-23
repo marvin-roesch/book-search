@@ -250,6 +250,20 @@ fun Route.bookSearch(index: BookIndex) {
         call.respond(mapOf("results" to results))
     }
 
+    get("/chapters/{id}") {
+        val id = UUID.fromString(call.parameters["id"])
+
+        call.respond(
+            transaction {
+                val chapter = Chapter.findById(id) ?: return@transaction null
+                mapOf("book" to chapter.book.toJson(), "chapter" to chapter.toJson(), "content" to chapter.indexedContent)
+            } ?: return@get call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Chapter with ID '$id' does not exist")
+            )
+        )
+    }
+
     post("/chapters/{id}/search") {
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<GroupedSearchRequest>()

@@ -119,7 +119,7 @@ export default {
     padding-top: 0;
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: $max-content-width) {
     .expandable-header {
       padding-left: 0;
       padding-right: 0;
