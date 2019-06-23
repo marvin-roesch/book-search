@@ -84,8 +84,7 @@ export default {
     z-index: 2000;
     cursor: initial;
     padding: 0 1rem;
-    transform: translate3d(0, 0, 0);
-    transition: 0.1s all ease-out;
+    transition: 0.2s top ease-out;
 
     @media (max-width: 1200px) {
       flex-direction: column;
@@ -95,7 +94,7 @@ export default {
     @media (max-height: 960px) {
       &-hidden {
         box-shadow: none;
-        transform: translate3d(0, -3rem, 0);
+        top: -3rem;
       }
     }
 

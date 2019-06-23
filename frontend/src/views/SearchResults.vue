@@ -189,8 +189,8 @@ body.chapter-preview {
     display: flex;
     align-items: center;
     z-index: 2000;
-    transform: translate3d(0, 0, 0);
-    transition: 0.1s all ease-out;
+    top: 0;
+    transition: 0.2s top ease-out;
 
     @media (max-width: 1200px) {
       flex-direction: column;
@@ -200,14 +200,14 @@ body.chapter-preview {
     @media (max-height: 960px) {
       &-hidden {
         box-shadow: none;
-        transform: translate3d(0, -3rem, 0);
+        top: -3rem;
       }
     }
 
     @media (max-height: 640px) {
       &-hidden {
         box-shadow: none;
-        transform: translate3d(0, -100%, 0);
+        top: -100%;
       }
     }
 
@@ -261,7 +261,7 @@ body.chapter-preview {
 
     @media (max-width: 640px) {
       margin-top: 0.25rem;
-      padding-top: 14rem;
+      padding-top: 11.5rem;
     }
   }
 }
