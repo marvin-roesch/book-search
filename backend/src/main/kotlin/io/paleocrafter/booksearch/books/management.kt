@@ -115,6 +115,7 @@ fun Route.bookManagement(index: BookIndex) {
                 content = SerialBlob(buffer)
                 title = epub.title
                 author = authorName
+                cover = epub.coverImage?.data?.let { SerialBlob(it) }
             }
         }
         call.respond(mapOf("id" to bookId))
@@ -282,7 +283,7 @@ fun Route.bookManagement(index: BookIndex) {
 
     put("/{id}/index") {
         val id = UUID.fromString(call.parameters["id"])
-        val book = transaction {Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
+        val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
         )

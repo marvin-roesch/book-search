@@ -39,10 +39,6 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 fun Application.auth() {
-    transaction {
-        SchemaUtils.createMissingTablesAndColumns(Users)
-    }
-
     val keyString = environment.config.propertyOrNull("crypto.key")?.getString()
         ?: throw IllegalStateException("'crypto.key' must be configured! Either specify it in config file or pass CRYPTO_KEY env variable.")
     val hashKey = SecretKeySpec(hex(keyString), "HmacSHA1")

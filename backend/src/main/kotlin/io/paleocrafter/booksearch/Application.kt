@@ -37,10 +37,18 @@ fun Application.db() {
         config.username = username
         config.password = password
     }
-
     config.validate()
-    val dataSource = HikariDataSource(config)
 
+    val migrationUsername = environment.config.propertyOrNull("db.migration.username")?.getString()
+    val migrationPassword = environment.config.propertyOrNull("db.migration.password")?.getString()
+    if (migrationUsername == null || migrationPassword == null) {
+        environment.log.warn("Migration username or password not provided, running without...")
+    }
+
+    val migrationDb = Database.connect(connection, driver, migrationUsername ?: "", migrationPassword ?: "")
+    DbMigrations.run(migrationDb)
+
+    val dataSource = HikariDataSource(config)
     Database.connect(dataSource)
 }
 

@@ -11,10 +11,12 @@ services:
       - ELASTIC_HOST=http://elasticsearch:9200
       - DEFAULT_PASSWORD=booksearcher
       - CRYPTO_KEY=966efc7f2526829ec7580bfb033652555adcc2bd8fb2a250aaa0ced12bbff00b7b60dd0e323f129171a27d66660af93b258eab90507ff28895fb79b459ced1f2
-      - DB_CONNECTION=jdbc:postgresql://db/
+      - DB_CONNECTION=jdbc:postgresql://db/booksearch
       - DB_DRIVER=org.postgresql.Driver
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=example
+      - DB_USERNAME=booksearch
+      - DB_PASSWORD=b00kse4rch
+      - DB_MIGRATION_USERNAME=booksearch_migrations
+      - DB_MIGRATION_PASSWORD=migr4tion5
 
   frontend:
     image: marvinroesch/book-search-frontend
@@ -46,8 +48,14 @@ services:
     container_name: bs-db
     environment:
       - POSTGRES_PASSWORD=example
+      - DB_MIGRATION_USER=booksearch_migrations
+      - DB_MIGRATION_PASSWORD=migr4tion5
+      - DB_DATA_USER=booksearch
+      - DB_DATA_PASSWORD=b00kse4rch
     ports:
       - "5432:5432"
+    volumes:
+      - ./database-init:/docker-entrypoint-initdb.d
 
 volumes:
   esdata:
