@@ -137,6 +137,13 @@ export default {
       }
     }
 
+    @media (max-height: 640px) {
+      &-hidden {
+        box-shadow: none;
+        top: -100%;
+      }
+    }
+
     .user-panel {
       position: absolute;
       left: 2rem;
