@@ -13,6 +13,7 @@ import UserProfile from '@/views/UserProfile.vue';
 import BookManagement from '@/views/BookManagement.vue';
 import NewBook from '@/views/NewBook.vue';
 import EditBook from '@/views/EditBook.vue';
+import NotFound from '@/views/NotFound.vue';
 
 Vue.use(Router);
 
@@ -98,6 +99,11 @@ const router = new Router({
       name: 'chapter',
       component: Chapter,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '*',
+      name: 'not-found',
+      component: NotFound,
     },
   ],
 });
