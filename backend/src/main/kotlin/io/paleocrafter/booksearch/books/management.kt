@@ -115,7 +115,10 @@ fun Route.bookManagement(index: BookIndex) {
                 content = SerialBlob(buffer)
                 title = epub.title
                 author = authorName
-                cover = epub.coverImage?.data?.let { SerialBlob(it) }
+                epub.coverImage.let {
+                    cover = SerialBlob(it.data)
+                    coverMime = it.mediaType.name
+                }
             }
         }
         call.respond(mapOf("id" to bookId))

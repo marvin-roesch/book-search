@@ -26,7 +26,7 @@ dependencies {
     implementation("io.ktor:ktor-server-sessions:1.2.1")
     implementation("org.postgresql:postgresql:42.2.5")
     implementation("com.zaxxer:HikariCP:2.7.8")
-    implementation("org.jetbrains.exposed:exposed:0.14.2")
+    implementation("org.jetbrains.exposed:exposed:0.15.1")
     implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.1.1")
     implementation("nl.siegmann.epublib:epublib-core:3.1")
     implementation("org.jsoup:jsoup:1.12.1")

@@ -25,10 +25,6 @@ fun Application.books() {
             "Either specify it as 'elasticsearch.hosts' in config file or pass ELASTIC_HOST env variable.")
     val index = BookIndex(*elasticConfig.map { HttpHost.create(it) }.toTypedArray())
 
-    transaction {
-        SchemaUtils.createMissingTablesAndColumns(Books, Chapters, Images, ClassMappings)
-    }
-
     routing {
         route("/api/books") {
             authenticate {
@@ -86,6 +82,26 @@ fun Application.books() {
                     } ?: return@get call.respond(
                         HttpStatusCode.NotFound,
                         mapOf("message" to "Image '$name' for book with ID '$id' does not exist")
+                    )
+
+                    call.respond(ByteArrayContent(imageData, imageType))
+                }
+
+                get("/{id}/cover") {
+                    val id = UUID.fromString(call.parameters["id"])
+                    val (imageType, imageData) = transaction {
+                        val book = Book.findById(id) ?: return@transaction null
+                        val cover = book.cover
+                        val mime = book.coverMime
+                        if (cover == null || mime == null) {
+                            return@transaction null
+                        }
+                        val type = ContentType.parse(mime)
+
+                        type to cover.binaryStream.readBytes()
+                    } ?: return@get call.respond(
+                        HttpStatusCode.NotFound,
+                        mapOf("message" to "Book with ID '$id' does not exist or does not have a cover")
                     )
 
                     call.respond(ByteArrayContent(imageData, imageType))

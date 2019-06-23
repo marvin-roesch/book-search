@@ -3,6 +3,7 @@ package io.paleocrafter.booksearch.books
 import io.paleocrafter.booksearch.DbMigration
 import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.or
 import javax.sql.rowset.serial.SerialBlob
 
 object CreateBookTablesMigration : DbMigration("create-book-tables") {
@@ -15,7 +16,7 @@ object AddCoverMigration : DbMigration("add-book-covers") {
     override fun apply() {
         SchemaUtils.createMissingTablesAndColumns(Books)
 
-        val booksMissingCovers = Book.find { Books.cover.isNull() }
+        val booksMissingCovers = Book.find { Books.cover.isNull() or Books.coverMime.isNull() }
         val epubReader = EpubReader()
         for (book in booksMissingCovers) {
             val epub = epubReader.readEpub(book.content.binaryStream)
