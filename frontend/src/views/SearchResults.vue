@@ -197,7 +197,7 @@ body.chapter-preview {
       align-items: flex-start;
     }
 
-    @media (max-height: 960px) {
+    @media (max-width: 960px) and (max-height: 960px) {
       &-hidden {
         box-shadow: none;
         top: -3rem;
