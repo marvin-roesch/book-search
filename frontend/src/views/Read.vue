@@ -130,5 +130,18 @@ export default {
 
   .user-panel {
   }
+
+  .expandable-content {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  @media (max-width: 1200px) {
+    padding: 1rem;
+
+    .user-panel {
+      padding: 0;
+    }
+  }
 }
 </style>
