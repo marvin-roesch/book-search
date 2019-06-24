@@ -13,8 +13,8 @@
     <p :class="paragraph.classes" v-html="paragraph.text"
        v-for="paragraph in result.nextParagraphs" :key="paragraph.position">
     </p>
-    <a href="#" @click.prevent.stop="showContent = true" v-if="displayMetadata">
-      Read Chapter
+    <a href="#" @click.prevent.stop="showContent = true">
+      Read from here
     </a>
     </template>
   </BidirectionalExpandable>

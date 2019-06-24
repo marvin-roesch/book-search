@@ -66,6 +66,7 @@ export default {
           }
 
           const paragraph = paragraphs[this.position];
+          paragraph.classList.add('result-paragraph');
           this.$refs.container.scrollTop = paragraph.offsetTop - 70;
         });
       }

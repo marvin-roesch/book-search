@@ -107,5 +107,9 @@ export default {
     font-style: normal;
     font-weight: normal;
   }
+
+  .result-paragraph {
+    background: aliceblue;
+  }
 }
 </style>
