@@ -1,6 +1,5 @@
 <template>
 <div class="book-chapters">
-  <h1>Chapters</h1>
   <LoadingSpinner v-if="loading"></LoadingSpinner>
   <transition-group
     tag="ol"
@@ -47,41 +46,39 @@ export default {
   box-sizing: border-box;
   position: relative;
   z-index: 0;
-  padding: 1.5rem 1rem 1rem 2rem;
 
-  h1 {
-    margin: 0;
+  .progress-spinner {
+    margin-top: 1rem;
   }
 
   &-nav {
-    margin: 1rem 0 0;
-    padding: 0;
+    margin: 0;
+    padding: 1rem 0 0;
     list-style-type: none;
     border-radius: 3px;
     box-sizing: border-box;
-    box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+
+    @media (max-width: $max-content-width) {
+      padding-top: 0.125rem;
+    }
 
     li {
       a {
         display: block;
-        padding: 0.5rem;
-        background: white;
+        padding: 0.5rem 0.5rem 0.5rem 2rem;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 
         &:hover, &:active, &:focus {
-          background: rgba(0, 0, 0, 0.001);
+          background: rgba(0, 0, 0, 0.01);
+        }
+
+        @media (max-width: $max-content-width) {
+          padding-left: 1rem;
+          padding-right: 1rem;
         }
       }
 
-      &:first-child a {
-        border-top-left-radius: 3px;
-        border-top-right-radius: 3px;
-      }
-
       &:last-child a {
-        border-bottom-left-radius: 3px;
-        border-bottom-right-radius: 3px;
         border-bottom: none;
       }
     }

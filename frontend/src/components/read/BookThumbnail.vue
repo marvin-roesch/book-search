@@ -1,5 +1,8 @@
 <template>
-<a href="#" @click.prevent="openBook" class="book-thumbnail">
+<router-link
+  class="book-thumbnail"
+  :to="{ name: 'book-chapters', params: { id: this.book.id,book } }"
+  @click.prevent="openBook">
   <div :id="`book-${book.id}-cover`" :data-book-id="book.id" class="book-thumbnail-cover">
     <transition name="fade-relative">
       <img :src="`/api/books/${book.id}/cover`" :alt="`'${book.title}' Cover`" v-if="hasCover">
@@ -11,7 +14,7 @@
   <div class="book-thumbnail-author">
     {{ book.author }}
   </div>
-</a>
+</router-link>
 </template>
 
 <script>
@@ -36,16 +39,6 @@ export default {
         this.$handleApiError(error);
       }
     }
-  },
-  methods: {
-    openBook() {
-      this.$router.push({
-        name: 'book-chapters',
-        params: {
-          id: this.book.id,
-        },
-      });
-    },
   },
 };
 </script>

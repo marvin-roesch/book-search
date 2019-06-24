@@ -28,7 +28,7 @@ export default {
   .user-panel {
     position: absolute;
     top: 0.5rem;
-    left: 32px;
+    left: 2rem;
   }
 
   @media (max-width: 1200px) {

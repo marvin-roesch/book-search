@@ -13,6 +13,19 @@ import UserPanel from '@/components/UserPanel.vue';
 
 let updaterTimeout = null;
 
+function postTransitionHook(cover, coverDummy) {
+  return () => {
+    cover.style.position = '';
+    cover.style.width = '';
+    cover.style.height = '';
+    cover.style.top = '';
+    cover.style.left = '';
+    coverDummy.parentNode.replaceChild(cover, coverDummy);
+    cover.removeEventListener('transitionend', cover.transitionListener);
+    cover.transitionListener = undefined;
+  };
+}
+
 export default {
   name: 'read',
   components: { UserPanel, SeriesTree },
@@ -48,17 +61,13 @@ export default {
               cover.style.height = `${rect.height}px`;
               cover.style.maxWidth = '';
               cover.style.maxHeight = '';
-              cover.transitionListener = () => {
-                cover.style.position = '';
-                cover.style.width = '';
-                cover.style.height = '';
-                cover.style.top = '';
-                cover.style.left = '';
-                coverDummy.parentNode.replaceChild(cover, coverDummy);
-                cover.removeEventListener('transitionend', cover.transitionListener);
+              cover.transitionListener = postTransitionHook(cover, coverDummy);
+              if (cover.noTransition) {
+                cover.transitionListener();
                 cover.transitionListener = undefined;
-              };
-              cover.addEventListener('transitionend', cover.transitionListener);
+              } else {
+                cover.addEventListener('transitionend', cover.transitionListener);
+              }
             }, 50);
           }
         });
