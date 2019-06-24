@@ -62,6 +62,7 @@ export default {
     height: 19rem;
     min-width: 10rem;
     transition: all 0.4s ease-in-out;
+    z-index: 1001;
 
     img {
       max-height: 100%;

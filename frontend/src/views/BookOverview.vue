@@ -4,7 +4,8 @@
     <UserPanel></UserPanel>
     <div class="book-cover" ref="cover">
       <div v-show="hasOldCover && !hasCover" ref="coverDummy"></div>
-      <transition :name="fromOldCover ? '' : 'fade-slide-up'">
+      <transition
+        :name="fromOldCover ? '' : 'fade-slide-up'">
         <img :src="`/api/books/${bookId}/cover`" v-show="!hasOldCover && hasCover">
       </transition>
     </div>
