@@ -3,8 +3,10 @@
   <div class="book-overview-sidebar">
     <UserPanel></UserPanel>
     <div class="book-cover" ref="cover">
-      <div style="display: none" ref="coverDummy"></div>
-      <img :src="`/api/books/${bookId}/cover`" v-show="!hasOldCover && hasCover">
+      <div v-show="hasOldCover && !hasCover" ref="coverDummy"></div>
+      <transition :name="fromOldCover ? '' : 'fade-slide-up'">
+        <img :src="`/api/books/${bookId}/cover`" v-show="!hasOldCover && hasCover">
+      </transition>
     </div>
     <transition name="fade-slide-up">
       <div class="book-metadata" v-if="book !== null">
@@ -17,6 +19,13 @@
       </div>
     </transition>
     <transition-group tag="ul" class="book-overview-nav" name="fade-slide-up">
+      <li :key="'search'" v-if="book !== null">
+        <router-link
+          :to="{ name: 'search', query: { focus: 'true', q: '', series: '', books: bookId } }">
+          <SearchIcon></SearchIcon>
+          Search
+        </router-link>
+      </li>
       <li :key="'chapters'" v-if="book !== null">
         <router-link :to="{ name: 'book-chapters', params: { id: bookId } }" exact>
           <ListIcon></ListIcon>
@@ -31,19 +40,19 @@
       </li>
     </transition-group>
   </div>
-  <router-view>
-
-  </router-view>
+  <transition name="fade">
+    <router-view></router-view>
+  </transition>
 </div>
 </template>
 
 <script>
 import UserPanel from '@/components/UserPanel.vue';
-import { BookIcon, ListIcon } from 'vue-feather-icons';
+import { BookIcon, ListIcon, SearchIcon } from 'vue-feather-icons';
 
 export default {
   name: 'book-overview',
-  components: { BookIcon, ListIcon, UserPanel },
+  components: { SearchIcon, BookIcon, ListIcon, UserPanel },
   data() {
     return {
       bookId: '',
@@ -51,6 +60,7 @@ export default {
       chapters: [],
       hasCover: false,
       hasOldCover: false,
+      fromOldCover: false,
     };
   },
   mounted() {
@@ -96,17 +106,15 @@ export default {
         }
         vm.$refs.coverDummy.style.width = cover.style.width;
         vm.$refs.coverDummy.style.height = cover.style.height;
-        vm.$refs.coverDummy.style.display = 'block';
         cover.transitionListener = () => {
           vm.hasOldCover = false;
-          vm.$refs.coverDummy.style.display = 'none';
           cover.style.display = 'none';
           cover.removeEventListener('transitionend', cover.transitionListener);
           cover.transitionListener = undefined;
         };
         cover.addEventListener('transitionend', cover.transitionListener);
       }
-      vm.hasOldCover = cover !== null;
+      vm.hasOldCover = vm.fromOldCover = from.name === 'read' && cover !== null;
     });
   },
   beforeRouteLeave(to, from, next) {
@@ -117,7 +125,7 @@ export default {
       const bounds = this.$refs.cover.getBoundingClientRect();
       cover.style.top = `${bounds.top}px`;
       cover.style.left = `${bounds.left}px`;
-      cover.style.display = '';
+      cover.style.display = to.name === 'read' ? '' : 'none';
     }
     next();
   },
@@ -127,7 +135,7 @@ export default {
 <style lang="scss">
 .book-overview {
   box-sizing: border-box;
-  padding: 0.5rem 2rem 2rem;
+  padding: 0 0 0 24rem;
   width: 100%;
 
   &-sidebar {
@@ -139,6 +147,8 @@ export default {
     left: 0;
     bottom: 0;
     padding: 0.5rem 2rem 0;
+    z-index: 1000;
+    background: white;
   }
 
   .book-metadata {
@@ -174,6 +184,10 @@ export default {
 
     li:nth-child(2) {
       transition-delay: 0.5s;
+    }
+
+    li:nth-child(3) {
+      transition-delay: 0.7s;
     }
   }
 

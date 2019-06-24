@@ -3,6 +3,7 @@
   <div class="home-content">
     <h1>Book Search</h1>
     <QueryPanel
+      auto-focus
       class="search-results-toolbar"
       :query="query"
       :series="series"

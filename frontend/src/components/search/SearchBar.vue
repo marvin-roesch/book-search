@@ -82,6 +82,7 @@ export default {
   props: {
     query: String,
     toolbar: Boolean,
+    autoFocus: Boolean,
   },
   data() {
     return {
@@ -89,7 +90,7 @@ export default {
     };
   },
   mounted() {
-    if (!this.toolbar) {
+    if (this.autoFocus) {
       this.$refs.search.focus();
     }
   },

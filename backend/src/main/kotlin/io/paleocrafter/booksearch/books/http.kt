@@ -13,7 +13,6 @@ import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.paleocrafter.booksearch.auth.authorize
 import org.apache.http.HttpHost
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -105,6 +104,20 @@ fun Application.books() {
                     )
 
                     call.respond(ByteArrayContent(imageData, imageType))
+                }
+
+                get("/{id}/chapters") {
+                    val id = UUID.fromString(call.parameters["id"])
+                    val chapters = transaction {
+                        val book = Book.findById(id) ?: return@transaction null
+
+                        Chapter.find { Chapters.book eq book.id }.sortedBy { it.position }.map { it.toJson() }
+                    } ?: return@get call.respond(
+                        HttpStatusCode.NotFound,
+                        mapOf("message" to "Book with ID '$id' does not exist")
+                    )
+
+                    call.respond(chapters)
                 }
             }
         }

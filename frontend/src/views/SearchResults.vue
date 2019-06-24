@@ -8,6 +8,7 @@
     <QueryPanel
       class="search-results-toolbar"
       toolbar
+      :auto-focus="$route.query.focus === 'true'"
       :query="$route.query.q"
       :series="series"
       :chapter-scope="chapterScope"

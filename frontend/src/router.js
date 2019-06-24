@@ -135,6 +135,12 @@ const router = new Router({
       component: NotFound,
     },
   ],
+  scrollBehavior(to) {
+    if (to.name === 'chapter') {
+      return { x: 0, y: 0 };
+    }
+    return undefined;
+  },
 });
 
 router.beforeEach(async (to, from, next) => {

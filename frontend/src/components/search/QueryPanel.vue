@@ -7,6 +7,7 @@
   @animation-end="$emit('ready')">
   <SearchBar
     :toolbar="toolbar"
+    :auto-focus="autoFocus"
     :query="query"
     @search="$emit('search', $event)">
   </SearchBar>
@@ -64,6 +65,7 @@ export default {
   components: { QuickHelp, SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary },
   props: {
     toolbar: Boolean,
+    autoFocus: Boolean,
     query: String,
     series: Array,
     chapterScope: Boolean,
