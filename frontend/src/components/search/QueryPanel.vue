@@ -32,17 +32,19 @@
       </transition>
     </div>
     <div class="query-panel-grouping">
-      <CheckBox
-        name="chapter-scope"
-        :value="chapterScope"
-        @input="$emit('chapter-scope', $event.target.checked)">
-        Search full chapter
-      </CheckBox>
+      <label for="query-panel-scope" class="query-panel-scope-label">Search in</label>
+      <select
+        id="query-panel-scope"
+        class="query-panel-scope"
+        @input="$emit('chapter-scope', $event.target.value === 'chapters')">
+        <option value="paragraphs" :selected="!chapterScope">Paragraphs</option>
+        <option value="chapters" :selected="chapterScope">Full chapters</option>
+      </select>
       <CheckBox
         name="group-results"
         :value="groupResults"
         @input="$emit('group-results', $event.target.checked)">
-        Group by
+        Group results by
         <template v-if="chapterScope">book</template>
         <template v-else>chapter</template>
       </CheckBox>
@@ -124,6 +126,10 @@ export default {
       flex-direction: column;
       align-items: stretch;
     }
+  }
+
+  &-scope {
+    margin: 0 0.5rem;
   }
 
   &-grouping {

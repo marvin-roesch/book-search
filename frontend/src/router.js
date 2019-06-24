@@ -135,8 +135,11 @@ const router = new Router({
       component: NotFound,
     },
   ],
-  scrollBehavior(to) {
+  scrollBehavior(to, from) {
     if (to.name === 'chapter') {
+      return { x: 0, y: 0 };
+    }
+    if (from.name === 'read' && to.path.startsWith('/read/')) {
       return { x: 0, y: 0 };
     }
     return undefined;
