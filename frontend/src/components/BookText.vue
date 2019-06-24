@@ -38,6 +38,21 @@ export default {
     }
   }
 
+  .h1 {
+    text-align: center;
+    font-size: 1.5rem;
+  }
+
+  .h2 {
+    text-align: center;
+    font-size: 1.25rem;
+  }
+
+  .h3 {
+    text-align: center;
+    font-size: 1.1rem;
+  }
+
   .chapterText {
     text-align: justify;
     text-indent: 1rem;
