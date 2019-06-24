@@ -1,7 +1,9 @@
 <template>
 <div id="app">
   <transition name="fade">
-    <router-view/>
+    <keep-alive include="read">
+      <router-view/>
+    </keep-alive>
   </transition>
   <div class="notification-container" v-if="notifications !== null">
     <transition-group name="notification-slide" tag="div" class="notification-group">

@@ -15,6 +15,9 @@ import NewBook from '@/views/NewBook.vue';
 import EditBook from '@/views/EditBook.vue';
 import NotFound from '@/views/NotFound.vue';
 import Read from '@/views/Read.vue';
+import BookOverview from '@/views/BookOverview.vue';
+import BookChapters from '@/views/BookChapters.vue';
+import BookDictionary from '@/views/BookDictionary.vue';
 
 Vue.use(Router);
 
@@ -106,6 +109,25 @@ const router = new Router({
       name: 'read',
       component: Read,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/read/:id',
+      component: BookOverview,
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '/',
+          name: 'book-chapters',
+          component: BookChapters,
+          meta: { coverTransition: true },
+        },
+        {
+          path: 'dictionary',
+          name: 'book-dictionary',
+          component: BookDictionary,
+          meta: { coverTransition: true },
+        },
+      ],
     },
     {
       path: '*',

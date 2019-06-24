@@ -4,6 +4,7 @@ a {
   position: relative;
   color: $primary;
   text-decoration: none;
+  transition: color 0.2s ease-in-out;
 
   &:hover, &:active, &:focus {
     color: saturate($primary, 10%);

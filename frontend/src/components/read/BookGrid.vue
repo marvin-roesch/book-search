@@ -18,7 +18,12 @@ export default {
 
 <style lang="scss">
 .book-grid {
-  display: grid;
-  grid-auto-flow: column;
+  display: flex;
+  flex-wrap: wrap;
+
+  & > * {
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+  }
 }
 </style>

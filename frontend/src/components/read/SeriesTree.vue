@@ -1,8 +1,10 @@
 <template>
 <Expandable start-expanded class="series-tree">
   <template slot="header">{{ series.name }}</template>
-  <BookGrid :books="series.books"></BookGrid>
-  <SeriesTree :series="s" v-for="s in series.children" :key="s.name"></SeriesTree>
+  <div class="series-tree-content">
+    <BookGrid :books="series.books"></BookGrid>
+    <SeriesTree :series="s" v-for="s in series.children" :key="s.name"></SeriesTree>
+  </div>
 </Expandable>
 </template>
 
@@ -24,6 +26,10 @@ export default {
   .expandable-header {
     font-weight: bold;
     font-size: 1.25rem;
+  }
+
+  &-content {
+    padding-bottom: 1rem;
   }
 }
 </style>
