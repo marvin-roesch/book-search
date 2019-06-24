@@ -7,18 +7,26 @@
     <UserPanel></UserPanel>
     <div class="chapter-toolbar">
       <div class="chapter-toolbar-title">
-        <h2>{{ bookTitle }} - {{ title }}</h2>
-        <XIcon class="chapter-toolbar-close-icon" @click.prevent.stop="$router.back()"></XIcon>
+        <h2>{{ book.title }} - {{ chapter.title }}</h2>
+        <XIcon
+          class="chapter-toolbar-close-icon"
+          @click.prevent.stop="$router.push({ name: 'book-chapters', params: { id: book.id } })">
+        </XIcon>
       </div>
       <SearchBar toolbar :query="$route.query.q" @search="changeQuery"></SearchBar>
       <QuickHelp></QuickHelp>
     </div>
   </div>
+  <ChapterNavigation fixed :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
   <div class="chapter-content-container">
-    <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
-    <Card class="chapter-content" v-else>
-      <BookText :content="content" ref="text"></BookText>
-    </Card>
+    <ChapterNavigation :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
+    <transition name="fade-relative">
+      <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
+      <Card class="chapter-content" v-else>
+        <BookText :content="content" ref="text"></BookText>
+      </Card>
+    </transition>
+    <ChapterNavigation :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
   </div>
 </div>
 </template>
@@ -33,22 +41,34 @@ import { scrollAware } from '@/custom-directives';
 import SearchBar from '@/components/search/SearchBar.vue';
 import { XIcon } from 'vue-feather-icons';
 import QuickHelp from '@/components/search/QuickHelp.vue';
+import ChapterNavigation from '@/components/ChapterNavigation.vue';
 
 export default {
   name: 'chapter',
   mixins: [scrollAware],
-  components: { QuickHelp, SearchBar, UserPanel, BookText, Card, XIcon, LoadingSpinner },
+  components: {
+    ChapterNavigation,
+    QuickHelp,
+    SearchBar,
+    UserPanel,
+    BookText,
+    Card,
+    XIcon,
+    LoadingSpinner,
+  },
   data() {
     return {
-      bookTitle: '',
-      title: '',
+      book: '',
+      chapter: '',
       content: '',
       contentLoaded: false,
       cancelToken: null,
+      prevChapter: null,
+      nextChapter: null,
     };
   },
   async mounted() {
-    await this.search();
+    await this.search(this.$route.params.id);
   },
   methods: {
     changeQuery(query) {
@@ -60,19 +80,23 @@ export default {
         },
       });
     },
-    async search() {
+    async search(chapterId) {
+      this.contentLoaded = false;
       if (this.cancelToken !== null) {
         this.cancelToken.cancel();
       }
       this.cancelToken = axios.CancelToken.source();
 
       const query = this.$route.query.q;
-      const { id } = this.$route.params;
       try {
-        const { data: { book, chapter, content } } = !query
-          ? await this.$api.get(`/books/chapters/${id}`)
+        const {
+          data: {
+            book, chapter, content, prevChapter, nextChapter,
+          },
+        } = !query
+          ? await this.$api.get(`/books/chapters/${chapterId}`)
           : await this.$api.post(
-            `/books/chapters/${id}/search`,
+            `/books/chapters/${chapterId}/search`,
             {
               query,
               seriesFilter: null,
@@ -80,9 +104,11 @@ export default {
             },
           );
 
-        this.bookTitle = book.title;
-        this.title = chapter.title;
+        this.book = book;
+        this.chapter = chapter;
         this.content = content;
+        this.prevChapter = prevChapter;
+        this.nextChapter = nextChapter;
         this.contentLoaded = true;
       } catch (error) {
         this.contentLoaded = true;
@@ -98,6 +124,10 @@ export default {
       this.search();
     },
   },
+  async beforeRouteUpdate(to, from, next) {
+    await this.search(to.params.id);
+    next();
+  },
 };
 </script>
 
@@ -109,6 +139,12 @@ export default {
   align-items: center;
   width: 100%;
   height: 100%;
+
+  .progress-spinner-container {
+    position: absolute;
+    left: 50%;
+    margin-left: -1.75rem;
+  }
 
   &-toolbar-container {
     box-sizing: border-box;

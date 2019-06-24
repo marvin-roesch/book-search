@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.UUIDTable
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.and
 import org.jsoup.nodes.Element
 import java.util.UUID
 
@@ -60,6 +61,16 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     var content by Chapters.content
     var indexedContent by Chapters.indexedContent
     var position by Chapters.position
+
+    val previous: Chapter?
+        get() = Chapter.find {
+            (Chapters.book eq book.id) and (Chapters.position eq (position - 1))
+        }.limit(1).firstOrNull()
+
+    val next: Chapter?
+        get() = Chapter.find {
+            (Chapters.book eq book.id) and (Chapters.position eq (position + 1))
+        }.limit(1).firstOrNull()
 
     fun toJson() =
         mapOf(

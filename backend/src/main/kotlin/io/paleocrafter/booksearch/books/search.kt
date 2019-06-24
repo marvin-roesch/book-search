@@ -256,7 +256,13 @@ fun Route.bookSearch(index: BookIndex) {
         call.respond(
             transaction {
                 val chapter = Chapter.findById(id) ?: return@transaction null
-                mapOf("book" to chapter.book.toJson(), "chapter" to chapter.toJson(), "content" to chapter.indexedContent)
+                mapOf(
+                    "book" to chapter.book.toJson(),
+                    "chapter" to chapter.toJson(),
+                    "content" to chapter.indexedContent,
+                    "prevChapter" to chapter.previous?.id?.value,
+                    "nextChapter" to chapter.next?.id?.value
+                )
             } ?: return@get call.respond(
                 HttpStatusCode.NotFound,
                 mapOf("message" to "Chapter with ID '$id' does not exist")
@@ -268,9 +274,14 @@ fun Route.bookSearch(index: BookIndex) {
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<GroupedSearchRequest>()
 
-        val (book, chapter) = transaction {
+        val dbData = transaction {
             val chapter = Chapter.findById(id) ?: return@transaction null
-            chapter.book.toJson() to chapter.toJson()
+            mapOf(
+                "book" to chapter.book.toJson(),
+                "chapter" to chapter.toJson(),
+                "prevChapter" to chapter.previous?.id?.value,
+                "nextChapter" to chapter.next?.id?.value
+            )
         } ?: return@post call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Chapter with ID '$id' does not exist")
@@ -281,7 +292,7 @@ fun Route.bookSearch(index: BookIndex) {
             mapOf("message" to "The provided query is invalid!")
         )
 
-        call.respond(mapOf("book" to book, "chapter" to chapter, "content" to searchResult))
+        call.respond(dbData + ("content" to searchResult))
     }
 }
 

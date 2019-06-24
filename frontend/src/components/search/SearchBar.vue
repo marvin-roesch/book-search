@@ -99,7 +99,7 @@ export default {
       this.$emit('search', event.target.value);
     },
   },
-  beforeRouteUpdate(from, to, next) {
+  beforeRouteUpdate(to, from, next) {
     this.showHelpDialog = false;
     next();
   },
