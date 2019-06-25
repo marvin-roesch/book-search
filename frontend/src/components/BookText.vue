@@ -1,5 +1,8 @@
 <template>
-<div class="book-text" v-html="content">
+<div class="book-text" v-html="content" v-if="content" ref="text">
+</div>
+<div class="book-text" v-else ref="text">
+  <slot></slot>
 </div>
 </template>
 
@@ -8,6 +11,74 @@ export default {
   name: 'BookText',
   props: {
     content: String,
+  },
+  data() {
+    return {
+      normalizationTimeout: null,
+      popupTimeout: null,
+    };
+  },
+  mounted() {
+    document.addEventListener('selectionchange', this.onSelectionChange);
+  },
+  destroyed() {
+    document.removeEventListener('selectionchange', this.onSelectionChange);
+  },
+  methods: {
+    onSelectionChange() {
+      const selection = document.getSelection();
+      const startNode = selection.anchorNode;
+      const endNode = selection.focusNode;
+      const startOffset = selection.anchorOffset;
+      const endOffset = selection.focusOffset;
+
+      const affectedBySelection = !selection.isCollapsed
+        && startNode !== null && this.$refs.text.contains(startNode)
+        && endNode !== null && this.$refs.text.contains(endNode);
+
+      if (!affectedBySelection) {
+        this.removeSelectionMarker('selection-start-marker');
+        this.removeSelectionMarker('selection-end-marker');
+      } else if (startNode !== endNode || startOffset > endOffset) {
+        this.insertSelectionMarker('selection-start-marker', startNode, startOffset);
+        this.insertSelectionMarker('selection-end-marker', endNode, endOffset);
+      } else {
+        this.insertSelectionMarker('selection-end-marker', endNode, endOffset);
+        this.insertSelectionMarker('selection-start-marker', startNode, startOffset);
+      }
+
+      clearTimeout(this.normalizationTimeout);
+      clearTimeout(this.popupTimeout);
+      this.normalizationTimeout = setTimeout(() => {
+        this.$refs.text.normalize();
+      }, 100);
+      if (affectedBySelection) {
+        this.popupTimeout = setTimeout(() => {
+          // TODO: Display popup
+        }, 500);
+      }
+    },
+    insertSelectionMarker(id, node, offset) {
+      const marker = document.getElementById(id) || document.createElement('span');
+      marker.id = id;
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        node.splitText(offset);
+        node.parentNode.insertBefore(marker, node.nextSibling);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        if (offset === 0 && node.previousElementSibling !== null) {
+          node.previousElementSibling.append(marker);
+        } else if (offset > 0 && node.nextElementSibling !== null) {
+          node.nextElementSibling.prepend(marker);
+        }
+      }
+    },
+    removeSelectionMarker(id) {
+      const marker = document.getElementById(id);
+      if (marker !== null && this.$refs.text.contains(marker)) {
+        marker.remove();
+      }
+    },
   },
 };
 </script>

@@ -2,22 +2,24 @@
 <div :class="{ 'search-result': true, 'search-result-with-siblings': showSiblings }"
      @click="toggleSiblings">
   <h2 v-if="displayMetadata">{{ result.book.title }} - {{ result.chapter.title }}</h2>
-  <BidirectionalExpandable class="book-text" :expanded="showSiblings" :visible-height="24">
-    <template slot="start">
-    <p :class="paragraph.classes" v-html="paragraph.text"
-       v-for="paragraph in result.prevParagraphs" :key="paragraph.position">
-    </p>
-    </template>
-    <p :class="result.mainParagraph.classes" v-html="result.mainParagraph.text"></p>
-    <template slot="end">
-    <p :class="paragraph.classes" v-html="paragraph.text"
-       v-for="paragraph in result.nextParagraphs" :key="paragraph.position">
-    </p>
-    <a href="#" @click.prevent.stop="showContent = true">
-      Read from here
-    </a>
-    </template>
-  </BidirectionalExpandable>
+  <BookText>
+    <BidirectionalExpandable :expanded="showSiblings" :visible-height="24">
+      <template slot="start">
+      <p :class="paragraph.classes" v-html="paragraph.text"
+         v-for="paragraph in result.prevParagraphs" :key="paragraph.position">
+      </p>
+      </template>
+      <p :class="result.mainParagraph.classes" v-html="result.mainParagraph.text"></p>
+      <template slot="end">
+      <p :class="paragraph.classes" v-html="paragraph.text"
+         v-for="paragraph in result.nextParagraphs" :key="paragraph.position">
+      </p>
+      <a href="#" @click.prevent.stop="showContent = true">
+        Read from here
+      </a>
+      </template>
+    </BidirectionalExpandable>
+  </BookText>
   <transition
     name="fade-slide-up"
     @after-enter="addBodyClass"
@@ -38,10 +40,12 @@
 <script>
 import BidirectionalExpandable from '@/components/BidirectionalExpandable.vue';
 import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
+import BookText from '@/components/BookText.vue';
 
 export default {
   name: 'search-result',
   components: {
+    BookText,
     ChapterOverlay,
     BidirectionalExpandable,
   },
@@ -94,6 +98,14 @@ export default {
   & > .book-text {
     .chapterText {
       text-indent: 0;
+    }
+
+    .bidirectional-expandable-start p:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .bidirectional-expandable-end p:first-of-type {
+      margin-top: 0;
     }
   }
 }
