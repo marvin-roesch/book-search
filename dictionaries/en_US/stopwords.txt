@@ -12883,6 +12883,7 @@ awoke
 awoken
 awry
 ax
+axe
 axial
 axiom
 axiomatic
@@ -16082,6 +16083,7 @@ chapbook
 chapeau
 chapel
 chaperon
+chaperone
 chaperonage
 chaperoned
 chaplain

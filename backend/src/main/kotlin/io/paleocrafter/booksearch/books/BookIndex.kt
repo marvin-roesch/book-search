@@ -129,38 +129,64 @@ class BookIndex(vararg hosts: HttpHost) {
                     "signature_analyzer": {
                         "tokenizer": "standard",
                         "filter": [
-                            "lowercase",
                             "possessive_stemmer",
                             "suffix_cleanup",
                             "en_US",
                             "english_stops",
                             "dictionary_stops",
+                            "trim",
                             "revert_hyphens",
                             "remove_duplicates"
                         ],
-                        "char_filter": ["html_stripper", "normalize_apostrophes", "convert_hyphens"]
+                        "char_filter": [
+                            "html_stripper",
+                            "normalize_apostrophes",
+                            "convert_hyphen_start",
+                            "convert_hyphens",
+                            "remove_numbers",
+                            "remove_all_caps"
+                        ]
                     }
                 },
                 "char_filter": {
                     "html_stripper": {
                         "type": "html_strip"
                     },
+                    "convert_hyphen_start": {
+                        "type": "pattern_replace",
+                        "pattern": "(\\p{Upper}[^\\s-]+)-(?=[^-\\s]+)",
+                        "replacement": "$1_"
+                    },
                     "convert_hyphens": {
                         "type": "pattern_replace",
-                        "pattern": "([^\\s]{3,})-([^\\s]{3,})",
-                        "replacement": "$1_$2"
+                        "pattern": "(?<=_)([^\\s-_]+)-(?=[^-\\s]+)",
+                        "replacement": "$1_"
+                    },
+                    "remove_numbers": {
+                        "type": "pattern_replace",
+                        "pattern": "[0-9]+",
+                        "replacement": ""
+                    },
+                    "remove_all_caps": {
+                        "type": "pattern_replace",
+                        "pattern": "\\p{Upper}{2,}",
+                        "replacement": ""
                     },
                     "normalize_apostrophes": {
                         "type": "mapping",
                         "mappings": [
-                            "’ => '"
+                            "\u0091=>\u0027",
+                            "\u0092=>\u0027",
+                            "\u2018=>\u0027",
+                            "\u2019=>\u0027",
+                            "\uFF07=>\u0027"
                         ]
                     }
                 },
                 "filter": {
                     "suffix_cleanup": {
                         "type": "length",
-                        "min": 3
+                        "min": 2
                     },
                     "possessive_stemmer": {
                         "type": "stemmer",
@@ -179,6 +205,10 @@ class BookIndex(vararg hosts: HttpHost) {
                         "type": "stop",
                         "stopwords_path": "hunspell/en_US/stopwords.txt",
                         "ignore_case": true
+                    },
+                    "word_pairs": {
+                        "type": "shingle",
+                        "filler_token": ""
                     },
                     "revert_hyphens": {
                         "type": "pattern_replace",
