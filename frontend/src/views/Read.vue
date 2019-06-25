@@ -13,17 +13,19 @@ import UserPanel from '@/components/UserPanel.vue';
 
 let updaterTimeout = null;
 
-function postTransitionHook(cover, coverDummy) {
-  return () => {
-    cover.style.position = '';
-    cover.style.width = '';
-    cover.style.height = '';
-    cover.style.top = '';
-    cover.style.left = '';
+function transitionListener(event) {
+  const cover = event.target;
+  const coverDummy = document.getElementById(`book-${cover.dataset.bookId}-cover-dummy`);
+  cover.style.position = '';
+  cover.style.width = '';
+  cover.style.height = '';
+  cover.style.top = '';
+  cover.style.left = '';
+  cover.style.display = '';
+  if (coverDummy !== null) {
     coverDummy.parentNode.replaceChild(cover, coverDummy);
-    cover.removeEventListener('transitionend', cover.transitionListener);
-    cover.transitionListener = undefined;
-  };
+  }
+  cover.removeEventListener('transitionend', transitionListener);
 }
 
 export default {
@@ -51,6 +53,7 @@ export default {
           if (coverDummy !== null) {
             const rect = coverDummy.getBoundingClientRect();
             cover.classList.add('no-transition');
+            cover.style.display = '';
             cover.style.top = `${cover.offsetTop + window.scrollY}px`;
             cover.style.position = 'absolute';
             cover.readTransitionTimeout = setTimeout(() => {
@@ -61,12 +64,10 @@ export default {
               cover.style.height = `${rect.height}px`;
               cover.style.maxWidth = '';
               cover.style.maxHeight = '';
-              cover.transitionListener = postTransitionHook(cover, coverDummy);
-              if (cover.noTransition) {
-                cover.transitionListener();
-                cover.transitionListener = undefined;
+              if (!from.meta.coverTransition) {
+                transitionListener({ target: cover });
               } else {
-                cover.addEventListener('transitionend', cover.transitionListener);
+                cover.addEventListener('transitionend', transitionListener);
               }
             }, 50);
           }
@@ -78,10 +79,16 @@ export default {
     const covers = document.querySelectorAll('body > div[data-book-id]');
     clearTimeout(updaterTimeout);
     covers.forEach((cover) => {
-      if (cover.transitionListener) {
-        cover.removeEventListener('transitionend', cover.transitionListener);
-        cover.transitionListener = undefined;
+      const coverDummy = document.getElementById(`book-${cover.dataset.bookId}-cover-dummy`);
+      if (coverDummy !== null) {
+        cover.style.position = '';
+        cover.style.width = '';
+        cover.style.height = '';
+        cover.style.top = '';
+        cover.style.left = '';
+        coverDummy.parentNode.replaceChild(cover, coverDummy);
       }
+      cover.removeEventListener('transitionend', transitionListener);
       if (cover.readTransitionTimeout) {
         clearTimeout(cover.readTransitionTimeout);
         cover.readTransitionTimeout = undefined;
@@ -103,19 +110,6 @@ export default {
       cover.style.left = `${bounds.left}px`;
       cover.style.width = `${bounds.width}px`;
       cover.style.height = `${bounds.height}px`;
-    } else {
-      const covers = document.querySelectorAll('body > div[data-book-id]');
-      covers.forEach((cover) => {
-        const coverDummy = document.getElementById(`book-${cover.dataset.bookId}-cover-dummy`);
-        if (coverDummy !== null) {
-          cover.style.position = '';
-          cover.style.width = '';
-          cover.style.height = '';
-          cover.style.top = '';
-          cover.style.left = '';
-          coverDummy.parentNode.replaceChild(cover, coverDummy);
-        }
-      });
     }
     next();
   },

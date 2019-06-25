@@ -37,25 +37,6 @@ private val TOCReference.id: String
     get() = "$fragmentId.$resourceId"
 
 fun Route.bookManagement(index: BookIndex) {
-    get("/{id}") {
-        val id = UUID.fromString(call.parameters["id"])
-        val book = transaction {
-            Book.findById(id) ?: return@transaction null
-        } ?: return@get call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-        call.respond(
-            mapOf(
-                "id" to id,
-                "title" to book.title,
-                "author" to book.author,
-                "series" to book.series,
-                "orderInSeries" to book.orderInSeries
-            )
-        )
-    }
-
     delete("/{id}") {
         val id = UUID.fromString(call.parameters["id"])
         val book = transaction {

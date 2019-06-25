@@ -122,13 +122,15 @@ export default {
         oldCover.style.maxHeight = oldCover.style.height;
         vm.$refs.coverDummy.style.width = oldCover.style.width;
         vm.$refs.coverDummy.style.height = oldCover.style.height;
-        oldCover.transitionListener = () => {
-          vm.hasOldCover = false;
-          oldCover.style.display = 'none';
-          oldCover.removeEventListener('transitionend', oldCover.transitionListener);
-          oldCover.transitionListener = undefined;
-        };
-        oldCover.addEventListener('transitionend', oldCover.transitionListener);
+
+        oldCover.addEventListener(
+          'transitionend',
+          function listener() {
+            vm.hasOldCover = false;
+            oldCover.style.display = 'none';
+            oldCover.removeEventListener('transitionend', listener);
+          },
+        );
       }
       vm.fromOldCover = from.name === 'read' && oldCover !== null;
       vm.hasOldCover = vm.fromOldCover;
@@ -140,7 +142,6 @@ export default {
     const styles = window.getComputedStyle(cover);
     if (oldCover !== null) {
       oldCover.style.display = to.name === 'read' ? '' : 'none';
-      oldCover.removeEventListener('transitionend', cover.transitionListener);
       this.hasCover = false;
       if (styles.getPropertyValue('display') === 'none') {
         oldCover.noTransition = true;
