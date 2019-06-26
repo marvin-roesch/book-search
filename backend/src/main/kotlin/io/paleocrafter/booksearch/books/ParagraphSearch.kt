@@ -145,17 +145,16 @@ class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Searc
             QueryBuilders.termQuery("book", bookId.toString())
         )
         query.aggregation(
-            AggregationBuilders.significantText(
-                "dictionary",
-                "text.signature"
-            ).size(1000)
+            AggregationBuilders.terms(
+                "dictionary"
+            ).field("text.signature").size(999)
         )
 
         val response = suspendCoroutine<SearchResponse> {
             client.searchAsync(SearchRequest("paragraphs").source(query), RequestOptions.DEFAULT, SuspendingActionListener(it))
         }
 
-        return response.aggregations.get<SignificantTerms>("dictionary").buckets
+        return response.aggregations.get<Terms>("dictionary").buckets
             .map {
                 DictionaryEntry(it.key.toString(), it.docCount)
             }

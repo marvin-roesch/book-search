@@ -59,10 +59,6 @@ class BookIndex(vararg hosts: HttpHost) {
                                     "term_vector": "with_positions_offsets"
                                 }
                             }
-                        },
-                        "signature": {
-                            "type": "text",
-                            "analyzer": "signature_analyzer"
                         }
                     }
                 }
@@ -103,7 +99,8 @@ class BookIndex(vararg hosts: HttpHost) {
                         },
                         "signature": {
                             "type": "text",
-                            "analyzer": "signature_analyzer"
+                            "analyzer": "signature_analyzer",
+                            "fielddata": true
                         }
                     }
                 }
@@ -134,7 +131,6 @@ class BookIndex(vararg hosts: HttpHost) {
                             "en_US",
                             "english_stops",
                             "dictionary_stops",
-                            "trim",
                             "revert_hyphens",
                             "remove_duplicates"
                         ],
@@ -205,10 +201,6 @@ class BookIndex(vararg hosts: HttpHost) {
                         "type": "stop",
                         "stopwords_path": "hunspell/en_US/stopwords.txt",
                         "ignore_case": true
-                    },
-                    "word_pairs": {
-                        "type": "shingle",
-                        "filler_token": ""
                     },
                     "revert_hyphens": {
                         "type": "pattern_replace",
