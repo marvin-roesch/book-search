@@ -23,7 +23,7 @@
     name="search-slide"
     v-else>
     <ChapterSubResult
-      :book-title="book.title"
+      :book="book"
       :chapter="chapter"
       :query="query"
       :series-filter="seriesFilter"

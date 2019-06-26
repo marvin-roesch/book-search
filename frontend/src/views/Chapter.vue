@@ -6,7 +6,7 @@
   }">
     <UserPanel></UserPanel>
     <div class="chapter-toolbar">
-      <div class="chapter-toolbar-title">
+      <div class="chapter-toolbar-title" v-if="book !== null">
         <h2>{{ book.title }} - {{ chapter.title }}</h2>
         <XIcon
           class="chapter-toolbar-close-icon"
@@ -23,7 +23,11 @@
     <transition name="fade-relative">
       <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
       <Card class="chapter-content" v-else>
-        <BookText :content="content" ref="text"></BookText>
+        <BookText
+          :book-title="book.title"
+          :chapter-title="chapter.title"
+          :content="content" ref="text">
+        </BookText>
       </Card>
     </transition>
     <ChapterNavigation :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
@@ -58,8 +62,8 @@ export default {
   },
   data() {
     return {
-      book: '',
-      chapter: '',
+      book: null,
+      chapter: null,
       content: '',
       contentLoaded: false,
       cancelToken: null,

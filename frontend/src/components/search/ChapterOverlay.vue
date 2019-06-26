@@ -15,7 +15,12 @@
   <div class="chapter-overlay-content-container" @click.self.stop="close">
     <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
     <Card class="chapter-overlay-content" v-else>
-      <BookText :content="content" ref="text"></BookText>
+      <BookText
+        :book-title="book.title"
+        :chapter-title="chapter.title"
+        :content="content"
+        ref="text">
+      </BookText>
     </Card>
   </div>
 </div>

@@ -1,8 +1,15 @@
 <template>
-<div class="book-text" v-html="content" v-if="content" ref="text">
-</div>
-<div class="book-text" v-else ref="text">
-  <slot></slot>
+<div class="book-text" ref="text" @mouseup="showPopup">
+  <slot>
+    <div v-html="content"></div>
+  </slot>
+  <transition name="fade">
+    <div class="book-text-popup" v-show="displayPopup" ref="popup">
+      Quote:
+      <a href="#" @click.prevent="copyDiscordQuote">Discord</a> &middot;
+      <a href="#" @click.prevent="copyWikiQuote">Wiki</a>
+    </div>
+  </transition>
 </div>
 </template>
 
@@ -10,12 +17,14 @@
 export default {
   name: 'BookText',
   props: {
+    bookTitle: String,
+    chapterTitle: String,
     content: String,
   },
   data() {
     return {
       normalizationTimeout: null,
-      popupTimeout: null,
+      displayPopup: false,
     };
   },
   mounted() {
@@ -37,6 +46,7 @@ export default {
         && endNode !== null && this.$refs.text.contains(endNode);
 
       if (!affectedBySelection) {
+        this.hidePopup();
         this.removeSelectionMarker('selection-start-marker');
         this.removeSelectionMarker('selection-end-marker');
       } else if (startNode !== endNode || startOffset > endOffset) {
@@ -48,30 +58,29 @@ export default {
       }
 
       clearTimeout(this.normalizationTimeout);
-      clearTimeout(this.popupTimeout);
       this.normalizationTimeout = setTimeout(() => {
         if (this.$refs.text) {
-          this.$refs.textnormalize();
+          this.$refs.text.normalize();
         }
       }, 100);
-      if (affectedBySelection) {
-        this.popupTimeout = setTimeout(() => {
-          // TODO: Display popup
-        }, 500);
-      }
     },
     insertSelectionMarker(id, node, offset) {
       const marker = document.getElementById(id) || document.createElement('span');
+
+      if (marker === node) {
+        return;
+      }
+
       marker.id = id;
 
       if (node.nodeType === Node.TEXT_NODE) {
         node.splitText(offset);
         node.parentNode.insertBefore(marker, node.nextSibling);
       } else if (node.nodeType === Node.ELEMENT_NODE) {
-        if (offset === 0 && node.previousElementSibling !== null) {
-          node.previousElementSibling.append(marker);
-        } else if (offset > 0 && node.nextElementSibling !== null) {
-          node.nextElementSibling.prepend(marker);
+        if (offset === 0) {
+          node.prepend(marker);
+        } else if (offset > 0) {
+          node.append(marker);
         }
       }
     },
@@ -81,6 +90,54 @@ export default {
         marker.remove();
       }
     },
+    hidePopup() {
+      this.displayPopup = false;
+    },
+    showPopup() {
+      const { popup } = this.$refs;
+      const startMarker = document.getElementById('selection-start-marker');
+      const endMarker = document.getElementById('selection-end-marker');
+
+      if (startMarker === null || !this.$refs.text.contains(startMarker)) {
+        return;
+      }
+
+      let x = startMarker.offsetLeft;
+      const y = Math.min(startMarker.offsetTop, endMarker.offsetTop);
+      if (y < startMarker.offsetTop) {
+        x = endMarker.offsetLeft;
+      } else if (y === startMarker.offsetTop) {
+        x = Math.min(startMarker.offsetLeft, endMarker.offsetLeft);
+      }
+      popup.style.left = `${x}px`;
+      popup.style.top = `${y}px`;
+      this.displayPopup = true;
+    },
+    copyWikiQuote() {
+      this.copySelection(
+        '{{quote\n| ',
+        `\n| ${this.bookTitle} - ${this.chapterTitle}\n}}`,
+      );
+    },
+    copyDiscordQuote() {
+      this.copySelection(
+        '```\n',
+        `\n${this.bookTitle} - ${this.chapterTitle}\n\`\`\``,
+      );
+    },
+    copySelection(prefix, suffix) {
+      const el = document.createElement('textarea');
+      const selection = document.getSelection().toString().trim();
+      el.value = `${prefix}${selection}${suffix}`;
+      document.body.appendChild(el);
+      el.select();
+
+      document.execCommand('copy');
+
+      document.body.removeChild(el);
+
+      this.$notifications.success('The quote has been successfully copied to your clipboard!');
+    },
   },
 };
 </script>
@@ -88,9 +145,39 @@ export default {
 <style lang="scss">
 .book-text {
   font-family: 'Lora', serif;
+  position: relative;
+
+  &-popup {
+    position: absolute;
+    padding: 0.25rem;
+    background: white;
+    border: 1px solid #C8C8C8;
+    border-radius: 3px;
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
+    transform: translateY(-100%);
+    margin-top: -0.5rem;
+    font-family: 'Nunito Sans', sans-serif;
+
+    &:after {
+      position: absolute;
+      box-sizing: border-box;
+      background: white;
+      content: '';
+      width: 0.5rem;
+      height: 0.5rem;
+      top: auto;
+      bottom: 0;
+      left: 0.7rem;
+      margin-bottom: -0.25rem;
+      transform-origin: 50%;
+      transform: rotate(45deg);
+      border: 1px solid #C8C8C8;
+      border-top: none;
+      border-left: none;
+    }
+  }
 
   h2 {
-    position: relative;
     margin: 0;
     padding: 0;
     font-family: 'Nunito Sans', sans-serif;

@@ -40,7 +40,7 @@ export default {
   name: 'ChapterSubResult',
   components: { SearchResult, ErrorMessage, Expandable, LoadingSpinner },
   props: {
-    bookTitle: String,
+    book: Object,
     chapter: Object,
     query: String,
     seriesFilter: Array,
@@ -78,6 +78,7 @@ export default {
         this.results = results.map(({ paragraphs }) => {
           const mainParagraph = paragraphs.find(p => p.main);
           return {
+            book: this.book,
             chapter: this.chapter,
             mainParagraph,
             prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
