@@ -21,6 +21,9 @@
       @group-results="onGroupResults">
     </QueryPanel>
   </div>
+  <transition name="fade-slide-up" @after-enter="preventBodyScroll">
+    <router-view></router-view>
+  </transition>
   <grouped-search-results
     :query="$route.query.q"
     :series-filter="seriesFilter"
@@ -147,6 +150,9 @@ export default {
           grouped: grouped || undefined,
         },
       });
+    },
+    preventBodyScroll() {
+      document.body.classList.add('chapter-preview');
     },
   },
 };

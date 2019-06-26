@@ -1,28 +1,12 @@
 <template>
-<div class="chapter-end-result" @click="showContent = true">
+<div class="chapter-end-result" @click.stop="showContent">
   <h2>{{ result.book.title }} - {{ result.chapter.title }}</h2>
-  <transition
-    name="fade-slide-up"
-    @after-enter="addBodyClass"
-    @leave="removeBodyClass">
-    <ChapterOverlay
-      :id="result.chapter.id"
-      :query="query"
-      :book-title="result.book.title"
-      :title="result.chapter.title"
-      @close="showContent = false"
-      v-if="showContent">
-    </ChapterOverlay>
-  </transition>
 </div>
 </template>
 
 <script>
-import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
-
 export default {
   name: 'chapter-search-result',
-  components: { ChapterOverlay },
   props: {
     query: String,
     result: Object,
@@ -31,17 +15,13 @@ export default {
       default: true,
     },
   },
-  data() {
-    return {
-      showContent: false,
-    };
-  },
   methods: {
-    addBodyClass() {
-      document.body.classList.add('chapter-preview');
-    },
-    removeBodyClass() {
-      document.body.classList.remove('chapter-preview');
+    showContent() {
+      this.$router.push({
+        name: 'search-preview',
+        params: { id: this.result.chapter.id },
+        query: { ...this.$route.query, q: this.query },
+      });
     },
   },
 };

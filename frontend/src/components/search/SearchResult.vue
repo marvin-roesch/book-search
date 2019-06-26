@@ -14,39 +14,29 @@
       <p :class="paragraph.classes" v-html="paragraph.text"
          v-for="paragraph in result.nextParagraphs" :key="paragraph.position">
       </p>
-      <a href="#" @click.prevent.stop="showContent = true">
+      <router-link
+        :to="{
+          name: 'search-preview',
+          params: { id: result.chapter.id },
+          query: { ...$route.query, q: query, position: result.mainParagraph.position }
+        }"
+        @click.native="$event.stopImmediatePropagation()">
         Read from here
-      </a>
+      </router-link>
       </template>
     </BidirectionalExpandable>
   </BookText>
-  <transition
-    name="fade-slide-up"
-    @after-enter="addBodyClass"
-    @leave="removeBodyClass">
-    <ChapterOverlay
-      :id="result.chapter.id"
-      :query="query"
-      :book-title="result.book.title"
-      :title="result.chapter.title"
-      :position="result.mainParagraph.position"
-      @close="showContent = false"
-      v-if="showContent">
-    </ChapterOverlay>
-  </transition>
 </div>
 </template>
 
 <script>
 import BidirectionalExpandable from '@/components/BidirectionalExpandable.vue';
-import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 import BookText from '@/components/BookText.vue';
 
 export default {
   name: 'search-result',
   components: {
     BookText,
-    ChapterOverlay,
     BidirectionalExpandable,
   },
   props: {
@@ -60,7 +50,6 @@ export default {
   data() {
     return {
       showSiblings: false,
-      showContent: false,
     };
   },
   methods: {
@@ -68,12 +57,6 @@ export default {
       if (window.getSelection().type !== 'Range') {
         this.showSiblings = !this.showSiblings;
       }
-    },
-    addBodyClass() {
-      document.body.classList.add('chapter-preview');
-    },
-    removeBodyClass() {
-      document.body.classList.remove('chapter-preview');
     },
   },
 };

@@ -50,7 +50,9 @@ export default {
       clearTimeout(this.normalizationTimeout);
       clearTimeout(this.popupTimeout);
       this.normalizationTimeout = setTimeout(() => {
-        this.$refs.text.normalize();
+        if (this.$refs.text) {
+          this.$refs.textnormalize();
+        }
       }, 100);
       if (affectedBySelection) {
         this.popupTimeout = setTimeout(() => {

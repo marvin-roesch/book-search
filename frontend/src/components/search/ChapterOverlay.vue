@@ -1,8 +1,8 @@
 <template>
 <div class="chapter-overlay" ref="container">
   <div class="chapter-overlay-header">
-    <div class="chapter-overlay-title">
-      <h2>{{ bookTitle }} - {{ title }}</h2>
+    <div class="chapter-overlay-title" v-if="chapter !== null">
+      <h2>{{ book.title }} - {{ chapter.title }}</h2>
       <Share2Icon
         class="chapter-overlay-header-share-icon"
         :width="20"
@@ -30,42 +30,40 @@ import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 export default {
   name: 'chapter-overlay',
   components: { Share2Icon, BookText, XIcon, Card, LoadingSpinner },
-  props: {
-    id: String,
-    query: String,
-    bookTitle: String,
-    title: String,
-    position: Number,
-  },
   data() {
     return {
+      book: null,
+      chapter: null,
       content: '',
       contentLoaded: false,
     };
   },
   async mounted() {
     try {
-      const { data: { content } } = await this.$api.post(
-        `/books/chapters/${this.id}/search`,
+      const { data: { book, chapter, content } } = await this.$api.post(
+        `/books/chapters/${this.$route.params.id}/search`,
         {
-          query: this.query,
+          query: this.$route.query.q,
           seriesFilter: null,
           bookFilter: null,
         },
       );
 
+      this.book = book;
+      this.chapter = chapter;
       this.content = content;
       this.contentLoaded = true;
 
-      if (this.position !== undefined) {
+      const { position } = this.$route.query;
+      if (position !== undefined) {
         this.$nextTick(() => {
           const paragraphs = this.$refs.text.$el.querySelectorAll('p');
 
-          if (this.position >= paragraphs.length) {
+          if (position >= paragraphs.length) {
             return;
           }
 
-          const paragraph = paragraphs[this.position];
+          const paragraph = paragraphs[position];
           paragraph.classList.add('result-paragraph');
           this.$refs.container.scrollTop = paragraph.offsetTop - 70;
         });
@@ -76,7 +74,7 @@ export default {
   },
   methods: {
     close() {
-      this.$emit('close');
+      this.$router.back();
     },
     share() {
       const baseUrl = window.location.origin;
@@ -92,6 +90,13 @@ export default {
       document.body.removeChild(el);
       this.$notifications.success('A link to this chapter has been copied to your clipboard!');
     },
+  },
+  beforeRouteEnter(to, from, next) {
+    next();
+  },
+  beforeRouteLeave(to, from, next) {
+    document.body.classList.remove('chapter-preview');
+    next();
   },
 };
 </script>
@@ -112,9 +117,6 @@ export default {
 
   &.fade-slide-up-enter-active, &.fade-slide-up-leave-active {
     overflow-y: hidden;
-  }
-
-  &-link {
   }
 
   &-header {

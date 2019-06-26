@@ -6,32 +6,26 @@
       {{ chapter.title }}
       <small>({{ chapter.totalOccurrences }})</small>
     </span>
-    <a href="#" class="chapter-sub-result-read" @click.prevent="showContent = true">Read</a>
+    <router-link
+      class="chapter-sub-result-read"
+      :to="{
+        name: 'search-preview',
+        params: { id: chapter.id },
+        query: { ...$route.query, q: query }
+      }"
+      @click.native="$event.stopImmediatePropagation()">
+      Read
+    </router-link>
   </div>
   </template>
   <transition-group tag="div" class="search-result-list" name="search-slide">
     <search-result
-      :result="result" :display-metadata="false"
+      :result="result" :display-metadata="false" :query="query"
       v-for="(result, index) in results" :key="index">
     </search-result>
   </transition-group>
   <ErrorMessage v-if="errorMessage !== null" :message="errorMessage"></ErrorMessage>
   <LoadingSpinner v-if="!resultsLoaded && errorMessage === null"></LoadingSpinner>
-  <template slot="footer">
-  <transition
-    name="fade-slide-up"
-    @after-enter="addBodyClass"
-    @leave="removeBodyClass">
-    <ChapterOverlay
-      :id="chapter.id"
-      :query="query"
-      :book-title="bookTitle"
-      :title="chapter.title"
-      @close="showContent = false"
-      v-if="showContent">
-    </ChapterOverlay>
-  </transition>
-  </template>
 </Expandable>
 </template>
 
@@ -41,11 +35,10 @@ import Expandable from '@/components/Expandable.vue';
 import ErrorMessage from '@/components/search/ErrorCard.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import SearchResult from '@/components/search/SearchResult.vue';
-import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 
 export default {
   name: 'ChapterSubResult',
-  components: { ChapterOverlay, SearchResult, ErrorMessage, Expandable, LoadingSpinner },
+  components: { SearchResult, ErrorMessage, Expandable, LoadingSpinner },
   props: {
     bookTitle: String,
     chapter: Object,
@@ -59,7 +52,6 @@ export default {
       resultsLoaded: false,
       cancelToken: null,
       errorMessage: null,
-      showContent: false,
     };
   },
   methods: {
@@ -86,6 +78,7 @@ export default {
         this.results = results.map(({ paragraphs }) => {
           const mainParagraph = paragraphs.find(p => p.main);
           return {
+            chapter: this.chapter,
             mainParagraph,
             prevParagraphs: paragraphs.filter(p => p.position < mainParagraph.position),
             nextParagraphs: paragraphs.filter(p => p.position > mainParagraph.position),
@@ -110,12 +103,6 @@ export default {
         this.cancelToken.cancel();
         this.cancelToken = null;
       }
-    },
-    addBodyClass() {
-      document.body.classList.add('chapter-preview');
-    },
-    removeBodyClass() {
-      document.body.classList.remove('chapter-preview');
     },
   },
 };

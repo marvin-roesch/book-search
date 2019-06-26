@@ -14,10 +14,11 @@ import BookManagement from '@/views/BookManagement.vue';
 import NewBook from '@/views/NewBook.vue';
 import EditBook from '@/views/EditBook.vue';
 import NotFound from '@/views/NotFound.vue';
-import Read from '@/views/Read.vue';
+import Library from '@/views/Library.vue';
 import BookOverview from '@/views/BookOverview.vue';
 import BookChapters from '@/views/BookChapters.vue';
 import BookDictionary from '@/views/BookDictionary.vue';
+import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 
 Vue.use(Router);
 
@@ -97,6 +98,13 @@ const router = new Router({
       name: 'search',
       component: SearchResults,
       meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'preview/:id',
+          name: 'search-preview',
+          component: ChapterOverlay,
+        },
+      ],
     },
     {
       path: '/chapters/:id',
@@ -105,13 +113,13 @@ const router = new Router({
       meta: { requiresAuth: true },
     },
     {
-      path: '/read',
-      name: 'read',
-      component: Read,
+      path: '/library',
+      name: 'library',
+      component: Library,
       meta: { requiresAuth: true },
     },
     {
-      path: '/read/:id',
+      path: '/library/:id',
       component: BookOverview,
       meta: { requiresAuth: true },
       children: [
@@ -139,7 +147,7 @@ const router = new Router({
     if (to.name === 'chapter') {
       return { x: 0, y: 0 };
     }
-    if (from.name === 'read' && to.path.startsWith('/read/')) {
+    if (from.name === 'library' && to.path.startsWith('/library/')) {
       return { x: 0, y: 0 };
     }
     return undefined;

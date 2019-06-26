@@ -1,7 +1,7 @@
 <template>
 <div id="app">
   <transition name="fade">
-    <keep-alive include="read">
+    <keep-alive include="library">
       <router-view/>
     </keep-alive>
   </transition>

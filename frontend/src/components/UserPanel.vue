@@ -27,7 +27,7 @@
       <router-link :to="{name: 'home'}">Search</router-link>
     </li>
     <li>
-      <router-link :to="{name: 'read'}">Library</router-link>
+      <router-link :to="{name: 'library'}">Library</router-link>
     </li>
     <li v-if="identity.canManageBooks">
       <router-link :to="{name: 'book-management'}">Manage</router-link>

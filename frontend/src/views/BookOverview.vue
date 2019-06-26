@@ -6,7 +6,7 @@
   <div class="book-overview-header">
     <UserPanel></UserPanel>
     <h1>{{ $route.meta.title }}</h1>
-    <XIcon class="book-overview-close-icon" @click.prevent.stop="$router.push({ name: 'read' })">
+    <XIcon class="book-overview-close-icon" @click.prevent.stop="$router.push({ name: 'library' })">
     </XIcon>
   </div>
   <div class="book-overview-sidebar">
@@ -64,7 +64,9 @@ import { scrollAware } from '@/custom-directives';
 export default {
   name: 'book-overview',
   mixins: [scrollAware],
-  components: { SearchIcon, BookIcon, ListIcon, UserPanel, XIcon },
+  components: {
+    SearchIcon, BookIcon, ListIcon, UserPanel, XIcon,
+  },
   data() {
     return {
       bookId: '',
@@ -132,7 +134,7 @@ export default {
           },
         );
       }
-      vm.fromOldCover = from.name === 'read' && oldCover !== null;
+      vm.fromOldCover = from.name === 'library' && oldCover !== null;
       vm.hasOldCover = vm.fromOldCover;
     });
   },
@@ -141,7 +143,7 @@ export default {
     const { cover } = this.$refs;
     const styles = window.getComputedStyle(cover);
     if (oldCover !== null) {
-      oldCover.style.display = to.name === 'read' ? '' : 'none';
+      oldCover.style.display = to.name === 'library' ? '' : 'none';
       this.hasCover = false;
       if (styles.getPropertyValue('display') === 'none') {
         oldCover.noTransition = true;

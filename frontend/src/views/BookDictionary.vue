@@ -36,7 +36,12 @@
       class="book-dictionary-entries-word"
       :style="{'transition-delay': `${calculateDelay(index)}ms`}"
       :key="term.word">
-      {{ term.word }}
+      <router-link :to="{
+        name: 'search',
+        query: { q: term.word, series: '', books: $route.params.id }
+      }">
+        {{ term.word }}
+      </router-link>
     </div>
     <div
       class="book-dictionary-entries-occurrences"

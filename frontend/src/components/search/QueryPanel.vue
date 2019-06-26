@@ -15,7 +15,9 @@
   <div class="query-panel-options">
     <div class="query-panel-filter">
       <span class="query-panel-filter-label">Filter:</span>
-      <a href="#" @click.prevent="filterVisible = !filterVisible" ref="filter-trigger">
+      <a
+        class="query-panel-filter-trigger" href="#"
+        @click.prevent="filterVisible = !filterVisible" ref="filter-trigger">
         <book-filter-summary :series="series"></book-filter-summary>
       </a>
       <transition name="fade">
@@ -26,7 +28,15 @@
             handler() { filterVisible = false; }
           }"
           v-if="filterVisible">
-          <book-filter :root="true" :series="series" @filtered="$emit('filter', $event)">
+          <a class="query-panel-filter-action" href="#" @click.prevent="$refs.filter.selectAll()">
+            All
+          </a>
+          <a class="query-panel-filter-action" href="#" @click.prevent="$refs.filter.deselectAll()">
+            None
+          </a>
+          <book-filter
+            :root="true" :series="series"
+            @filtered="$emit('filter', $event)" ref="filter">
           </book-filter>
         </div>
       </transition>
@@ -164,7 +174,7 @@ export default {
       line-height: 1rem;
     }
 
-    a {
+    &-trigger {
       position: relative;
       display: flex;
       align-items: center;

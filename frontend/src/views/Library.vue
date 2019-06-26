@@ -29,7 +29,7 @@ function transitionListener(event) {
 }
 
 export default {
-  name: 'read',
+  name: 'library',
   components: { UserPanel, SeriesTree },
   data() {
     return {

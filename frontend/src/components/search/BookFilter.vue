@@ -40,6 +40,18 @@ export default {
     series: Array,
   },
   methods: {
+    selectAll() {
+      this.series.forEach(s => this.toggleSeriesImpl(s, true));
+      if (this.root) {
+        this.$emit('filtered', this.buildFilter());
+      }
+    },
+    deselectAll() {
+      this.series.forEach(s => this.toggleSeriesImpl(s, false));
+      if (this.root) {
+        this.$emit('filtered', this.buildFilter());
+      }
+    },
     allSelected(series) {
       return series.books.reduce((acc, b) => acc && b.selected, true)
         && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
