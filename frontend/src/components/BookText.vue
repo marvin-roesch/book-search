@@ -6,8 +6,9 @@
   <transition name="fade">
     <div class="book-text-popup" v-show="displayPopup" ref="popup">
       Quote:
-      <a href="#" @click.prevent="copyDiscordQuote">Discord</a> &middot;
-      <a href="#" @click.prevent="copyWikiQuote">Wiki</a>
+      <a href="#" @click.prevent.stop="copyPlainQuote">Plain</a> &middot;
+      <a href="#" @click.prevent.stop="copyDiscordQuote">Discord</a> &middot;
+      <a href="#" @click.prevent.stop="copyWikiQuote">Wiki</a>
     </div>
   </transition>
 </div>
@@ -113,21 +114,24 @@ export default {
       popup.style.top = `${y}px`;
       this.displayPopup = true;
     },
+    copyPlainQuote() {
+      this.copySelection('', '');
+    },
+    copyDiscordQuote() {
+      this.copySelection(
+        '```\n',
+        `\n\n${this.bookTitle} - ${this.chapterTitle}\n\`\`\``,
+      );
+    },
     copyWikiQuote() {
       this.copySelection(
         '{{quote\n| ',
         `\n| ${this.bookTitle} - ${this.chapterTitle}\n}}`,
       );
     },
-    copyDiscordQuote() {
-      this.copySelection(
-        '```\n',
-        `\n${this.bookTitle} - ${this.chapterTitle}\n\`\`\``,
-      );
-    },
     copySelection(prefix, suffix) {
       const el = document.createElement('textarea');
-      const selection = document.getSelection().toString().trim();
+      const selection = this.normalizeText(document.getSelection().toString().trim());
       el.value = `${prefix}${selection}${suffix}`;
       document.body.appendChild(el);
       el.select();
@@ -137,6 +141,11 @@ export default {
       document.body.removeChild(el);
 
       this.$notifications.success('The quote has been successfully copied to your clipboard!');
+    },
+    normalizeText(text) {
+      return text
+        .replace(/[\u00AB\u00BB\u201C\u201D\u201E]/g, '"') // Double quotes
+        .replace(/\u0091\u0092\u2018\u2019\u201A\u2039\u203A\uFF07/, '\''); // Single quotes
     },
   },
 };
@@ -157,6 +166,7 @@ export default {
     transform: translateY(-100%);
     margin-top: -0.5rem;
     font-family: 'Nunito Sans', sans-serif;
+    z-index: 2000;
 
     &:after {
       position: absolute;
