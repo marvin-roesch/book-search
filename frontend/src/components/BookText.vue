@@ -1,5 +1,5 @@
 <template>
-<div class="book-text" ref="text" @mouseup="showPopup">
+<div class="book-text" ref="text">
   <slot>
     <div v-html="content"></div>
   </slot>
@@ -30,9 +30,15 @@ export default {
   },
   mounted() {
     document.addEventListener('selectionchange', this.onSelectionChange);
+    document.addEventListener('mouseup', this.showPopup);
+    document.addEventListener('touchend', this.showPopup);
+    document.addEventListener('touchcancel', this.showPopup);
   },
   destroyed() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
+    document.removeEventListener('mouseup', this.showPopup);
+    document.removeEventListener('touchend', this.showPopup);
+    document.removeEventListener('touchcancel', this.showPopup);
   },
   methods: {
     onSelectionChange() {
@@ -94,7 +100,7 @@ export default {
     hidePopup() {
       this.displayPopup = false;
     },
-    showPopup() {
+    showPopup(event) {
       const { popup } = this.$refs;
       const startMarker = document.getElementById('selection-start-marker');
       const endMarker = document.getElementById('selection-end-marker');
@@ -104,12 +110,15 @@ export default {
       }
 
       let x = startMarker.offsetLeft;
-      const y = Math.min(startMarker.offsetTop, endMarker.offsetTop);
+      let y = Math.min(startMarker.offsetTop, endMarker.offsetTop);
       if (y < startMarker.offsetTop) {
         x = endMarker.offsetLeft;
-      } else if (y === startMarker.offsetTop) {
-        x = Math.min(startMarker.offsetLeft, endMarker.offsetLeft);
       }
+
+      if (event instanceof TouchEvent) {
+        y += 50;
+      }
+
       popup.style.left = `${x}px`;
       popup.style.top = `${y}px`;
       this.displayPopup = true;
@@ -167,6 +176,7 @@ export default {
     margin-top: -0.5rem;
     font-family: 'Nunito Sans', sans-serif;
     z-index: 2000;
+    max-width: 1000px;
 
     &:after {
       position: absolute;
