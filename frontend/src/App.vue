@@ -26,9 +26,23 @@ import { mapState } from 'vuex';
 export default {
   name: 'app',
   components: { Notification },
-  computed: mapState('notifications', {
-    notifications: 'activeNotifications',
-  }),
+  computed: {
+    ...mapState('notifications', {
+      notifications: 'activeNotifications',
+    }),
+    ...mapState(['darkMode']),
+  },
+  watch: {
+    darkMode: {
+      handler(enabled) {
+        document.body.classList.remove('dark-theme');
+        if (enabled) {
+          document.body.classList.add('dark-theme');
+        }
+      },
+      immediate: true,
+    },
+  },
 };
 </script>
 

@@ -1,6 +1,12 @@
 <template>
 <Card class="account-settings" title="Account Settings">
-  <form>
+  <div class="account-settings-section">
+    <h3>Appearance</h3>
+    <CheckBox :value="darkMode" @input="$store.commit('setDarkMode', $event.target.checked)">
+      Enable Dark Mode (Currently only affects this device)
+    </CheckBox>
+  </div>
+  <form class="account-settings-section">
     <h3>Change password</h3>
     <TextField
       type="password"
@@ -45,10 +51,20 @@ import TextField from '@/components/TextField.vue';
 import Button from '@/components/Button.vue';
 import { KeyIcon, LockIcon, RepeatIcon } from 'vue-feather-icons';
 import Card from '@/components/Card.vue';
+import CheckBox from '@/components/CheckBox.vue';
+import { mapState } from 'vuex';
 
 export default {
   name: 'AccountSettings',
-  components: { Card, Button, TextField, LockIcon, KeyIcon, RepeatIcon },
+  components: {
+    CheckBox,
+    Card,
+    Button,
+    TextField,
+    LockIcon,
+    KeyIcon,
+    RepeatIcon,
+  },
   data() {
     return {
       oldPassword: '',
@@ -57,6 +73,7 @@ export default {
       verifying: false,
     };
   },
+  computed: mapState(['darkMode']),
   methods: {
     async change() {
       const {
@@ -90,11 +107,6 @@ export default {
     flex-direction: column;
     align-items: stretch;
 
-    h3 {
-      padding: 0;
-      margin: 0;
-    }
-
     .checkbox {
       display: inline-block;
       margin-top: 0.5rem;
@@ -103,6 +115,19 @@ export default {
       &:last-child {
         margin-right: 0;
       }
+    }
+  }
+
+  &-section {
+    h3 {
+      padding: 0;
+      margin: 0;
+    }
+
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 
