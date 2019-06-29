@@ -212,7 +212,7 @@ export default {
       font-weight: bold;
       border-bottom: 1px solid rgba(0, 0, 0, 0.2);
       top: 0;
-      background: white;
+      background: var(--section-bg);
       z-index: 1000;
     }
 

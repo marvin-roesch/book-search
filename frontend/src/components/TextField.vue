@@ -53,8 +53,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-$inactive-color: desaturate(lighten($primary, 20%), 20%);
-
 .text-field {
   position: relative;
   transition: opacity 0.2s ease-in-out;
@@ -71,8 +69,8 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    color: lighten($inactive-color, 10%);
-    border-bottom: 2px solid lighten($inactive-color, 20%);
+    color: var(--muted-text-color);
+    border-bottom: 2px solid var(--muted-text-color);
     transition: border-bottom-color 0.2s ease-in-out, color 0.2s ease-in-out;
   }
 
@@ -82,7 +80,7 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
     border: none;
     padding: 0.75rem;
     background: none;
-    border-bottom: 2px solid lighten($inactive-color, 20%);
+    border-bottom: 2px solid var(--muted-text-color);
     transition: border-bottom-color 0.2s ease-in-out;
     font-size: 1rem;
     color: inherit;
@@ -93,7 +91,7 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
     }
 
     &::placeholder {
-      color: $inactive-color;
+      color: var(--muted-text-color);
     }
   }
 
@@ -116,10 +114,6 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
     height: 1rem;
   }
 
-  .text-field-hint {
-    color: rgba($base-text-color, 0.5);
-  }
-
   &-with-errors {
     .text-field-icon, .text-field-input {
       border-bottom-color: $errors;
@@ -132,16 +126,6 @@ $inactive-color: desaturate(lighten($primary, 20%), 20%);
     .text-field-input {
       &:hover, &:focus, &:hover ~ .text-field-icon, &:focus ~ .text-field-icon {
         border-bottom-color: $errors;
-      }
-    }
-  }
-
-  &.text-field-disabled {
-    opacity: 0.5;
-
-    .text-field-input {
-      &:hover, &:focus, &:hover ~ .text-field-icon, &:focus ~ .text-field-icon {
-        border-bottom-color: lighten($inactive-color, 20%);
       }
     }
   }

@@ -158,7 +158,7 @@ export default {
     position: fixed;
     top: 0;
     left: 0;
-    background: white;
+    background: var(--section-bg);
     display: flex;
     align-items: center;
     z-index: 2000;

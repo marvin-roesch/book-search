@@ -38,14 +38,14 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: #fafafa;
+  background: var(--body-bg);
 }
 
 #app {
   font-family: 'Nunito Sans', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: $base-text-color;
+  color: var(--base-text-color);
   display: flex;
   flex-direction: column;
   align-items: center;

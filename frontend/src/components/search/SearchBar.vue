@@ -131,7 +131,7 @@ export default {
   input {
     width: 100%;
     font-size: 1rem;
-    color: $base-text-color;
+    color: var(--base-text-color);
     line-height: 1;
     box-shadow: rgba(0, 0, 0, 0.1) 0 0 0 1px, rgba(0, 0, 0, 0.1) 0 2px 4px;
     font-family: 'Nunito Sans', Helvetica, Arial, sans-serif;
@@ -141,7 +141,7 @@ export default {
     border-radius: 4px;
     outline: 0;
     box-sizing: border-box;
-    background: white;
+    background: var(--section-bg);
   }
 
   &-help-icon {

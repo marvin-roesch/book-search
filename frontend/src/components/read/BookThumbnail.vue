@@ -47,7 +47,7 @@ export default {
 .book-thumbnail {
   display: block;
   cursor: pointer;
-  color: $base-text-color;
+  color: var(--base-text-color);
 
   &-cover {
     position: relative;
@@ -73,7 +73,7 @@ export default {
       top: 0;
       bottom: 0;
       background: rgba(255, 255, 255, 0.3);
-      color: $base-text-color;
+      color: var(--base-text-color);
       transition: opacity 0.2s ease-in-out;
     }
 
@@ -90,7 +90,7 @@ export default {
 
   &-author {
     font-size: 0.8rem;
-    color: lighten($base-text-color, 10%);
+    color: var(--highlight-text-color);
   }
 
   &:hover, &:focus, &:active {

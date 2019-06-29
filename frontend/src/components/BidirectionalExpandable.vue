@@ -69,7 +69,7 @@ export default {
   overflow: hidden;
   box-sizing: border-box;
   min-height: 5rem;
-  background: #fff;
+  background: var(--section-bg);
 
   &:before, &:after {
     content: '';
@@ -78,7 +78,7 @@ export default {
     height: 1px;
     position: relative;
     z-index: 1000;
-    box-shadow: 0 0 16px 16px #fff;
+    box-shadow: 0 0 16px 16px var(--section-bg);
     transition: box-shadow 0.2s ease-in-out;
   }
 
@@ -118,7 +118,7 @@ export default {
 
   &-expanded {
     &:before, &:after {
-      box-shadow: 0 0 0 0 #fff;
+      box-shadow: 0 0 0 0 var(--section-bg);
     }
   }
 }

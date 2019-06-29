@@ -50,7 +50,7 @@
     </transition-group>
   </div>
   <h1>{{ $route.meta.title }}</h1>
-  <transition name="fade">
+  <transition name="fade-relative">
     <router-view></router-view>
   </transition>
 </div>
@@ -172,7 +172,7 @@ export default {
     top: 0;
     left: 0;
     right: 0;
-    background: white;
+    background: var(--section-bg);
     box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
     z-index: 1001;
     padding: 0.5rem 2rem 0.5rem;
@@ -204,7 +204,7 @@ export default {
     box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
     padding: 0.5rem 2rem 0;
     z-index: 1000;
-    background: white;
+    background: var(--section-bg);
     width: 24rem;
     transition: 0.2s top ease-out;
   }
@@ -260,7 +260,7 @@ export default {
 
   &-author {
     font-size: 0.8rem;
-    color: lighten($base-text-color, 10%);
+    color: var(--highlight-text-color);
   }
 
   .book-cover {

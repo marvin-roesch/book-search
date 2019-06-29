@@ -83,16 +83,16 @@ export default {
         width: 32px;
         height: 32px;
         border-radius: 100%;
-        border: 2px solid $base-text-color;
+        border: 2px solid var(--base-text-color);
         position: relative;
         margin-right: 0.5rem;
       }
 
       &:hover {
-        color: lighten($base-text-color, 10%);
+        color: var(--highlight-text-color);
 
-        &-icon {
-          border-color: lighten($base-text-color, 10%);
+        .user-panel-menu-trigger-icon {
+          border-color: var(--highlight-text-color);
         }
       }
     }
@@ -104,8 +104,8 @@ export default {
       left: 0;
       margin-top: 0.6rem;
       padding: 0.5rem 0;
-      background: white;
-      border: 1px solid #C8C8C8;
+      background: var(--section-bg);
+      border: 1px solid rgba(0, 0, 0, 0.1);
       border-radius: 3px;
       box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
       width: auto;
@@ -123,11 +123,11 @@ export default {
         a {
           display: block;
           padding: 0.25rem 0.5rem;
-          color: $base-text-color;
+          color: var(--base-text-color);
 
           &:hover, &:focus, &:active {
             cursor: pointer;
-            color: $base-text-color;
+            color: var(--base-text-color);
             background: rgba(0, 0, 0, 0.05);
           }
         }
@@ -136,7 +136,7 @@ export default {
       &:before {
         position: absolute;
         box-sizing: border-box;
-        background: white;
+        background: var(--section-bg);
         content: '';
         width: 0.5rem;
         height: 0.5rem;
@@ -145,7 +145,7 @@ export default {
         margin-top: -1px;
         transform-origin: 50%;
         transform: rotate(45deg);
-        border: 1px solid #C8C8C8;
+        border: 1px solid rgba(0, 0, 0, 0.1);
         border-bottom: none;
         border-right: none;
       }

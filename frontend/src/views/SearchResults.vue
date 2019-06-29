@@ -181,7 +181,7 @@ body.chapter-preview {
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
     position: fixed;
-    background: white;
+    background: var(--section-bg);
     display: flex;
     align-items: center;
     z-index: 2000;

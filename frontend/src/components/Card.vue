@@ -24,7 +24,7 @@ export default {
 <style lang="scss">
 .card {
   padding: 2rem;
-  background: white;
+  background: var(--section-bg);
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);

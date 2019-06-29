@@ -80,10 +80,6 @@ export default {
     height: 1rem;
   }
 
-  .checkbox-hint {
-    color: rgba($base-text-color, 0.5);
-  }
-
   &-with-errors {
     .text-field-input {
       &:hover, &:focus, &:hover ~ .text-field-icon, &:focus ~ .text-field-icon {

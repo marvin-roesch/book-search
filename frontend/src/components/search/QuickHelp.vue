@@ -23,7 +23,7 @@ export default {
   flex-grow: 1;
   margin-top: 0.5rem;
   font-size: 0.8rem;
-  color: rgba(0, 0, 0, 0.5);
+  color: var(--muted-text-color);
 
   code {
     background: rgba(0, 0, 0, 0.05);

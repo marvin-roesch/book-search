@@ -114,7 +114,7 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--body-bg);
   z-index: 2000;
   overflow-y: scroll;
   --delay: 0ms;
@@ -132,7 +132,7 @@ export default {
     position: sticky;
     top: 0;
     left: 0;
-    background: white;
+    background: var(--section-bg);
     display: flex;
     align-items: center;
     z-index: 2000;

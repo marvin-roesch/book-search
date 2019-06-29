@@ -135,6 +135,7 @@ export default {
   box-sizing: border-box;
   list-style-type: none;
   display: flex;
+  flex-wrap: wrap;
   padding: 0;
   margin: 0;
 

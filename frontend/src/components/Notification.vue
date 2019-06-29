@@ -31,7 +31,7 @@ export default {
 .notification {
   display: flex;
   padding: 2rem;
-  background: white;
+  background: var(--section-bg);
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-top: none;
   box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);

@@ -110,7 +110,7 @@ export default {
     }
 
     &-action {
-      color: $base-text-color;
+      color: var(--base-text-color);
       display: flex;
       align-items: center;
       background: rgba(0, 0, 0, 0.05);
@@ -118,7 +118,7 @@ export default {
       border-right: 1px solid rgba(0, 0, 0, 0.1);
 
       &:hover, &:active, &:focus {
-        color: $base-text-color;
+        color: var(--base-text-color);
         background: rgba(0, 0, 0, 0.1);
       }
 

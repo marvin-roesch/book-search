@@ -24,7 +24,7 @@ export default {
   flex-direction: column;
   align-items: center;
   font-size: 1rem;
-  color: $base-text-color;
+  color: var(--base-text-color);
   margin: 0 auto;
   max-width: 50%;
   text-align: left;

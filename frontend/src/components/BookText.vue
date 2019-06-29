@@ -168,8 +168,8 @@ export default {
   &-popup {
     position: absolute;
     padding: 0.25rem;
-    background: white;
-    border: 1px solid #C8C8C8;
+    background: var(--section-bg);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 3px;
     box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
     transform: translateY(-100%);
@@ -181,7 +181,7 @@ export default {
     &:after {
       position: absolute;
       box-sizing: border-box;
-      background: white;
+      background: var(--section-bg);
       content: '';
       width: 0.5rem;
       height: 0.5rem;
@@ -191,7 +191,7 @@ export default {
       margin-bottom: -0.25rem;
       transform-origin: 50%;
       transform: rotate(45deg);
-      border: 1px solid #C8C8C8;
+      border: 1px solid rgba(0, 0, 0, 0.1);
       border-top: none;
       border-left: none;
     }
@@ -304,7 +304,7 @@ export default {
   }
 
   .result-paragraph {
-    background: aliceblue;
+    background: var(--chapter-highlight-color);
   }
 }
 </style>

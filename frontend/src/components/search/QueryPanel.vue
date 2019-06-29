@@ -191,7 +191,7 @@ export default {
       left: -0.5rem;
       right: 0;
       top: -0.5rem;
-      background: white;
+      background: var(--section-bg);
       border-radius: 3px;
       padding: 2rem 0.5rem 0.5rem;
       border: 1px solid rgba(0, 0, 0, 0.1);

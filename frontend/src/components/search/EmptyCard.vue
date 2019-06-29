@@ -19,7 +19,7 @@ export default {
   flex-direction: column;
   align-items: center;
   font-size: 1rem;
-  color: $base-text-color;
+  color: var(--base-text-color);
   text-align: left;
 }
 </style>
