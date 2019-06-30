@@ -54,6 +54,16 @@ export default {
         }
       }
     }
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      list-style-type: disc;
+      padding-left: 1rem;
+
+      li:after {
+        display: none;
+      }
+    }
   }
 }
 </style>

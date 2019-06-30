@@ -42,14 +42,16 @@
       </transition>
     </div>
     <div class="query-panel-grouping">
-      <label for="query-panel-scope" class="query-panel-scope-label">Search in</label>
-      <select
-        id="query-panel-scope"
-        class="query-panel-scope"
-        @input="$emit('chapter-scope', $event.target.value === 'chapters')">
-        <option value="paragraphs" :selected="!chapterScope">Paragraphs</option>
-        <option value="chapters" :selected="chapterScope">Full chapters</option>
-      </select>
+      <div class="query-panel-scope-container">
+        <label for="query-panel-scope" class="query-panel-scope-label">Search in</label>
+        <select
+          id="query-panel-scope"
+          class="query-panel-scope"
+          @input="$emit('chapter-scope', $event.target.value === 'chapters')">
+          <option value="paragraphs" :selected="!chapterScope">Paragraphs</option>
+          <option value="chapters" :selected="chapterScope">Full chapters</option>
+        </select>
+      </div>
       <CheckBox
         name="group-results"
         :value="groupResults"
@@ -131,6 +133,7 @@ export default {
     margin-top: 0.5rem;
     display: flex;
     align-items: center;
+    position: relative;
 
     @media (max-width: 640px) {
       flex-direction: column;
@@ -140,6 +143,11 @@ export default {
 
   &-scope {
     margin: 0 0.5rem;
+
+    &-container {
+      display: flex;
+      align-items: stretch;
+    }
   }
 
   &-grouping {
@@ -158,12 +166,12 @@ export default {
     @media (max-width: 640px) {
       margin-top: 0.25rem;
       margin-left: 0;
+      flex-direction: column;
     }
   }
 
   &-filter {
     margin-right: 1rem;
-    position: relative;
     display: flex;
     min-width: 0;
     flex-grow: 1;
@@ -190,12 +198,23 @@ export default {
       box-sizing: border-box;
       left: -0.5rem;
       right: 0;
-      top: -0.5rem;
+      top: auto;
+      margin-top: -0.5rem;
       background: var(--section-bg);
       border-radius: 3px;
       padding: 2rem 0.5rem 0.5rem;
       border: 1px solid rgba(0, 0, 0, 0.1);
       z-index: 2000;
+      width: calc(100% + 1rem);
+      max-width: $max-content-width;
+
+      @media (max-width: $max-content-width) {
+        max-width: calc(100% + 1rem);
+      }
+    }
+
+    @media (max-width: 640px) {
+      margin-right: 0;
     }
   }
 }

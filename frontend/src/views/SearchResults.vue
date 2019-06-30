@@ -260,7 +260,7 @@ body.chapter-preview {
 
     @media (max-width: 640px) {
       margin-top: 0.25rem;
-      padding-top: 11.5rem;
+      padding-top: 12.5rem;
     }
   }
 }
