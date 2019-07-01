@@ -125,7 +125,7 @@ export default {
   },
   watch: {
     '$route.query.q': function () {
-      this.search();
+      this.search(this.$route.params.id);
     },
   },
   async beforeRouteUpdate(to, from, next) {
