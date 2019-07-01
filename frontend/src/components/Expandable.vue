@@ -1,8 +1,8 @@
 <template>
 <div :class="classes">
-  <div class="expandable-header" @click.self="toggle">
+  <div class="expandable-header" @click="toggle">
     <slot name="header"></slot>
-    <ChevronDownIcon class="expandable-toggle-button" @click.self="toggle"></ChevronDownIcon>
+    <ChevronDownIcon class="expandable-toggle-button"></ChevronDownIcon>
   </div>
   <collapse-transition>
     <div class="expandable-content" v-if="expanded">

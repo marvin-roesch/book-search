@@ -8,7 +8,9 @@
         <label :for="`class-mapping-${cls.name}`">
           {{ cls.name }} ({{ cls.occurrences }} Occurrences):
         </label>
-        <select :id="`class-mapping-${cls.name}`" v-model="cls.mapping">
+        <select :id="`class-mapping-${cls.name}`"
+                v-model="cls.mapping"
+                @click="$event.stopImmediatePropagation()">
           <option value="no-selection" disabled selected>Choose style</option>
           <optgroup :label="group" v-for="(mappings, group) in availableMappings" :key="group">
             <option :value="mapping.id" v-for="mapping in mappings" :key="mapping.id">
@@ -121,6 +123,11 @@ export default {
       background: none;
       margin-left: auto;
       pointer-events: auto;
+      color: inherit;
+
+      optgroup, option {
+        color: $light-base-text-color;
+      }
     }
   }
 }
