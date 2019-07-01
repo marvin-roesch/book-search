@@ -236,9 +236,16 @@ body.chapter-preview {
     }
   }
 
+  &-hits {
+    color: var(--muted-text-color);
+    font-size: 0.9rem;
+    text-align: right;
+    font-weight: normal;
+  }
+
   .search-result-container {
     box-sizing: border-box;
-    padding: 9rem 1rem 1rem;
+    padding: 8.5rem 1rem 1rem;
     width: 50%;
     max-width: $max-content-width;
     display: flex;

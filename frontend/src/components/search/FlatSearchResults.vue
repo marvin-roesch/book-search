@@ -1,7 +1,7 @@
 <template>
 <div class="search-result-container">
   <transition name="search-slide">
-    <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
+    <h2 class="search-results-hits" v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
   </transition>
   <transition-group
     v-infinite-scroll="loadMore"
@@ -234,5 +234,9 @@ export default {
   flex-direction: column;
   align-items: stretch;
   position: relative;
+
+  .search-result:first-child {
+    margin-top: 0.25rem;
+  }
 }
 </style>
