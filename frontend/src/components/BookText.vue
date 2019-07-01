@@ -154,7 +154,7 @@ export default {
     normalizeText(text) {
       return text
         .replace(/[\u00AB\u00BB\u201C\u201D\u201E]/g, '"') // Double quotes
-        .replace(/\u0091\u0092\u2018\u2019\u201A\u2039\u203A\uFF07/, '\''); // Single quotes
+        .replace(/[\u0091\u0092\u2018\u2019\u201A\u2039\u203A\uFF07]/, '\''); // Single quotes
     },
   },
 };

@@ -116,12 +116,12 @@ class BookIndex(vararg hosts: HttpHost) {
                 "analyzer": {
                     "strip_html_analyzer": {
                         "tokenizer": "classic",
-                        "char_filter": ["html_stripper"]
+                        "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "case_insensitive_analyzer": {
                         "tokenizer": "classic",
                         "filter": ["lowercase"],
-                        "char_filter": ["html_stripper"]
+                        "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "signature_analyzer": {
                         "tokenizer": "standard",
@@ -137,6 +137,7 @@ class BookIndex(vararg hosts: HttpHost) {
                         "char_filter": [
                             "html_stripper",
                             "normalize_apostrophes",
+                            "normalize_quotes",
                             "convert_hyphen_start",
                             "convert_hyphens",
                             "remove_numbers",
@@ -175,7 +176,20 @@ class BookIndex(vararg hosts: HttpHost) {
                             "\u0092=>\u0027",
                             "\u2018=>\u0027",
                             "\u2019=>\u0027",
+                            "\u201A=>\u0027",
+                            "\u2039=>\u0027",
+                            "\u203A=>\u0027",
                             "\uFF07=>\u0027"
+                        ]
+                    },
+                    "normalize_quotes": {
+                        "type": "mapping",
+                        "mappings": [
+                            "\u00AB=>\u0022",
+                            "\u00BB=>\u0022",
+                            "\u201C=>\u0022",
+                            "\u201D=>\u0022",
+                            "\u201E=>\u0022"
                         ]
                     }
                 },
