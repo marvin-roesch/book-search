@@ -2,7 +2,15 @@
 <div class="chapter-overlay" ref="container">
   <div class="chapter-overlay-header">
     <div class="chapter-overlay-title" v-if="chapter !== null">
-      <h2>{{ book.title }} - {{ chapter.title }}</h2>
+      <h2>
+        <router-link :to="{
+          name: 'chapter',
+          params: { id: chapter.id },
+          query: { q: $route.query.q }
+        }">
+          {{ book.title }} - {{ chapter.title }}
+        </router-link>
+      </h2>
       <Share2Icon
         class="chapter-overlay-header-share-icon"
         :width="20"
@@ -83,7 +91,7 @@ export default {
     },
     share() {
       const baseUrl = window.location.origin;
-      const link = `${baseUrl}/chapters/${this.id}?q=${encodeURIComponent(this.query)}`;
+      const link = `${baseUrl}/chapters/${this.id}?q=${encodeURIComponent(this.$route.query.q)}`;
 
       const el = document.createElement('textarea');
       el.value = link;
@@ -95,9 +103,6 @@ export default {
       document.body.removeChild(el);
       this.$notifications.success('A link to this chapter has been copied to your clipboard!');
     },
-  },
-  beforeRouteEnter(to, from, next) {
-    next();
   },
   beforeRouteLeave(to, from, next) {
     document.body.classList.remove('chapter-preview');
