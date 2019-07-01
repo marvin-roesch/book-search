@@ -18,12 +18,12 @@
     </router-link>
   </div>
   </template>
-  <transition-group tag="div" class="search-result-list" name="search-slide">
+  <div class="search-result-list">
     <search-result
       :result="result" :display-metadata="false" :query="query"
       v-for="(result, index) in results" :key="index">
     </search-result>
-  </transition-group>
+  </div>
   <ErrorMessage v-if="errorMessage !== null" :message="errorMessage"></ErrorMessage>
   <LoadingSpinner v-if="!resultsLoaded && errorMessage === null"></LoadingSpinner>
 </Expandable>

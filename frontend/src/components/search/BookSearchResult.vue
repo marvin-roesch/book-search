@@ -6,21 +6,17 @@
     <small>({{ book.totalOccurrences }})</small>
   </span>
   </template>
-  <transition-group
-    tag="div"
+  <div
     class="search-result-list"
-    name="search-slide"
     v-if="chapterScope">
     <ChapterSearchResult
       :result="{ book, chapter }"
       :query="query"
       v-for="chapter in chapters" :key="chapter.id">
     </ChapterSearchResult>
-  </transition-group>
-  <transition-group
-    tag="div"
+  </div>
+  <div
     class="search-result-list"
-    name="search-slide"
     v-else>
     <ChapterSubResult
       :book="book"
@@ -30,7 +26,7 @@
       :book-filter="bookFilter"
       v-for="chapter in chapters" :key="chapter.id">
     </ChapterSubResult>
-  </transition-group>
+  </div>
   <ErrorMessage v-if="errorMessage !== null" :message="errorMessage"></ErrorMessage>
   <LoadingSpinner v-if="!chaptersLoaded && errorMessage === null"></LoadingSpinner>
 </Expandable>

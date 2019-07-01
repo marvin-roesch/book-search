@@ -1,7 +1,7 @@
 <template>
 <div class="search-result-container grouped-search-results">
   <transition name="search-slide">
-    <h2 v-if="totalHits > 0">Displayed hits: {{ totalHits }}</h2>
+    <h2 v-if="totalHits > 0">Total hits: {{ totalHits }}</h2>
   </transition>
   <transition-group tag="div" class="search-result-list" name="search-slide">
     <BookSearchResult
