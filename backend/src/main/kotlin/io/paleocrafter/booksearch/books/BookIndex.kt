@@ -348,8 +348,8 @@ class BookIndex(vararg hosts: HttpHost) {
                 HighlightBuilder.Field("text.cs")
                     .matchedFields("text.cs", "text.cs.lowercase")
                     .numOfFragments(0)
-                    .preTags("<strong>")
-                    .postTags("</strong>")
+                    .preTags("<mark>")
+                    .postTags("</mark>")
             ).highlighterType("fvh")
 
         protected fun buildBaseQuery(query: String, bookFilter: List<UUID>, chapterFilter: List<UUID>? = null) =
