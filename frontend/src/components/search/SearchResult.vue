@@ -1,7 +1,17 @@
 <template>
 <div :class="{ 'search-result': true, 'search-result-with-siblings': showSiblings }"
      @click="toggleSiblings">
-  <h2 v-if="displayMetadata">{{ result.book.title }} - {{ result.chapter.title }}</h2>
+  <h2 v-if="displayMetadata">
+    <router-link
+      :to="{
+          name: 'search-preview',
+          params: { id: result.chapter.id },
+          query: { ...$route.query, q: query, position: result.mainParagraph.position }
+        }"
+      @click.native="$event.stopImmediatePropagation()">
+      {{ result.book.title }} - {{ result.chapter.title }}
+    </router-link>
+  </h2>
   <BookText :book-title="result.book.title" :chapter-title="result.chapter.title">
     <BidirectionalExpandable :expanded="showSiblings" :visible-height="24">
       <template slot="start">
