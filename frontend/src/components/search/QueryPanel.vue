@@ -5,14 +5,14 @@
   :duration="300"
   :easing="easing"
   @animation-end="$emit('ready')">
-  <SearchBar
-    :toolbar="toolbar"
-    :auto-focus="autoFocus"
-    :query="query"
-    @search="$emit('search', $event)">
-  </SearchBar>
-  <QuickHelp></QuickHelp>
-  <div class="query-panel-options">
+  <div class="query-panel-search">
+    <SearchBar
+      :toolbar="toolbar"
+      :auto-focus="autoFocus"
+      :query="query"
+      @search="$emit('search', $event)">
+    </SearchBar>
+    <QuickHelp></QuickHelp>
     <div class="query-panel-filter">
       <span class="query-panel-filter-label">Filter:</span>
       <a
@@ -24,9 +24,9 @@
         <div
           class="query-panel-filter-container"
           v-closable="{
-            exclude: ['filter-trigger'],
-            handler() { filterVisible = false; }
-          }"
+          exclude: ['filter-trigger'],
+          handler() { filterVisible = false; }
+        }"
           v-if="filterVisible">
           <a class="query-panel-filter-action" href="#" @click.prevent="$refs.filter.selectAll()">
             All
@@ -41,24 +41,35 @@
         </div>
       </transition>
     </div>
-    <div class="query-panel-grouping">
-      <div class="query-panel-scope-container">
-        <label for="query-panel-scope" class="query-panel-scope-label">Search in</label>
-        <select
-          id="query-panel-scope"
-          class="query-panel-scope"
-          @input="$emit('chapter-scope', $event.target.value === 'chapters')">
-          <option value="paragraphs" :selected="!chapterScope">Paragraphs</option>
-          <option value="chapters" :selected="chapterScope">Full chapters</option>
-        </select>
+  </div>
+  <div class="query-panel-options">
+    <div class="query-panel-scope-container">
+      <span class="query-panel-scope-label">Search in</span>
+      <div class="query-panel-scope">
+        <input
+          type="radio"
+          id="query-panel-paragraphs-scope"
+          value="paragraphs"
+          :checked="!chapterScope"
+          @input="onScopeChange">
+        <label for="query-panel-paragraphs-scope">Paragraphs</label>
       </div>
+      <div class="query-panel-scope">
+        <input
+          type="radio"
+          id="query-panel-chapters-scope"
+          value="chapters"
+          :checked="chapterScope"
+          @input="onScopeChange">
+        <label for="query-panel-chapters-scope">Chapters</label>
+      </div>
+    </div>
+    <div class="query-panel-grouping">
       <CheckBox
         name="group-results"
         :value="groupResults"
         @input="$emit('group-results', $event.target.checked)">
-        Group results by
-        <template v-if="chapterScope">book</template>
-        <template v-else>chapter</template>
+        Group results
       </CheckBox>
     </div>
   </div>
@@ -95,6 +106,9 @@ export default {
     search(event) {
       this.$emit('search', event.target.value);
     },
+    onScopeChange(event) {
+      this.$emit('chapter-scope', event.target.value === 'chapters');
+    },
   },
 };
 </script>
@@ -105,7 +119,6 @@ export default {
   margin: 0 auto;
   display: flex;
   align-items: stretch;
-  flex-direction: column;
   padding: 1rem 0 0.5rem;
   width: 50vw;
   max-width: $max-content-width;
@@ -120,6 +133,8 @@ export default {
   }
 
   @media (max-width: 640px) {
+    flex-direction: column;
+
     &.query-panel-toolbar {
       .quick-help {
         display: none;
@@ -127,54 +142,66 @@ export default {
     }
   }
 
+  &-search {
+    position: relative;
+  }
+
   &-options {
     box-sizing: border-box;
-    flex-grow: 1;
-    margin-top: 0.5rem;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     position: relative;
+    font-size: 0.8rem;
 
     @media (max-width: 640px) {
-      flex-direction: column;
-      align-items: stretch;
+      margin-left: 0;
+      margin-top: 0.5rem;
     }
   }
 
   &-scope {
-    margin: 0 0.5rem;
+    display: flex;
+    align-items: center;
+
+    @media (max-width: 640px) {
+      margin-left: 0.25rem;
+    }
 
     &-container {
       display: flex;
       align-items: stretch;
+      flex-direction: column;
+
+      @media (max-width: 640px) {
+        flex-direction: row;
+      }
+    }
+
+    input {
+      margin: 0 0.125rem 0 0;
+    }
+
+    label:hover {
+      cursor: pointer;
     }
   }
 
   &-grouping {
-    margin-left: auto;
-    flex-shrink: 0;
-    display: flex;
-
-    .checkbox {
-      margin-right: 0.5rem;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
+    margin-top: 0.25rem;
 
     @media (max-width: 640px) {
-      margin-top: 0.25rem;
       margin-left: 0;
-      flex-direction: column;
     }
   }
 
   &-filter {
-    margin-right: 1rem;
     display: flex;
     min-width: 0;
     flex-grow: 1;
+    margin-top: 0.5rem;
 
     &-label {
       position: relative;

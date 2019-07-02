@@ -109,7 +109,7 @@ export default {
 <style lang="scss">
 .search-bar {
   position: relative;
-  width: 50vw;
+  width: 100%;
   max-width: $max-content-width;
   z-index: 2500;
 
