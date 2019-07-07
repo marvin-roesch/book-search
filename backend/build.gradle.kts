@@ -24,11 +24,14 @@ dependencies {
     implementation("io.ktor:ktor-jackson:1.2.1")
     implementation("io.ktor:ktor-auth:1.2.1")
     implementation("io.ktor:ktor-server-sessions:1.2.1")
+    implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("org.postgresql:postgresql:42.2.5")
     implementation("com.zaxxer:HikariCP:2.7.8")
     implementation("org.jetbrains.exposed:exposed:0.15.1")
     implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.1.1")
-    implementation("nl.siegmann.epublib:epublib-core:3.1")
+    implementation("nl.siegmann.epublib:epublib-core:3.1") {
+        exclude(group = "org.slf4j", module = "slf4j-simple")
+    }
     implementation("org.jsoup:jsoup:1.12.1")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:2.11.2")
 }
