@@ -57,3 +57,16 @@ tasks.withType<Jar> {
         )
     }
 }
+
+val run: JavaExec by tasks
+run.setEnvironment(
+    "ELASTIC_HOST" to "http://127.0.0.1:9200",
+    "DEFAULT_PASSWORD" to "booksearcher",
+    "CRYPTO_KEY" to "966efc7f2526829ec7580bfb033652555adcc2bd8fb2a250aaa0ced12bbff00b7b60dd0e323f129171a27d66660af93b258eab90507ff28895fb79b459ced1f2",
+    "DB_CONNECTION" to "jdbc:postgresql://127.0.0.1:5432/booksearch",
+    "DB_DRIVER" to "org.postgresql.Driver",
+    "DB_USERNAME" to "booksearch",
+    "DB_PASSWORD" to "b00kse4rch",
+    "DB_MIGRATION_USERNAME" to "booksearch_migrations",
+    "DB_MIGRATION_PASSWORD" to "migr4tion5"
+)
