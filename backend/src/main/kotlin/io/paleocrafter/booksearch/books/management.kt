@@ -14,10 +14,12 @@ import io.ktor.routing.get
 import io.ktor.routing.patch
 import io.ktor.routing.post
 import io.ktor.routing.put
+import io.paleocrafter.booksearch.auth.user
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.find
 import kotlinx.coroutines.channels.mapNotNull
 import kotlinx.coroutines.launch
+import nl.siegmann.epublib.domain.Resource
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
@@ -28,10 +30,17 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.slf4j.LoggerFactory
 import java.io.File
+import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.Charset
+import java.nio.file.Paths
 import java.util.UUID
 import javax.sql.rowset.serial.SerialBlob
+
+private val logger = LoggerFactory.getLogger("BookManagement")
 
 private val TOCReference.id: String
     get() = "$fragmentId.$resourceId"
@@ -102,6 +111,9 @@ fun Route.bookManagement(index: BookIndex) {
                 }
             }
         }
+
+        logger.info("New book '${epub.title}' uploaded by ${call.user?.username}")
+
         call.respond(mapOf("id" to bookId))
     }
 
@@ -171,22 +183,33 @@ fun Route.bookManagement(index: BookIndex) {
             val chapters = epub.tableOfContents.tocReferences
                 .flatMap { linearizeTableOfContents(it) }
                 .filter { it.first in entries }
-                .map { Pair(it.first, it.second.title) to Jsoup.parse(String(it.second.resource.data)) }
 
-            for ((position, chapter) in chapters.withIndex()) {
-                val (metadata, content) = chapter
-                content.extractImages(id, epub.resources) { name, data ->
+            for ((position, entry) in chapters.withIndex()) {
+                val (tocReference, chapter) = entry
+
+                val content = Jsoup.parse(String(chapter.resource.data))
+                content.extractImages(id) { path ->
+                    val uri = chapter.resource.href.resolveHref(path)
+
+                    if (uri.isAbsolute) {
+                        return@extractImages null
+                    }
+
+                    val name = Paths.get(uri.path).fileName.toString().urlDecoded
+                    val resourcePath = uri.path.urlDecoded
+                    val data = epub.resources.getByHref(resourcePath).data
                     Images.insertIgnore {
                         it[Images.book] = book.id
                         it[Images.name] = name
                         it[Images.data] = SerialBlob(data)
                     }
+                    name
                 }
 
                 Chapter.new(UUID.randomUUID()) {
                     this.book = book
-                    tocReference = metadata.first
-                    this.title = metadata.second
+                    this.tocReference = tocReference
+                    this.title = chapter.title
                     this.content = content.outerHtml()
                     this.position = position
                 }
@@ -289,6 +312,8 @@ fun Route.bookManagement(index: BookIndex) {
             book.searchable = true
         }
 
+        logger.info("Book '${book.title}' indexed by ${call.user?.username}")
+
         call.respond(mapOf(
             "id" to id,
             "message" to "Book '${book.title}' was successfully indexed and is now searchable!"
@@ -322,6 +347,8 @@ fun Route.bookManagement(index: BookIndex) {
             books.forEach { Book.findById(it.key)?.searchable = it.value.isNotEmpty() }
         }
 
+        logger.info("All books reindexed")
+
         call.respond(mapOf(
             "message" to "All books were successfully re-indexed!"
         ))
@@ -330,15 +357,24 @@ fun Route.bookManagement(index: BookIndex) {
 
 private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int)
 
-private inline fun Document.extractImages(bookId: UUID, resources: Resources, imageHandler: (name: String, data: ByteArray) -> Unit) {
+private inline fun Document.extractImages(bookId: UUID, imageHandler: (path: String) -> String?) {
     val images = this.select("img")
     for (img in images) {
         val src = img.attr("src")
-        val data = resources.getByHref(src).data
-        imageHandler(src, data)
-        img.attr("src", "/api/books/$bookId/images/$src")
+        val newSrc = imageHandler(src)
+        if (newSrc != null) {
+            img.attr("src", "/api/books/$bookId/images/$newSrc")
+        }
     }
 }
+
+private fun String.resolveHref(path: String) = URI(this.urlEncoded).resolve(path.urlEncoded)
+
+private val String.urlEncoded: String
+    get() = this.split('/').joinToString("/") { URLEncoder.encode(it, Charsets.UTF_8.name()) }
+
+private val String.urlDecoded: String
+    get() = this.split('/').joinToString("/") { URLDecoder.decode(it, Charsets.UTF_8.name()) }
 
 private fun Document.extractClasses(resources: Resources): List<HtmlClass> {
     val styles = this.select("link[rel='stylesheet']")
