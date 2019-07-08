@@ -177,6 +177,7 @@ export default {
     font-family: 'Nunito Sans', sans-serif;
     z-index: 2000;
     max-width: 1000px;
+    user-select: none;
 
     &:after {
       position: absolute;
@@ -218,17 +219,17 @@ export default {
     }
   }
 
-  .h1 {
+  h1, .h1 {
     text-align: center;
     font-size: 1.5rem;
   }
 
-  .h2 {
+  h2, .h2 {
     text-align: center;
     font-size: 1.25rem;
   }
 
-  .h3 {
+  h3, .h3 {
     text-align: center;
     font-size: 1.1rem;
   }
@@ -243,15 +244,19 @@ export default {
     max-width: 100%;
   }
 
-  .centeredImage {
+  .centeredImage, .fullWidthImage {
     text-align: center;
-
-    img {
-      max-width: 80%;
-    }
   }
 
-  .epigraphText {
+  .centeredImage img {
+    max-width: 80%;
+  }
+
+  .fullWidthImage img {
+    max-width: 100%;
+  }
+
+  p.epigraphText {
     width: 60%;
     margin-left: auto;
     margin-right: auto;
