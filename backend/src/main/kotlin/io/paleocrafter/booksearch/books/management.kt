@@ -19,7 +19,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.find
 import kotlinx.coroutines.channels.mapNotNull
 import kotlinx.coroutines.launch
-import nl.siegmann.epublib.domain.Resource
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
@@ -42,8 +41,7 @@ import javax.sql.rowset.serial.SerialBlob
 
 private val logger = LoggerFactory.getLogger("BookManagement")
 
-private val TOCReference.id: String
-    get() = "$fragmentId.$resourceId"
+private fun TOCReference.buildId(parent: String, index: Int): String = "$parent.$index-$title"
 
 fun Route.bookManagement(index: BookIndex) {
     delete("/{id}") {
@@ -147,19 +145,23 @@ fun Route.bookManagement(index: BookIndex) {
             mapOf("message" to "Book with ID '$id' does not exist")
         )
 
-        fun serializeTableOfContents(toc: TOCReference): Map<String, Any> {
+        fun serializeTableOfContents(id: String, toc: TOCReference): Map<String, Any> {
             return mapOf(
-                "id" to toc.id,
+                "id" to id,
                 "title" to toc.title,
-                "selected" to (existingChapters.contains(toc.id) || existingChapters.isEmpty()),
-                "children" to toc.children.map { serializeTableOfContents(it) }
+                "selected" to (existingChapters.contains(id) || existingChapters.isEmpty()),
+                "children" to toc.children.mapIndexed { index, tocReference ->
+                    serializeTableOfContents(tocReference.buildId(id, index), tocReference)
+                }
             )
         }
 
         call.respond(
             mapOf(
                 "id" to id,
-                "toc" to epub.tableOfContents.tocReferences.map { serializeTableOfContents(it) }
+                "toc" to epub.tableOfContents.tocReferences.mapIndexed { index, tocReference ->
+                    serializeTableOfContents(tocReference.buildId("", index), tocReference)
+                }
             )
         )
     }
@@ -175,19 +177,22 @@ fun Route.bookManagement(index: BookIndex) {
             Images.deleteWhere { Images.book eq id }
             book.searchable = false
 
-            fun linearizeTableOfContents(toc: TOCReference): List<Pair<String, TOCReference>> {
-                return listOf(toc.id to toc) + toc.children.flatMap { linearizeTableOfContents(it) }
+            fun linearizeTableOfContents(id: String, toc: TOCReference): List<Pair<String, TOCReference>> {
+                return listOf(id to toc) + toc.children.withIndex().flatMap { (index, tocReference) ->
+                    linearizeTableOfContents(tocReference.buildId(id, index), tocReference)
+                }
             }
 
             val epub = epubReader.readEpub(book.content.binaryStream)
             val chapters = epub.tableOfContents.tocReferences
-                .flatMap { linearizeTableOfContents(it) }
+                .withIndex()
+                .flatMap { (index, tocReference) -> linearizeTableOfContents(tocReference.buildId("", index), tocReference) }
                 .filter { it.first in entries }
+                .splitOffFragments()
 
             for ((position, entry) in chapters.withIndex()) {
-                val (tocReference, chapter) = entry
+                val (tocId, chapter, content) = entry
 
-                val content = Jsoup.parse(String(chapter.resource.data))
                 content.extractImages(id) { path ->
                     val uri = chapter.resource.href.resolveHref(path)
 
@@ -206,9 +211,19 @@ fun Route.bookManagement(index: BookIndex) {
                     name
                 }
 
+                content.resolveStylesheets {
+                    val uri = chapter.resource.href.resolveHref(it)
+
+                    if (uri.isAbsolute) {
+                        return@resolveStylesheets null
+                    }
+
+                    uri.path.urlDecoded
+                }
+
                 Chapter.new(UUID.randomUUID()) {
                     this.book = book
-                    this.tocReference = tocReference
+                    this.tocReference = tocId
                     this.title = chapter.title
                     this.content = content.outerHtml()
                     this.position = position
@@ -357,6 +372,49 @@ fun Route.bookManagement(index: BookIndex) {
 
 private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int)
 
+private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
+    val result = mutableListOf<SplitChapter>()
+
+    for (i in 0 until this.size) {
+        val (tocId, tocReference) = this[i]
+        val content = Jsoup.parse(String(tocReference.resource.data))
+
+        val startFragment = tocReference.fragmentId
+
+        if (!startFragment.isNullOrEmpty()) {
+            val fragmentElement = content.getElementById(startFragment)
+            val parentParagraphs = fragmentElement.parents().filter { it.`is`("p") }
+            val reference = if (parentParagraphs.isEmpty() || fragmentElement.`is`("p")) {
+                fragmentElement
+            } else {
+                parentParagraphs.last()
+            }
+            reference.siblingNodes().take(reference.siblingIndex()).forEach { it.remove() }
+        }
+
+        val next = this.getOrNull(i + 1)?.second
+        val endFragment = if (next?.resource?.href == tocReference.resource.href) next?.fragmentId else null
+
+        if (!endFragment.isNullOrEmpty()) {
+            val fragmentElement = content.getElementById(endFragment)
+            val parentParagraphs = fragmentElement.parents().filter { it.`is`("p") }
+            val reference = if (parentParagraphs.isEmpty() || fragmentElement.`is`("p")) {
+                fragmentElement
+            } else {
+                parentParagraphs.last()
+            }
+            reference.siblingNodes().drop(reference.siblingIndex()).forEach { it.remove() }
+            reference.remove()
+        }
+
+        result.add(SplitChapter(tocId, tocReference, content))
+    }
+
+    return result
+}
+
+private data class SplitChapter(val tocId: String, val tocReference: TOCReference, val content: Document)
+
 private inline fun Document.extractImages(bookId: UUID, imageHandler: (path: String) -> String?) {
     val images = this.select("img")
     for (img in images) {
@@ -364,6 +422,17 @@ private inline fun Document.extractImages(bookId: UUID, imageHandler: (path: Str
         val newSrc = imageHandler(src)
         if (newSrc != null) {
             img.attr("src", "/api/books/$bookId/images/$newSrc")
+        }
+    }
+}
+
+private inline fun Document.resolveStylesheets(pathHandler: (path: String) -> String?) {
+    val styles = this.select("link[rel='stylesheet']")
+    for (style in styles) {
+        val href = style.attr("href")
+        val newHref = pathHandler(href)
+        if (newHref != null) {
+            style.attr("href", newHref)
         }
     }
 }

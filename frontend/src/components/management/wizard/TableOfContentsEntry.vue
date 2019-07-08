@@ -1,7 +1,9 @@
 <template>
 <ul class="table-of-contents-entry">
   <li v-for="entry in entries" :key="entry.id">
-    <CheckBox :name="entry.id" :value="entry.selected" @input="onDirectChange">{{ entry.title }}</CheckBox>
+    <CheckBox :name="entry.id" :value="entry.selected" @input="onDirectChange">
+      {{ entry.title }}
+    </CheckBox>
     <TableOfContentsEntry v-if="entry.children.length > 0" :entries="entry.children"
                           @change="onChildChange(entry.id, $event)"></TableOfContentsEntry>
   </li>
