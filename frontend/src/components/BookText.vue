@@ -303,6 +303,26 @@ export default {
     font-weight: bold;
   }
 
+  .dialogLine {
+    .dialogSpeaker {
+      display: block;
+      text-align: left;
+      text-transform: uppercase;
+      font-style: normal;
+      font-weight: bold;
+    }
+
+    .dialogText {
+      display: block;
+      box-sizing: border-box;
+      padding-left: 2rem;
+
+      &:before, &:after {
+        content: none;
+      }
+    }
+  }
+
   .reset {
     font-style: normal;
     font-weight: normal;

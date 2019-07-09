@@ -20,6 +20,10 @@ enum class BookStyle(val group: String, val id: String, val description: String)
     FULL_WIDTH_IMAGE("Images", "fullWidthImage", "Full width image"),
     CENTRED_IMAGE("Images", "centeredImage", "Centered image"),
 
+    DIALOG_LINE("Dialog", "dialogLine", "Line (paragraph)"),
+    DIALOG_SPEAKER("Dialog", "dialogSpeaker", "Speaker"),
+    DIALOG_TEXT("Dialog", "dialogText", "Text"),
+
     STRIP_CLASS("Remove", "stripClass", "Strip class from elements"),
     STRIP_ELEMENT("Remove", "stripElement", "Discard elements with class");
 
