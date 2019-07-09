@@ -50,12 +50,24 @@ class BookIndex(vararg hosts: HttpHost) {
                     "fields": {
                         "cs": {
                             "type": "text",
-                            "analyzer": "strip_html_analyzer",
+                            "analyzer": "stemmed_strip_html_analyzer",
                             "term_vector": "with_positions_offsets",
                             "fields": {
                                 "lowercase": {
                                     "type": "text",
-                                    "analyzer": "case_insensitive_analyzer",
+                                    "analyzer": "stemmed_case_insensitive_analyzer",
+                                    "term_vector": "with_positions_offsets",
+                                    "fields": {
+                                        "exact": {
+                                            "type": "text",
+                                            "analyzer": "case_insensitive_analyzer",
+                                            "term_vector": "with_positions_offsets"
+                                        }
+                                    }
+                                },
+                                "exact": {
+                                    "type": "text",
+                                    "analyzer": "strip_html_analyzer",
                                     "term_vector": "with_positions_offsets"
                                 }
                             }
@@ -87,20 +99,27 @@ class BookIndex(vararg hosts: HttpHost) {
                     "fields": {
                         "cs": {
                             "type": "text",
-                            "analyzer": "strip_html_analyzer",
+                            "analyzer": "stemmed_strip_html_analyzer",
                             "term_vector": "with_positions_offsets",
                             "fields": {
                                 "lowercase": {
                                     "type": "text",
-                                    "analyzer": "case_insensitive_analyzer",
+                                    "analyzer": "stemmed_case_insensitive_analyzer",
+                                    "term_vector": "with_positions_offsets",
+                                    "fields": {
+                                        "exact": {
+                                            "type": "text",
+                                            "analyzer": "case_insensitive_analyzer",
+                                            "term_vector": "with_positions_offsets"
+                                        }
+                                    }
+                                },
+                                "exact": {
+                                    "type": "text",
+                                    "analyzer": "strip_html_analyzer",
                                     "term_vector": "with_positions_offsets"
                                 }
                             }
-                        },
-                        "signature": {
-                            "type": "text",
-                            "analyzer": "signature_analyzer",
-                            "fielddata": true
                         }
                     }
                 }
@@ -121,6 +140,16 @@ class BookIndex(vararg hosts: HttpHost) {
                     "case_insensitive_analyzer": {
                         "tokenizer": "classic",
                         "filter": ["lowercase"],
+                        "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
+                    },
+                    "stemmed_strip_html_analyzer": {
+                        "tokenizer": "classic",
+                        "filter": ["possessive_stemmer", "kstem"],
+                        "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
+                    },
+                    "stemmed_case_insensitive_analyzer": {
+                        "tokenizer": "classic",
+                        "filter": ["lowercase", "possessive_stemmer", "kstem"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "signature_analyzer": {
@@ -360,7 +389,7 @@ class BookIndex(vararg hosts: HttpHost) {
         protected fun buildHighlighter() =
             HighlightBuilder().field(
                 HighlightBuilder.Field("text.cs")
-                    .matchedFields("text.cs", "text.cs.lowercase")
+                    .matchedFields("text.cs", "text.cs.lowercase", "text.cs.exact", "text.cs.lowercase.exact")
                     .numOfFragments(0)
                     .preTags("<mark>")
                     .postTags("</mark>")
@@ -369,7 +398,12 @@ class BookIndex(vararg hosts: HttpHost) {
         protected fun buildBaseQuery(query: String, bookFilter: List<UUID>, chapterFilter: List<UUID>? = null) =
             SearchSourceBuilder().query(
                 QueryBuilders.boolQuery()
-                    .must(QueryBuilders.queryStringQuery(query).defaultField("text.cs.lowercase").defaultOperator(Operator.AND))
+                    .must(
+                        QueryBuilders.queryStringQuery(query)
+                            .defaultField("text.cs.lowercase")
+                            .defaultOperator(Operator.AND)
+                            .quoteFieldSuffix(".exact")
+                    )
                     .filter(
                         QueryBuilders.boolQuery()
                             .minimumShouldMatch(1)
