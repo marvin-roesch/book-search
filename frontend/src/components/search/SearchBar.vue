@@ -26,6 +26,13 @@
             <p>You have the following options to refine your search:</p>
             <ul>
               <li>
+                <strong>Search in chapters:</strong>
+                If you choose "Search in chapters" rather than "Search in paragraphs", the entire
+                text of a chapter will be searched. You'll only see the chapter title as a
+                result, but the chapter view will highlight all occurrences of your search terms
+                within the chapter.
+              </li>
+              <li>
                 <strong>Quoting:</strong>
                 Putting terms in quotes will search for exactly the quoted phrase, disregarding
                 punctuation. Only paragraphs containing every word from the phrase in consecutive
@@ -34,11 +41,14 @@
               </li>
               <li>
                 <strong>Wildcards:</strong>
-                Search is only performed on entire words. If you want to include results where
-                a term only appears within another word, you can use wildcards.
-                An asterisk (<code>*</code>) will match any number of characters, including none,
-                while a question mark (<code>?</code>) will match exactly one character.<br>
-                Examples: <code>Kal*</code>, <code>Dalina?</code>
+                Search is usually only performed on entire words. If you want to include results
+                where a term only appears within another word, you can use wildcards.
+                An asterisk (<code>*</code>) will match any number of characters in a word,
+                while a question mark (<code>?</code>) will stand in as replacement for exactly
+                one character.<br>
+                Examples: <code>Kal*</code> matches all words starting with "Kal",
+                <code>Kala?</code> matches "Kalad" and "Kalak", <code>*weaver</code> matches
+                all words ending in "weaver"
               </li>
               <li>
                 <strong>Case Sensitivity:</strong>
