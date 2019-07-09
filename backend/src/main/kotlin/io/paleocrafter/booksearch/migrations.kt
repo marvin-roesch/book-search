@@ -1,5 +1,6 @@
 package io.paleocrafter.booksearch
 
+import io.paleocrafter.booksearch.auth.AddSearchSettingsMigration
 import io.paleocrafter.booksearch.auth.CreateAuthTablesMigration
 import io.paleocrafter.booksearch.books.AddCoverMigration
 import io.paleocrafter.booksearch.books.CreateBookTablesMigration
@@ -18,7 +19,8 @@ object DbMigrations : Table() {
     private val logger = LoggerFactory.getLogger("DbMigrations")
     private val versions = mapOf(
         0 to listOf(CreateAuthTablesMigration, CreateBookTablesMigration),
-        1 to listOf(AddCoverMigration)
+        1 to listOf(AddCoverMigration),
+        2 to listOf(AddSearchSettingsMigration)
     ).toSortedMap()
 
     fun run(db: Database) {

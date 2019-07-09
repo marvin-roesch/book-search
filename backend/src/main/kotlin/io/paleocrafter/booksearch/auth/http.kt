@@ -30,7 +30,6 @@ import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
 import io.ktor.util.hex
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
@@ -183,6 +182,37 @@ fun Application.auth() {
 
                     call.respond(mapOf("message" to "Your password was successfully changed!"))
                 }
+
+                patch("/search-settings") {
+                    val userId = call.userId ?: return@patch call.respond(
+                        HttpStatusCode.Unauthorized,
+                        mapOf(
+                            "message" to "You need to be logged in to view this page!"
+                        )
+                    )
+                    val request = call.receive<ChangeSearchSettingsRequest>()
+
+                    val view = transaction {
+                        val user = User.findById(userId) ?: return@transaction null
+
+                        user.defaultSearchScope = request.defaultScope
+                        user.groupResultsByDefault = request.groupByDefault
+
+                        user.view
+                    } ?: return@patch call.respond(
+                        HttpStatusCode.BadRequest,
+                        mapOf(
+                            "message" to "Your user does not seem to exist!"
+                        )
+                    )
+
+                    call.respond(
+                        mapOf(
+                            "message" to "Your search settings were successfully changed!",
+                            "identity" to view
+                        )
+                    )
+                }
             }
 
             authorize({ it.canManageUsers }) {
@@ -304,5 +334,7 @@ data class CreateUserRequest(val username: String, val password: String, val can
 data class PatchUserRequest(val canManageBooks: Boolean, val canManageUsers: Boolean)
 
 data class ChangePasswordRequest(val oldPassword: String, val newPassword: String, val newPasswordRepeat: String)
+
+data class ChangeSearchSettingsRequest(val defaultScope: String, val groupByDefault: Boolean)
 
 data class UserId(val id: UUID) : Principal

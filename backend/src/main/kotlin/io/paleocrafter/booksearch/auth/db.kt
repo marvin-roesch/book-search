@@ -12,6 +12,8 @@ object Users : UUIDTable() {
     val canManageBooks = bool("can_manage_books")
     val canManageUsers = bool("can_manage_users")
     val hasLoggedIn = bool("has_logged_in").default(false)
+    val defaultSearchScope = varchar("default_search_scope", 255).default("paragraphs")
+    val groupResultsByDefault = bool("group_results_by_default").default(false)
 }
 
 class User(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -22,9 +24,18 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var canManageBooks by Users.canManageBooks
     var canManageUsers by Users.canManageUsers
     var hasLoggedIn by Users.hasLoggedIn
+    var defaultSearchScope by Users.defaultSearchScope
+    var groupResultsByDefault by Users.groupResultsByDefault
 
     val view: UserView
-        get() = UserView(id.value, username, canManageBooks, canManageUsers)
+        get() = UserView(id.value, username, canManageBooks, canManageUsers, defaultSearchScope, groupResultsByDefault)
 }
 
-data class UserView(val id: UUID, val username: String, val canManageBooks: Boolean, val canManageUsers: Boolean)
+data class UserView(
+    val id: UUID,
+    val username: String,
+    val canManageBooks: Boolean,
+    val canManageUsers: Boolean,
+    val defaultSearchScope: String,
+    val groupResultsByDefault: Boolean
+)
