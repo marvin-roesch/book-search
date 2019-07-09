@@ -96,8 +96,7 @@ fun Route.bookManagement(index: BookIndex) {
             )
         }
         val bookId = UUID.randomUUID()
-        val bookAuthor = epub.metadata.authors.first()
-        val authorName = "${bookAuthor.firstname} ${bookAuthor.lastname}"
+        val authorName = epub.metadata.authors.firstOrNull()?.let { "${it.firstname} ${it.lastname}" } ?: ""
         transaction {
             Book.new(bookId) {
                 content = SerialBlob(buffer)
