@@ -37,7 +37,6 @@ const actions = {
     } catch (error) {
       throw error;
     }
-    return false;
   },
   async logout({ commit, dispatch }) {
     const { data: { message } } = await axios.post('/api/auth/logout');

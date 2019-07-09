@@ -21,14 +21,12 @@
 
 <script>
 import QueryPanel from '@/components/search/QueryPanel.vue';
-import UserPanel from '@/components/UserPanel.vue';
 import Fullscreen from '@/views/Fullscreen.vue';
 
 export default {
   name: 'home',
   components: {
     Fullscreen,
-    UserPanel,
     QueryPanel,
   },
   data() {
@@ -37,8 +35,8 @@ export default {
       series: [],
       bookFilter: undefined,
       seriesFilter: undefined,
-      chapterScope: false,
-      groupResults: false,
+      chapterScope: this.$store.state.auth.identity.defaultSearchScope === 'chapters',
+      groupResults: this.$store.state.auth.identity.groupResultsByDefault,
       oldQuery: {},
     };
   },
@@ -48,8 +46,12 @@ export default {
       const { q, books, series, scope, grouped } = { ...this.oldQuery, ...this.$route.query };
 
       this.query = q || '';
-      this.chapterScope = scope === 'chapters';
-      this.groupResults = grouped === true || grouped === 'true';
+      if (scope !== undefined) {
+        this.chapterScope = scope === 'chapters';
+      }
+      if (grouped !== undefined) {
+        this.groupResults = grouped === true || grouped === 'true';
+      }
       const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
       const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
 
