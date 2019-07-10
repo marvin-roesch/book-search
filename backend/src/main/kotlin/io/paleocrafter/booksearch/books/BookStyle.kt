@@ -26,6 +26,7 @@ enum class BookStyle(val group: String, val id: String, val description: String)
     GRAPHIC_NOVEL_SFX("Graphic Novel/Comic", "graphicNovelSfx", "(Sound) Effect"),
     GRAPHIC_NOVEL_SPEAKER("Graphic Novel/Comic", "graphicNovelSpeaker", "Speaker"),
     GRAPHIC_NOVEL_TEXT("Graphic Novel/Comic", "graphicNovelText", "Text"),
+    GRAPHIC_NOVEL_PANEL_SPLIT("Graphic Novel/Comic", "graphicNovelPanelSplit", "Panel split"),
 
     STRIP_CLASS("Remove", "stripClass", "Strip class from elements"),
     STRIP_ELEMENT("Remove", "stripElement", "Discard elements with class");

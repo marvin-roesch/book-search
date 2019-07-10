@@ -242,6 +242,7 @@ export default {
   img {
     display: inline-block;
     max-width: 100%;
+    margin: 0 auto;
   }
 
   .centeredImage, .fullWidthImage {
@@ -335,11 +336,21 @@ export default {
       font-weight: normal;
       text-transform: none;
       user-select: auto;
+      font-size: 0.8rem;
     }
 
     .graphicNovelText {
       font-style: italic;
     }
+  }
+
+  .graphicNovelPanelSplit {
+    display: block;
+    overflow: hidden;
+    width: 50%;
+    height: 0;
+    margin: 1rem auto;
+    border: 1px solid rgba(0, 0, 0, 0.2);
   }
 
   .reset {
