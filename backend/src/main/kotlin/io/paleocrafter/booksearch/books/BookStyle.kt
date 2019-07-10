@@ -12,6 +12,7 @@ enum class BookStyle(val group: String, val id: String, val description: String)
     EPIGRAPH_TEXT("Text Style", "epigraphText", "Epigraph text"),
     EPIGRAPH_CITATION("Text Style", "epigraphCitation", "Epigraph citation"),
     EMBED("Text Style", "embed", "Embed (in-world books, letters etc.)"),
+    FOOTNOTE("Text Style", "footnote", "Footnote"),
 
     ITALIC("Text Modifiers", "italic", "Italic"),
     BOLD("Text Modifiers", "bold", "Bold"),
@@ -20,9 +21,11 @@ enum class BookStyle(val group: String, val id: String, val description: String)
     FULL_WIDTH_IMAGE("Images", "fullWidthImage", "Full width image"),
     CENTRED_IMAGE("Images", "centeredImage", "Centered image"),
 
-    DIALOG_LINE("Dialog", "dialogLine", "Line (paragraph)"),
-    DIALOG_SPEAKER("Dialog", "dialogSpeaker", "Speaker"),
-    DIALOG_TEXT("Dialog", "dialogText", "Text"),
+    GRAPHIC_NOVEL_LINE("Graphic Novel/Comic", "graphicNovelLine", "Spoken line (paragraph)"),
+    GRAPHIC_NOVEL_THOUGHT("Graphic Novel/Comic", "graphicNovelThought", "Thought (paragraph)"),
+    GRAPHIC_NOVEL_SFX("Graphic Novel/Comic", "graphicNovelSfx", "(Sound) Effect"),
+    GRAPHIC_NOVEL_SPEAKER("Graphic Novel/Comic", "graphicNovelSpeaker", "Speaker"),
+    GRAPHIC_NOVEL_TEXT("Graphic Novel/Comic", "graphicNovelText", "Text"),
 
     STRIP_CLASS("Remove", "stripClass", "Strip class from elements"),
     STRIP_ELEMENT("Remove", "stripElement", "Discard elements with class");

@@ -289,6 +289,12 @@ export default {
     }
   }
 
+  .footnote {
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+    color: var(--muted-text-color);
+  }
+
   samp {
     font-family: 'Nunito Sans', sans-serif;
     text-align: justify;
@@ -303,8 +309,8 @@ export default {
     font-weight: bold;
   }
 
-  .dialogLine {
-    .dialogSpeaker {
+  .graphicNovelLine, .graphicNovelThought, .graphicNovelSfx {
+    .graphicNovelSpeaker {
       display: block;
       text-align: left;
       text-transform: uppercase;
@@ -312,7 +318,7 @@ export default {
       font-weight: bold;
     }
 
-    .dialogText {
+    .graphicNovelText {
       display: block;
       box-sizing: border-box;
       padding-left: 2rem;
@@ -320,6 +326,19 @@ export default {
       &:before, &:after {
         content: none;
       }
+    }
+  }
+
+  .graphicNovelThought {
+    .graphicNovelSpeaker:after {
+      content: ' (thinking)';
+      font-weight: normal;
+      text-transform: none;
+      user-select: auto;
+    }
+
+    .graphicNovelText {
+      font-style: italic;
     }
   }
 
