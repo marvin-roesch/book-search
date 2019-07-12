@@ -120,6 +120,11 @@ class BookIndex(vararg hosts: HttpHost) {
                                     "term_vector": "with_positions_offsets"
                                 }
                             }
+                        },
+                        "signature": {
+                            "type": "text",
+                            "analyzer": "signature_analyzer",
+                            "fielddata": true
                         }
                     }
                 }
