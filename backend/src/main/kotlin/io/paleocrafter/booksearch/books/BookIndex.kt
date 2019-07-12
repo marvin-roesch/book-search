@@ -140,21 +140,22 @@ class BookIndex(vararg hosts: HttpHost) {
                 "analyzer": {
                     "strip_html_analyzer": {
                         "tokenizer": "classic",
+                        "filter": ["remove_accents"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "case_insensitive_analyzer": {
                         "tokenizer": "classic",
-                        "filter": ["lowercase"],
+                        "filter": ["lowercase", "remove_accents"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "stemmed_strip_html_analyzer": {
                         "tokenizer": "classic",
-                        "filter": ["possessive_stemmer", "kstem"],
+                        "filter": ["remove_accents", "possessive_stemmer", "kstem"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "stemmed_case_insensitive_analyzer": {
                         "tokenizer": "classic",
-                        "filter": ["lowercase", "possessive_stemmer", "kstem"],
+                        "filter": ["lowercase", "remove_accents", "possessive_stemmer", "kstem"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "signature_analyzer": {
@@ -254,6 +255,9 @@ class BookIndex(vararg hosts: HttpHost) {
                         "type": "pattern_replace",
                         "pattern": "_",
                         "replacement": "-"
+                    },
+                    "remove_accents": {
+                        "type": "icu_folding"
                     }
                 }
             }
