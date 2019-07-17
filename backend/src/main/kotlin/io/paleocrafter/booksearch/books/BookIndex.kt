@@ -337,33 +337,39 @@ class BookIndex(vararg hosts: HttpHost) {
     suspend fun index(id: UUID, chapters: Iterable<ResolvedChapter>) {
         this.deleteBook(id)
 
-        val bulkRequest = BulkRequest()
-        for (chapter in chapters) {
-            bulkRequest.add(IndexRequest("chapters").id(chapter.id.toString()).source(
-                mapOf(
-                    "book" to id.toString(),
-                    "position" to chapter.position,
-                    "text" to chapter.content.html()
-                )
-            ))
+        for (batch in chapters.windowed(10, 10, partialWindows = true)) {
+            val chapterRequest = BulkRequest()
+            for (chapter in batch) {
+                chapterRequest.add(IndexRequest("chapters").id(chapter.id.toString()).source(
+                    mapOf(
+                        "book" to id.toString(),
+                        "position" to chapter.position,
+                        "text" to chapter.content.html()
+                    )
+                ))
+            }
+            suspendCoroutine<BulkResponse> {
+                client.bulkAsync(chapterRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
+            }
         }
 
         val paragraphs = chapters.flatMap { this.collectEntries(it) }
-
-        for (entry in paragraphs) {
-            bulkRequest.add(IndexRequest("paragraphs").id(UUID.randomUUID().toString()).source(
-                mapOf(
-                    "book" to id.toString(),
-                    "chapter" to entry.chapter,
-                    "position" to entry.position,
-                    "classes" to entry.classes,
-                    "text" to entry.text
-                )
-            ))
-        }
-
-        suspendCoroutine<BulkResponse> {
-            client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
+        for (batch in paragraphs.windowed(100, 100, partialWindows = true)) {
+            val paragraphRequest = BulkRequest()
+            for (entry in batch) {
+                paragraphRequest.add(IndexRequest("paragraphs").id(UUID.randomUUID().toString()).source(
+                    mapOf(
+                        "book" to id.toString(),
+                        "chapter" to entry.chapter,
+                        "position" to entry.position,
+                        "classes" to entry.classes,
+                        "text" to entry.text
+                    )
+                ))
+            }
+            suspendCoroutine<BulkResponse> {
+                client.bulkAsync(paragraphRequest, RequestOptions.DEFAULT, SuspendingActionListener(it))
+            }
         }
     }
 
