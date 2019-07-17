@@ -15,10 +15,13 @@ import io.ktor.routing.patch
 import io.ktor.routing.post
 import io.ktor.routing.put
 import io.paleocrafter.booksearch.auth.user
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.find
 import kotlinx.coroutines.channels.mapNotNull
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newFixedThreadPoolContext
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
@@ -43,6 +46,8 @@ private val logger = LoggerFactory.getLogger("BookManagement")
 
 private fun TOCReference.buildId(parent: String, index: Int): String = "$parent.$index-$title"
 
+val indexing = newFixedThreadPoolContext(4, "indexing")
+
 fun Route.bookManagement(index: BookIndex) {
     delete("/{id}") {
         val id = UUID.fromString(call.parameters["id"])
@@ -53,6 +58,7 @@ fun Route.bookManagement(index: BookIndex) {
             mapOf("message" to "Book with ID '$id' does not exist")
         )
 
+        index.prepare()
         index.deleteBook(id)
 
         val title = book.title
@@ -302,12 +308,12 @@ fun Route.bookManagement(index: BookIndex) {
         ))
     }
 
-    put("/{id}/index") {
-        val id = UUID.fromString(call.parameters["id"])
-        val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
+    suspend fun index(book: Book, user: String?) {
+        val id = transaction {
+            book.indexing = true
+            book.id.value
+        }
+
         val normalized = transaction {
             val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
                 it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
@@ -320,51 +326,69 @@ fun Route.bookManagement(index: BookIndex) {
             }
         }
 
-        index.index(id, normalized)
+        try {
+            index.index(id, normalized)
+        } catch(e: Exception) {
+            logger.error("Could not finish indexing '${book.title}'", e)
+            transaction {
+                book.indexing = false
+            }
+            return
+        }
 
         transaction {
             book.searchable = true
+            book.indexing = false
         }
 
-        logger.info("Book '${book.title}' indexed by ${call.user?.username}")
+        logger.info("Book '${book.title}' indexed by $user")
+    }
+
+    put("/{id}/index") {
+        val id = UUID.fromString(call.parameters["id"])
+        val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
+            HttpStatusCode.NotFound,
+            mapOf("message" to "Book with ID '$id' does not exist")
+        )
+
+        index.prepare()
+
+        // Only index when necessary
+        if (!transaction { book.indexing }) {
+            transaction { book.indexing = true }
+            GlobalScope.launch(indexing) {
+                index(book, call.user?.username)
+            }
+        }
 
         call.respond(mapOf(
             "id" to id,
-            "message" to "Book '${book.title}' was successfully indexed and is now searchable!"
+            "message" to "Indexing of '${book.title}' was successfully started and will soon be searchable!"
         ))
     }
 
     post("/reindex-all") {
+        index.reset()
+        index.prepare()
+
         val books = transaction {
-            Book.all().associate { book ->
-                book.id.value to transaction {
-                    val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
-                        it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping])
-                    }
-                    Chapter.find { Chapters.book eq book.id }.map {
-                        ResolvedChapter(it.id.value, book.id.value, it.title, it.position, Jsoup.parse(it.content).body()).also { resolved ->
-                            BookNormalizer.normalize(resolved, classMappings)
-                            it.indexedContent = resolved.content.html()
-                        }
+            Book.all().filter { !it.indexing }.also { it.forEach { b -> b.indexing = true } }
+        }
+
+        GlobalScope.launch {
+            coroutineScope {
+                for (book in books) {
+                    launch(indexing) {
+                        index(book, call.user?.username)
                     }
                 }
             }
+
+            logger.info("All books reindexed")
         }
-
-        index.reset()
-
-        for ((id, normalized) in books) {
-            index.index(id, normalized)
-        }
-
-        transaction {
-            books.forEach { Book.findById(it.key)?.searchable = it.value.isNotEmpty() }
-        }
-
-        logger.info("All books reindexed")
 
         call.respond(mapOf(
-            "message" to "All books were successfully re-indexed!"
+            "message" to "Re-indexing for all books was started!"
         ))
     }
 }

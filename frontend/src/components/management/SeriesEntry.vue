@@ -8,8 +8,13 @@
           <AlertTriangleIcon
             class="series-entry-book-unsearchable"
             :width="20" :height="20"
-            v-if="!book.searchable">
+            v-if="!book.searchable && !book.indexing">
           </AlertTriangleIcon>
+          <RefreshCcwIcon
+            class="series-entry-book-indexing"
+            :width="20" :height="20"
+            v-if="book.indexing">
+          </RefreshCcwIcon>
           {{ book.title }}
         </span>
         <div class="series-entry-book-actions">
@@ -32,11 +37,11 @@
 </template>
 
 <script>
-import { AlertTriangleIcon, Edit2Icon, XIcon } from 'vue-feather-icons';
+import { AlertTriangleIcon, Edit2Icon, RefreshCcwIcon, XIcon } from 'vue-feather-icons';
 
 export default {
   name: 'SeriesEntry',
-  components: { AlertTriangleIcon, XIcon, Edit2Icon },
+  components: { RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon },
   props: {
     series: Array,
   },
@@ -101,6 +106,11 @@ export default {
     &-unsearchable {
       margin-right: 0.25rem;
       color: $errors;
+    }
+
+    &-indexing {
+      margin-right: 0.25rem;
+      color: #b8993e;
     }
 
     &-actions {

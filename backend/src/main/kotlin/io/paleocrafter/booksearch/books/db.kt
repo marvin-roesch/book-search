@@ -18,6 +18,7 @@ object Books : UUIDTable() {
     val searchable = bool("searchable").default(false)
     val cover = blob("cover").nullable()
     val coverMime = varchar("cover_mime_type", 255).nullable()
+    val indexing = bool("indexing").default(false)
 }
 
 class Book(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -31,6 +32,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var searchable by Books.searchable
     var cover by Books.cover
     var coverMime by Books.coverMime
+    var indexing by Books.indexing
 
     fun toJson() =
         mapOf(
@@ -39,7 +41,8 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             "author" to author,
             "series" to series,
             "orderInSeries" to orderInSeries,
-            "searchable" to searchable
+            "searchable" to searchable,
+            "indexing" to indexing
         )
 }
 

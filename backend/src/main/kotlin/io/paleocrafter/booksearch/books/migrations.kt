@@ -4,6 +4,7 @@ import io.paleocrafter.booksearch.DbMigration
 import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import javax.sql.rowset.serial.SerialBlob
 
 object CreateBookTablesMigration : DbMigration("create-book-tables") {
@@ -23,6 +24,17 @@ object AddCoverMigration : DbMigration("add-book-covers") {
             epub.coverImage.let {
                 book.cover = SerialBlob(it.data)
                 book.coverMime = it.mediaType.name
+            }
+        }
+    }
+}
+
+object AddIndexingIndicatorMigration : DbMigration("add-book-indexing-indicator") {
+    override fun apply() {
+        with(TransactionManager.current()) {
+            val statements = Books.indexing.ddl
+            for (statement in statements) {
+                exec(statement)
             }
         }
     }

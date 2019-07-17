@@ -258,6 +258,10 @@ class BookIndex(vararg hosts: HttpHost) {
     val paragraphs = ParagraphSearch(client)
     val chapters = ChapterSearch(client)
 
+    suspend fun prepare() {
+        ensureElasticIndices()
+    }
+
     private suspend fun ensureElasticIndices() {
         ensureElasticIndex("chapters", chapterMapping)
         ensureElasticIndex("paragraphs", paragraphMapping)
@@ -331,8 +335,6 @@ class BookIndex(vararg hosts: HttpHost) {
     }
 
     suspend fun index(id: UUID, chapters: Iterable<ResolvedChapter>) {
-        ensureElasticIndices()
-
         this.deleteBook(id)
 
         val bulkRequest = BulkRequest()
@@ -372,8 +374,6 @@ class BookIndex(vararg hosts: HttpHost) {
     }
 
     suspend fun deleteBook(id: UUID) {
-        ensureElasticIndices()
-
         suspendCoroutine<Any> {
             client.deleteByQueryAsync(
                 DeleteByQueryRequest("chapters", "paragraphs").setQuery(QueryBuilders.termQuery("book", id.toString())),
