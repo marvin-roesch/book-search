@@ -257,7 +257,7 @@ class BookIndex(vararg hosts: HttpHost) {
                         "replacement": "-"
                     },
                     "remove_accents": {
-                        "type": "icu_folding"
+                        "type": "asciifolding"
                     }
                 }
             }
