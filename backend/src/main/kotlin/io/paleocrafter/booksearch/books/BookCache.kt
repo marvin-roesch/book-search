@@ -31,9 +31,11 @@ object BookCache {
 
     private fun rebuildSeries() {
         seriesPaths.clear()
-        for (book in Book.all()) {
-            val destinationSeries = buildSeries(book.series)
-            destinationSeries?.books?.add(book.resolved)
+        transaction {
+            for (book in Book.all()) {
+                val destinationSeries = buildSeries(book.series)
+                destinationSeries?.books?.add(book.resolved)
+            }
         }
         seriesCache = seriesPaths.entries
             .filter { it.value.root }
