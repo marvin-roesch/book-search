@@ -23,7 +23,7 @@ fun Route.bookSearch(index: BookIndex) {
         } else {
             val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
             BookCache.linearSeries
-                .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path ?: "No Series") } }
+                .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path.orElse("No Series")) } }
                 .flatMap { it.books }
                 .map { it.id } + bookFilter.orEmpty().map { UUID.fromString(it) }
         }

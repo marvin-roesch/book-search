@@ -11,6 +11,7 @@ import io.ktor.routing.get
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -96,10 +97,10 @@ fun Route.bookReading() {
 }
 
 data class Series(
-    val path: String?,
+    val path: Optional<String>,
     val name: String,
     val books: MutableList<ResolvedBook>,
-    val children: ConcurrentHashMap<String?, Series>
+    val children: ConcurrentHashMap<Optional<String>, Series>
 ) {
     fun toJson(): Map<String, Any> =
         mapOf(
