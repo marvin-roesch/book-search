@@ -6,13 +6,18 @@ import com.zaxxer.hikari.HikariDataSource
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.features.CachingHeaders
 import io.ktor.features.CallLogging
 import io.ktor.features.Compression
 import io.ktor.features.ConditionalHeaders
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.DefaultHeaders
 import io.ktor.features.StatusPages
+import io.ktor.features.gzip
+import io.ktor.http.CacheControl
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.CachingOptions
 import io.ktor.jackson.jackson
 import io.ktor.response.respond
 import org.jetbrains.exposed.sql.Database
@@ -63,6 +68,15 @@ fun Application.main() {
     }
     install(ContentNegotiation) {
         jackson {
+        }
+    }
+    install(CachingHeaders) {
+        options { outgoingContent ->
+            if (outgoingContent.contentType?.withoutParameters()?.match(ContentType.Image.Any) == true) {
+                CachingOptions(CacheControl.MaxAge(maxAgeSeconds = 30 * 24 * 60 * 60))
+            } else {
+                null
+            }
         }
     }
 }
