@@ -5,6 +5,7 @@ import io.paleocrafter.booksearch.auth.CreateAuthTablesMigration
 import io.paleocrafter.booksearch.books.AddCoverMigration
 import io.paleocrafter.booksearch.books.AddIndexingIndicatorMigration
 import io.paleocrafter.booksearch.books.CreateBookTablesMigration
+import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.SortOrder
@@ -12,6 +13,7 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
@@ -47,6 +49,20 @@ object DbMigrations : Table() {
                     }
                 }
             }
+        }
+    }
+}
+
+fun Table.createOrModifyColumns(vararg columns: Column<*>) {
+    val table = this
+    val byName = columns.groupBy { it.name }
+    with(TransactionManager.current()) {
+        val existing = this.db.dialect.tableColumns(table)[table].orEmpty()
+            .filter { byName.containsKey(it.name) }
+            .map { it.name }
+        val statements = columns.flatMap { if (existing.contains(it.name)) it.modifyStatement() else it.ddl }
+        for (statement in statements) {
+            exec(statement)
         }
     }
 }

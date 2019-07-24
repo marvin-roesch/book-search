@@ -1,6 +1,7 @@
 package io.paleocrafter.booksearch.books
 
 import io.paleocrafter.booksearch.DbMigration
+import io.paleocrafter.booksearch.createOrModifyColumns
 import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.or
@@ -31,11 +32,6 @@ object AddCoverMigration : DbMigration("add-book-covers") {
 
 object AddIndexingIndicatorMigration : DbMigration("add-book-indexing-indicator") {
     override fun apply() {
-        with(TransactionManager.current()) {
-            val statements = Books.indexing.ddl
-            for (statement in statements) {
-                exec(statement)
-            }
-        }
+        Books.createOrModifyColumns(Books.indexing)
     }
 }
