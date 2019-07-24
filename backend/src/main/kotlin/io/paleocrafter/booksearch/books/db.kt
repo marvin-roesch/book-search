@@ -34,9 +34,30 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var coverMime by Books.coverMime
     var indexing by Books.indexing
 
+    val resolved: ResolvedBook
+        get() = ResolvedBook(
+            id.value,
+            title,
+            author,
+            series,
+            orderInSeries,
+            searchable,
+            indexing
+        )
+}
+
+data class ResolvedBook(
+    val id: UUID,
+    val title: String,
+    val author: String,
+    val series: String?,
+    val orderInSeries: Int,
+    val searchable: Boolean,
+    val indexing: Boolean
+) {
     fun toJson() =
         mapOf(
-            "id" to id.value,
+            "id" to id,
             "title" to title,
             "author" to author,
             "series" to series,

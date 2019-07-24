@@ -24,6 +24,8 @@ fun Application.books() {
             "Either specify it as 'elasticsearch.hosts' in config file or pass ELASTIC_HOST env variable.")
     val index = BookIndex(*elasticConfig.map { HttpHost.create(it) }.toTypedArray())
 
+    BookCache.rebuild()
+
     routing {
         route("/api/books") {
             authenticate {

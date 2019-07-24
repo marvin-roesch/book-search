@@ -18,14 +18,15 @@ fun Route.bookSearch(index: BookIndex) {
     }
 
     fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?) =
-        transaction {
-            if (seriesFilter == null && bookFilter == null) {
-                Book.all()
-            } else {
-                val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
-                Book.all().filter { (it.series ?: "No Series").let { s -> adjustedFilter.any { r -> r.containsMatchIn(s) } } }
-            }.map { it.id.value }
-        } + bookFilter.orEmpty().map { UUID.fromString(it) }
+        if (seriesFilter == null && bookFilter == null) {
+            BookCache.books.map { it.id }
+        } else {
+            val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
+            BookCache.linearSeries
+                .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path ?: "No Series") } }
+                .flatMap { it.books }
+                .map { it.id } + bookFilter.orEmpty().map { UUID.fromString(it) }
+        }
 
     post("/paragraph-search") {
         val request = call.receive<SearchRequest>()
@@ -45,10 +46,10 @@ fun Route.bookSearch(index: BookIndex) {
 
         val results = transaction {
             searchResult.results.map {
-                val book = Book.findById(it.bookId) ?: return@transaction null
+                val book = BookCache.find(it.bookId) ?: return@transaction null
                 val chapter = Chapter.findById(it.chapterId) ?: return@transaction null
                 mapOf(
-                    "book" to book.toJson(),
+                    "book" to book,
                     "chapter" to chapter.toJson(),
                     "paragraphs" to it.paragraphs
                 )
@@ -84,7 +85,7 @@ fun Route.bookSearch(index: BookIndex) {
             searchResult.results.map {
                 val chapter = Chapter.findById(it) ?: return@transaction null
                 mapOf(
-                    "book" to chapter.book.toJson(),
+                    "book" to chapter.book.resolved,
                     "chapter" to chapter.toJson()
                 )
             }
@@ -118,11 +119,11 @@ fun Route.bookSearch(index: BookIndex) {
         val results = transaction {
             searchResult.results
                 .map { bookResult ->
-                    val book = Book.findById(bookResult.id)!!
+                    val book = BookCache.find(bookResult.id)!!
                     book to bookResult
                 }
                 .sortedWith(
-                    compareBy<Pair<Book, GroupSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
+                    compareBy<Pair<ResolvedBook, GroupSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
                         (it.first.series ?: "").split("\\")
                     }.thenBy { it.first.orderInSeries }.thenBy { it.first.title }
                 )
@@ -157,11 +158,11 @@ fun Route.bookSearch(index: BookIndex) {
         val results = transaction {
             searchResult.results
                 .map { bookResult ->
-                    val book = Book.findById(bookResult.id)!!
+                    val book = BookCache.find(bookResult.id)!!
                     book to bookResult
                 }
                 .sortedWith(
-                    compareBy<Pair<Book, GroupSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
+                    compareBy<Pair<ResolvedBook, GroupSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
                         (it.first.series ?: "").split("\\")
                     }.thenBy { it.first.orderInSeries }.thenBy { it.first.title }
                 )
@@ -257,7 +258,7 @@ fun Route.bookSearch(index: BookIndex) {
             transaction {
                 val chapter = Chapter.findById(id) ?: return@transaction null
                 mapOf(
-                    "book" to chapter.book.toJson(),
+                    "book" to chapter.book.resolved,
                     "chapter" to chapter.toJson(),
                     "content" to chapter.indexedContent,
                     "prevChapter" to chapter.previous?.id?.value,
@@ -277,7 +278,7 @@ fun Route.bookSearch(index: BookIndex) {
         val dbData = transaction {
             val chapter = Chapter.findById(id) ?: return@transaction null
             mapOf(
-                "book" to chapter.book.toJson(),
+                "book" to chapter.book.resolved,
                 "chapter" to chapter.toJson(),
                 "prevChapter" to chapter.previous?.id?.value,
                 "nextChapter" to chapter.next?.id?.value

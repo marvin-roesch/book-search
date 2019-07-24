@@ -70,6 +70,8 @@ fun Route.bookManagement(index: BookIndex) {
             book.delete()
         }
 
+        BookCache.removeBook(id)
+
         call.respond(
             mapOf(
                 "message" to "Book '$title' was successfully deleted!"
@@ -104,7 +106,7 @@ fun Route.bookManagement(index: BookIndex) {
         val bookId = UUID.randomUUID()
         val authorName = epub.metadata.authors.firstOrNull()?.let { "${it.firstname} ${it.lastname}" } ?: ""
         transaction {
-            Book.new(bookId) {
+            val book = Book.new(bookId) {
                 content = SerialBlob(buffer)
                 title = epub.title
                 author = authorName
@@ -113,6 +115,7 @@ fun Route.bookManagement(index: BookIndex) {
                     coverMime = it.mediaType.name
                 }
             }
+            BookCache.updateBook(bookId, book.resolved)
         }
 
         logger.info("New book '${epub.title}' uploaded by ${call.user?.username}")
@@ -129,6 +132,8 @@ fun Route.bookManagement(index: BookIndex) {
             book.author = request.author
             book.series = request.series
             book.orderInSeries = request.orderInSeries
+
+            BookCache.updateBook(id, book.resolved)
         } ?: return@patch call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -234,6 +239,8 @@ fun Route.bookManagement(index: BookIndex) {
                     this.position = position
                 }
             }
+
+            BookCache.updateBook(id, book.resolved)
         } ?: return@put call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -298,6 +305,8 @@ fun Route.bookManagement(index: BookIndex) {
             }
 
             book.searchable = false
+
+            BookCache.updateBook(id, book.resolved)
         } ?: return@put call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -328,7 +337,7 @@ fun Route.bookManagement(index: BookIndex) {
 
         try {
             index.index(id, normalized)
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             logger.error("Could not finish indexing '${book.title}'", e)
             transaction {
                 book.indexing = false
@@ -358,6 +367,9 @@ fun Route.bookManagement(index: BookIndex) {
             transaction { book.indexing = true }
             GlobalScope.launch(indexing) {
                 index(book, call.user?.username)
+                transaction {
+                    BookCache.updateBook(id, book.resolved)
+                }
             }
         }
 
@@ -383,6 +395,8 @@ fun Route.bookManagement(index: BookIndex) {
                     }
                 }
             }
+
+            BookCache.rebuild()
 
             logger.info("All books reindexed")
         }

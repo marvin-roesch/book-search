@@ -12,37 +12,11 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 fun Route.bookReading() {
-    data class Series(val name: String, val books: MutableList<Book>, val children: MutableMap<String, Series>) {
-        fun toJson(): Map<String, Any> =
-            mapOf(
-                "name" to name,
-                "books" to books.sortedBy { it.orderInSeries }.map { it.toJson() },
-                "children" to children.map { it.value.toJson() }
-            )
-    }
-
     get("/series") {
-        call.respond(
-            transaction {
-                val series = mutableMapOf<String, Series>()
-                for (book in Book.all()) {
-                    val seriesHierarchy = book.series?.split("\\") ?: listOf("No Series")
-
-                    var destinationSeries: Series? = null
-                    var seriesMap = series
-                    for (seriesName in seriesHierarchy) {
-                        val s = seriesMap.computeIfAbsent(seriesName) { Series(seriesName, mutableListOf(), mutableMapOf()) }
-                        destinationSeries = s
-                        seriesMap = s.children
-                    }
-
-                    destinationSeries?.books?.add(book)
-                }
-                series.map { it.value.toJson() }
-            }
-        )
+        call.respond(BookCache.series.map { it.toJson() })
     }
 
     get("/{id}") {
@@ -119,4 +93,18 @@ fun Route.bookReading() {
 
         call.respond(ByteArrayContent(imageData, imageType))
     }
+}
+
+data class Series(
+    val path: String?,
+    val name: String,
+    val books: MutableList<ResolvedBook>,
+    val children: ConcurrentHashMap<String?, Series>
+) {
+    fun toJson(): Map<String, Any> =
+        mapOf(
+            "name" to name,
+            "books" to books,
+            "children" to children.map { it.value.toJson() }
+        )
 }
