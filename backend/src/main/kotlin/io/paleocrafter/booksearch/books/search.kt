@@ -237,10 +237,11 @@ fun Route.bookSearch(index: BookIndex) {
             ))
         }
 
-        val searchResult = index.paragraphs.search(request.query, filter, chapterFilter = listOf(id)) ?: return@post call.respond(
-            HttpStatusCode.BadRequest,
-            mapOf("message" to "The provided query is invalid!")
-        )
+        val searchResult = index.paragraphs.search(request.query, filter, chapterFilter = listOf(id), sort = true)
+            ?: return@post call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf("message" to "The provided query is invalid!")
+            )
 
         val results = searchResult.results.map {
             mapOf(

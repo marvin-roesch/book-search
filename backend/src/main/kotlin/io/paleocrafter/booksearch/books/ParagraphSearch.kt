@@ -12,7 +12,6 @@ import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.aggregations.bucket.significant.SignificantTerms
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.util.UUID
@@ -20,11 +19,15 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.math.absoluteValue
 
 class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Search() {
-    suspend fun search(query: String, filter: List<UUID>, page: Int? = null, chapterFilter: List<UUID>? = null): SearchResults? {
+    suspend fun search(query: String, filter: List<UUID>, page: Int? = null, chapterFilter: List<UUID>? = null, sort: Boolean = false): SearchResults? {
         val baseQuery = buildBaseQuery(query, filter, chapterFilter)
         baseQuery.size(if (page == null) 1000 else 10)
         if (page != null) {
             baseQuery.from(page * 10)
+        }
+
+        if (sort) {
+            baseQuery.sort("position")
         }
 
         baseQuery.highlighter(buildHighlighter())
