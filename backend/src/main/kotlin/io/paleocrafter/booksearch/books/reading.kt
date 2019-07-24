@@ -98,6 +98,7 @@ fun Route.bookReading() {
 
 data class Series(
     val path: Optional<String>,
+    val root: Boolean,
     val name: String,
     val books: MutableList<ResolvedBook>,
     val children: ConcurrentHashMap<Optional<String>, Series>

@@ -29,28 +29,33 @@ object BookCache {
         }
     }
 
-    fun rebuildSeries() {
+    private fun rebuildSeries() {
         seriesPaths.clear()
         for (book in Book.all()) {
             val destinationSeries = buildSeries(book.series)
             destinationSeries?.books?.add(book.resolved)
         }
         seriesCache = seriesPaths.entries
+            .filter { it.value.root }
             .sortedWith(compareBy({ it.key.isPresent }, { it.value.name }))
             .map { it.value }
         seriesPaths.values.forEach { it.books.sortBy { b -> b.orderInSeries } }
     }
 
     private fun buildSeries(path: String?): Series? {
-        val seriesHierarchy = path?.split("\\") ?: listOf(null)
+        val seriesHierarchy = path?.split("\\")?.map { Optional.of(it) } ?: listOf(Optional.empty())
         var seriesMap = seriesPaths
         var rebuiltPath: Optional<String>? = null
         for (seriesName in seriesHierarchy) {
-            rebuiltPath = if (rebuiltPath === null) Optional.ofNullable(seriesName) else rebuiltPath.map { "$it\\$seriesName" }
-            val s = seriesMap.getOrPut(rebuiltPath) {
-                Series(rebuiltPath, seriesName ?: "No Series", mutableListOf(), ConcurrentHashMap())
+            val root = rebuiltPath === null
+            rebuiltPath = if (rebuiltPath === null) seriesName else rebuiltPath.flatMap { p -> seriesName.map { "$p\\$it" } }
+            var series = seriesPaths[rebuiltPath]
+            if (series === null) {
+                series = Series(rebuiltPath, root, seriesName.orElse("No Series"), mutableListOf(), ConcurrentHashMap())
+                seriesMap[seriesName] = series
+                seriesPaths[rebuiltPath] = series
             }
-            seriesMap = s.children
+            seriesMap = series.children
         }
         return seriesPaths[Optional.ofNullable(path)]
     }
