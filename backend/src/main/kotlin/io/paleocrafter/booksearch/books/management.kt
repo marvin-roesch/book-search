@@ -364,7 +364,10 @@ fun Route.bookManagement(index: BookIndex) {
 
         // Only index when necessary
         if (!transaction { book.indexing }) {
-            transaction { book.indexing = true }
+            transaction {
+                book.indexing = true
+                BookCache.updateBook(id, book.resolved)
+            }
             GlobalScope.launch(indexing) {
                 index(book, call.user?.username)
                 transaction {
@@ -384,7 +387,12 @@ fun Route.bookManagement(index: BookIndex) {
         index.prepare()
 
         val books = transaction {
-            Book.all().filter { !it.indexing }.also { it.forEach { b -> b.indexing = true } }
+            Book.all().filter { !it.indexing }.also {
+                it.forEach { b ->
+                    b.indexing = true
+                    BookCache.updateBook(b.id.value, b.resolved)
+                }
+            }
         }
 
         GlobalScope.launch {
