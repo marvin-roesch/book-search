@@ -22,6 +22,7 @@
 <script>
 import QueryPanel from '@/components/search/QueryPanel.vue';
 import Fullscreen from '@/views/Fullscreen.vue';
+import { mapState } from 'vuex';
 
 export default {
   name: 'home',
@@ -32,7 +33,6 @@ export default {
   data() {
     return {
       query: '',
-      series: [],
       bookFilter: undefined,
       seriesFilter: undefined,
       chapterScope: this.$store.state.auth.identity.defaultSearchScope === 'chapters',
@@ -40,9 +40,9 @@ export default {
       oldQuery: {},
     };
   },
+  computed: mapState(['series']),
   async mounted() {
     try {
-      const { data: allSeries } = await this.$api.get('/books/series');
       const { q, books, series, scope, grouped } = { ...this.oldQuery, ...this.$route.query };
 
       this.query = q || '';
@@ -59,7 +59,8 @@ export default {
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
       );
 
-      this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesRegex, bookFilter));
+      this.$store.commit('applySeriesFilter', { seriesFilter: seriesRegex, bookFilter });
+      await this.$store.dispatch('refreshSeries', { seriesFilter: seriesRegex, bookFilter });
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -74,21 +75,6 @@ export default {
     }
   },
   methods: {
-    prepareSeries(path, series, seriesFilter, bookFilter) {
-      return {
-        ...series,
-        books: series.books
-          .map(b => ({
-            ...b,
-            selected: (seriesFilter === null && bookFilter === null)
-              || bookFilter === null
-              || seriesFilter.some(f => path.match(f))
-              || bookFilter.includes(b.id),
-          })),
-        children: series.children
-          .map(s => this.prepareSeries(`${path}\\${s.name}`, s, seriesFilter, bookFilter)),
-      };
-    },
     onSearch(query) {
       this.query = query;
       this.$router.push({

@@ -29,6 +29,7 @@ export default {
         this.summary = newVal.flatMap(s => this.summarizeSeries('', s));
       },
       deep: true,
+      immediate: true,
     },
   },
   methods: {

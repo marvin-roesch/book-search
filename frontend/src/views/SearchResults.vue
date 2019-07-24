@@ -47,6 +47,7 @@ import GroupedSearchResults from '@/components/search/GroupedSearchResults.vue';
 import QueryPanel from '@/components/search/QueryPanel.vue';
 import UserPanel from '@/components/UserPanel.vue';
 import { scrollAware } from '@/custom-directives';
+import { mapState } from 'vuex';
 
 export default {
   name: 'search-results',
@@ -59,7 +60,6 @@ export default {
   },
   data() {
     return {
-      series: [],
       displayResults: false,
     };
   },
@@ -80,10 +80,10 @@ export default {
       const { scope } = this.$route.query;
       return scope === 'chapters';
     },
+    ...mapState(['series']),
   },
   async mounted() {
     try {
-      const { data: allSeries } = await this.$api.get('/books/series');
       const { books, series } = this.$route.query;
 
       const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
@@ -93,7 +93,8 @@ export default {
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
       );
 
-      this.series = allSeries.map(s => this.prepareSeries(s.name, s, seriesRegex, bookFilter));
+      this.$store.commit('applySeriesFilter', { seriesFilter: seriesRegex, bookFilter });
+      await this.$store.dispatch('refreshSeries', { seriesFilter: seriesRegex, bookFilter });
     } catch (error) {
       this.$handleApiError(error);
     }

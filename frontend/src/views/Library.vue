@@ -10,6 +10,7 @@
 <script>
 import SeriesTree from '@/components/read/SeriesTree.vue';
 import UserPanel from '@/components/UserPanel.vue';
+import { mapState } from 'vuex';
 
 let updaterTimeout = null;
 
@@ -31,15 +32,10 @@ function transitionListener(event) {
 export default {
   name: 'library',
   components: { UserPanel, SeriesTree },
-  data() {
-    return {
-      series: [],
-    };
-  },
+  computed: mapState(['series']),
   async mounted() {
     try {
-      const { data: allSeries } = await this.$api.get('/books/series');
-      this.series = allSeries;
+      await this.$store.dispatch('refreshSeries', { seriesFilter: null, bookFilter: null });
     } catch (error) {
       this.$handleApiError(error);
     }
