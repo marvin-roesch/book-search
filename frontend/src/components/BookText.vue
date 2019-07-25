@@ -344,7 +344,7 @@ export default {
     }
   }
 
-  .graphicNovelPanelSplit {
+  hr, .graphicNovelPanelSplit {
     display: block;
     overflow: hidden;
     width: 50%;
