@@ -25,6 +25,7 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
@@ -68,6 +69,7 @@ fun Route.bookManagement(index: BookIndex) {
             Images.deleteWhere { Images.book eq book.id }
             Chapters.deleteWhere { Chapters.book eq book.id }
             ClassMappings.deleteWhere { ClassMappings.book eq book.id }
+            BookTags.deleteWhere { BookTags.book eq book.id }
             book.delete()
         }
 
@@ -133,6 +135,13 @@ fun Route.bookManagement(index: BookIndex) {
             book.author = request.author
             book.series = request.series
             book.orderInSeries = request.orderInSeries
+
+            BookTags.deleteWhere { BookTags.book eq book.id }
+            BookTags.batchInsert(request.tags) {
+                this[BookTags.book] = book.id
+                this[BookTags.tag] = it
+            }
+
             book
         } ?: return@patch call.respond(
             HttpStatusCode.NotFound,
@@ -140,6 +149,7 @@ fun Route.bookManagement(index: BookIndex) {
         )
 
         BookCache.updateBook(book)
+        BookCache.rebuildTags()
 
         call.respond(
             mapOf("message" to "Book information was successfully updated")
@@ -415,7 +425,7 @@ fun Route.bookManagement(index: BookIndex) {
     }
 }
 
-private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int)
+private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int, val tags: Set<String>)
 
 private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
     val result = mutableListOf<SplitChapter>()

@@ -52,6 +52,12 @@ export default {
         this.$emit('filtered', this.buildFilter());
       }
     },
+    select(books) {
+      this.series.forEach(s => this.toggleBooksImpl(s, books));
+      if (this.root) {
+        this.$emit('filtered', this.buildFilter());
+      }
+    },
     allSelected(series) {
       return series.books.reduce((acc, b) => acc && b.selected, true)
         && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
@@ -70,6 +76,14 @@ export default {
       });
       series.children.forEach((s) => {
         this.toggleSeriesImpl(s, value);
+      });
+    },
+    toggleBooksImpl(series, books) {
+      series.books.forEach((b) => {
+        b.selected = books.includes(b.id);
+      });
+      series.children.forEach((s) => {
+        this.toggleBooksImpl(s, books);
       });
     },
     toggleBook(book, selected) {

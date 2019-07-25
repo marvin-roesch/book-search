@@ -24,6 +24,11 @@
     v-model="orderInSeries"
   >
     <template slot="icon">
+    <BarChartIcon></BarChartIcon>
+    </template>
+  </TextField>
+  <TextField name="book-series" placeholder="Tags" v-model="tags">
+    <template slot="icon">
     <HashIcon></HashIcon>
     </template>
   </TextField>
@@ -37,11 +42,11 @@
 <script>
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
-import { GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
+import { BarChartIcon, GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
 
 export default {
   name: 'MetadataEditor',
-  components: { UserIcon, TypeIcon, TextField, Button, HashIcon, GridIcon },
+  components: { UserIcon, TypeIcon, TextField, Button, HashIcon, GridIcon, BarChartIcon },
   async mounted() {
     this.updating = true;
     const { id } = this.$route.params;
@@ -51,13 +56,18 @@ export default {
     }
 
     try {
-      const { data: { title, author, series, orderInSeries } } = await this.$api.get(`/books/${id}`);
+      const {
+        data: {
+          title, author, series, orderInSeries, tags,
+        },
+      } = await this.$api.get(`/books/${id}`);
 
       this.bookId = id;
       this.title = title;
       this.author = author;
       this.series = series;
       this.orderInSeries = orderInSeries.toString();
+      this.tags = tags.join(', ');
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -71,6 +81,7 @@ export default {
       author: '',
       series: '',
       orderInSeries: '1',
+      tags: '',
       updating: false,
     };
   },
@@ -85,6 +96,7 @@ export default {
             author: this.author,
             series: this.series,
             orderInSeries: Number(this.orderInSeries),
+            tags: this.tags.split(',').map(tag => tag.trim()),
           },
           {
             headers: {

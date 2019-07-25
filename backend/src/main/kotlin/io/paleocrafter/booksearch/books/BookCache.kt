@@ -1,5 +1,7 @@
 package io.paleocrafter.booksearch.books
 
+import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.Optional
 import java.util.UUID
@@ -9,6 +11,7 @@ object BookCache {
     private val seriesPaths = ConcurrentHashMap<Optional<String>, Series>()
     private lateinit var seriesCache: List<Series>
     private val bookCache = ConcurrentHashMap<UUID, ResolvedBook>()
+    private val tagCache = ConcurrentHashMap<String, Set<UUID>>()
 
     val linearSeries: Collection<Series>
         get() = seriesPaths.values
@@ -19,9 +22,13 @@ object BookCache {
     val books: Collection<ResolvedBook>
         get() = bookCache.values
 
+    val tags: Map<String, Set<UUID>>
+        get() = tagCache
+
     fun rebuild() {
         transaction {
             rebuildSeries()
+            rebuildTags()
             bookCache.clear()
             seriesPaths.values.flatMap { it.books }.forEach {
                 bookCache[it.id] = it
@@ -62,6 +69,17 @@ object BookCache {
         return seriesPaths[Optional.ofNullable(path)]
     }
 
+    fun rebuildTags() {
+        tagCache.clear()
+        transaction {
+            for (row in Books.innerJoin(BookTags, { id }, { book }).slice(BookTags.book, BookTags.tag).selectAll()) {
+                val tag = row[BookTags.tag]
+                val book = row[BookTags.book].value
+                tagCache[tag] = tagCache.getOrPut(tag) { emptySet() } + book
+            }
+        }
+    }
+
     fun find(id: UUID): ResolvedBook? {
         return bookCache[id]
     }
@@ -71,21 +89,43 @@ object BookCache {
         val oldBook = bookCache[resolved.id]
         bookCache[resolved.id] = resolved
 
-        if (oldBook === null || oldBook.series != book.series) {
+        if (oldBook === null || oldBook.series != resolved.series) {
             if (updateSeries) {
                 rebuildSeries()
             }
         } else {
-            val series = seriesPaths[Optional.ofNullable(book.series)] ?: return
+            val series = seriesPaths[Optional.ofNullable(resolved.series)] ?: return
             series.books[series.books.indexOfFirst { it.id == resolved.id }] = resolved
             if (resolved.orderInSeries != oldBook.orderInSeries) {
                 series.books.sortBy { it.orderInSeries }
+            }
+        }
+
+        if (oldBook === null || oldBook.tags != resolved.tags) {
+            val oldTags = oldBook?.tags ?: emptySet()
+            val obsolete = oldTags - resolved.tags
+            val new = resolved.tags - oldTags
+            for (tag in obsolete) {
+                val tagBooks = tagCache[tag] ?: continue
+
+                val newBooks = tagBooks - resolved.id
+                if (newBooks.isEmpty()) {
+                    tagCache.remove(tag)
+                } else {
+                    tagCache[tag] = newBooks
+                }
+            }
+
+            for (tag in new) {
+                val tagBooks = tagCache.getOrPut(tag) { emptySet() }
+                tagCache[tag] = tagBooks + resolved.id
             }
         }
     }
 
     fun removeBook(id: UUID) {
         bookCache.remove(id)
+        rebuildTags()
         rebuildSeries()
     }
 }

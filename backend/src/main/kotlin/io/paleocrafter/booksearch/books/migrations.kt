@@ -5,7 +5,6 @@ import io.paleocrafter.booksearch.createOrModifyColumns
 import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import javax.sql.rowset.serial.SerialBlob
 
 object CreateBookTablesMigration : DbMigration("create-book-tables") {
@@ -33,5 +32,11 @@ object AddCoverMigration : DbMigration("add-book-covers") {
 object AddIndexingIndicatorMigration : DbMigration("add-book-indexing-indicator") {
     override fun apply() {
         Books.createOrModifyColumns(Books.indexing)
+    }
+}
+
+object AddTagsTableMigration : DbMigration("add-tags-table") {
+    override fun apply() {
+        SchemaUtils.createMissingTablesAndColumns(BookTags)
     }
 }

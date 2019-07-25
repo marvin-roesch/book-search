@@ -21,9 +21,11 @@ function prepareSeries(path, series, seriesFilter, bookFilter) {
 }
 
 const cachedSeries = window.localStorage.getItem('series');
+const cachedTags = window.localStorage.getItem('tags');
 const initialState = {
   darkMode: window.localStorage.getItem('darkMode') === 'true',
   series: !cachedSeries ? [] : JSON.parse(cachedSeries),
+  tags: !cachedTags ? [] : JSON.parse(cachedTags),
 };
 
 const mutations = {
@@ -34,6 +36,10 @@ const mutations = {
   setSeries(state, series) {
     state.series = series;
     window.localStorage.setItem('series', JSON.stringify(series));
+  },
+  setTags(state, tags) {
+    state.tags = tags;
+    window.localStorage.setItem('tags', JSON.stringify(tags));
   },
   applySeriesFilter(state, { seriesFilter, bookFilter }) {
     if (state.series === null) {
@@ -46,9 +52,13 @@ const mutations = {
 
 const actions = {
   async refreshSeries({ commit }, filter) {
-    const { data: allSeries } = await api.get('/books/series');
-    commit('setSeries', allSeries);
+    const { data: series } = await api.get('/books/series');
+    commit('setSeries', series);
     commit('applySeriesFilter', filter);
+  },
+  async refreshTags({ commit }) {
+    const { data: tags } = await api.get('/books/tags');
+    commit('setTags', tags);
   },
 };
 

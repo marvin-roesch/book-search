@@ -33,6 +33,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var cover by Books.cover
     var coverMime by Books.coverMime
     var indexing by Books.indexing
+    val tags by BookTag referrersOn BookTags.book
 
     val resolved: ResolvedBook
         get() = ResolvedBook(
@@ -42,7 +43,8 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             series,
             orderInSeries,
             searchable,
-            indexing
+            indexing,
+            tags.mapTo(mutableSetOf()) { it.tag }
         )
 }
 
@@ -53,7 +55,8 @@ data class ResolvedBook(
     val series: String?,
     val orderInSeries: Int,
     val searchable: Boolean,
-    val indexing: Boolean
+    val indexing: Boolean,
+    val tags: Set<String>
 ) {
     fun toJson() =
         mapOf(
@@ -65,6 +68,18 @@ data class ResolvedBook(
             "searchable" to searchable,
             "indexing" to indexing
         )
+}
+
+object BookTags : UUIDTable() {
+    val book = reference("book", Books).index().primaryKey(0)
+    val tag = varchar("tag", 255)
+}
+
+class BookTag(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<BookTag>(BookTags)
+
+    var book by Book referencedOn BookTags.book
+    var tag by BookTags.tag
 }
 
 object Chapters : UUIDTable() {

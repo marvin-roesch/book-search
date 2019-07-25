@@ -12,6 +12,7 @@ export default {
   name: 'BookFilterSummary',
   props: {
     series: Array,
+    tags: Array,
   },
   data() {
     return {
@@ -25,8 +26,9 @@ export default {
           this.summary = ['All Books'];
           return;
         }
-
-        this.summary = newVal.flatMap(s => this.summarizeSeries('', s));
+        const selectedBooks = newVal.flatMap(s => this.getSelectedBooks(s));
+        const [tagSummary, used] = this.summarizeTags(selectedBooks);
+        this.summary = [...tagSummary, ...newVal.flatMap(s => this.summarizeSeries('', s, used))];
       },
       deep: true,
       immediate: true,
@@ -37,14 +39,43 @@ export default {
       return series.books.reduce((acc, b) => acc && b.selected, true)
         && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
     },
-    summarizeSeries(prefix, series) {
+    getSelectedBooks(series) {
+      return [
+        ...series.books.filter(b => b.selected).map(b => b.id),
+        ...series.children.flatMap(s => this.getSelectedBooks(s)),
+      ];
+    },
+    isSubset(subset, superset) {
+      return subset.every(v => superset.includes(v));
+    },
+    setsMatch(a, b) {
+      return this.isSubset(a, b) && this.isSubset(b, a);
+    },
+    summarizeTags(selectedBooks) {
+      const summary = [];
+      const used = [];
+      Object.keys(this.tags).forEach((tag) => {
+        const tagBooks = this.tags[tag];
+        if (this.setsMatch(tagBooks, selectedBooks)) {
+          summary.push(tag);
+          used.push(...tagBooks);
+        }
+      });
+      return [summary, used];
+    },
+    summarizeSeries(prefix, series, used) {
+      const selectedBooks = this.getSelectedBooks(series);
+      if (this.isSubset(selectedBooks, used)) {
+        return [];
+      }
+
       if (this.allSelected(series)) {
         return [`${prefix}${series.name}`];
       }
 
       return [
-        ...series.books.filter(b => b.selected).map(b => b.title),
-        ...series.children.flatMap(s => this.summarizeSeries(`${prefix}${series.name} > `, s)),
+        ...series.books.filter(b => b.selected && !used.includes(b.id)).map(b => b.title),
+        ...series.children.flatMap(s => this.summarizeSeries(`${prefix}${series.name} > `, s, used)),
       ];
     },
   },

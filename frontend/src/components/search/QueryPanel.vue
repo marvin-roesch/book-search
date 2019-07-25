@@ -18,7 +18,7 @@
       <a
         class="query-panel-filter-trigger" href="#"
         @click.prevent="filterVisible = !filterVisible" ref="filter-trigger">
-        <book-filter-summary :series="series"></book-filter-summary>
+        <book-filter-summary :series="series" :tags="tags"></book-filter-summary>
       </a>
       <transition name="fade">
         <div
@@ -37,6 +37,13 @@
              @click.prevent="$refs.filter.deselectAll()">
             None
           </a>
+          <template v-for="(books, tag) in tags">
+            &middot;
+            <a class="query-panel-filter-action" href="#"
+               @click.prevent="$refs.filter.select(books)" :key="tag">
+              {{ tag }}
+            </a>
+          </template>
           <div class="query-panel-filter-scrollable" v-bar>
             <div>
               <book-filter
@@ -91,6 +98,7 @@ import SearchBar from '@/components/search/SearchBar.vue';
 import SharedElement from '@/components/SharedElement.vue';
 import { easeInOut as easing } from 'ramjet';
 import QuickHelp from '@/components/search/QuickHelp.vue';
+import { mapState } from 'vuex';
 
 export default {
   name: 'QueryPanel',
@@ -108,6 +116,14 @@ export default {
       filterVisible: false,
       easing,
     };
+  },
+  computed: mapState(['tags']),
+  async mounted() {
+    try {
+      await this.$store.dispatch('refreshTags');
+    } catch (error) {
+      this.$handleApiError(error);
+    }
   },
   methods: {
     search(event) {

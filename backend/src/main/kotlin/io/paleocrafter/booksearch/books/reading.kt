@@ -20,11 +20,13 @@ fun Route.bookReading() {
         call.respond(BookCache.series.map { it.toJson() })
     }
 
+    get("/tags") {
+        call.respond(BookCache.tags)
+    }
+
     get("/{id}") {
         val id = UUID.fromString(call.parameters["id"])
-        val book = transaction {
-            Book.findById(id) ?: return@transaction null
-        } ?: return@get call.respond(
+        val book = BookCache.find(id) ?: return@get call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
         )
@@ -34,7 +36,8 @@ fun Route.bookReading() {
                 "title" to book.title,
                 "author" to book.author,
                 "series" to book.series,
-                "orderInSeries" to book.orderInSeries
+                "orderInSeries" to book.orderInSeries,
+                "tags" to book.tags
             )
         )
     }
