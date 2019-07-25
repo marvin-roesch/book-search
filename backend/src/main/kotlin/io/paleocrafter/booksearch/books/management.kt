@@ -30,6 +30,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.slf4j.LoggerFactory
@@ -115,7 +116,7 @@ fun Route.bookManagement(index: BookIndex) {
                     coverMime = it.mediaType.name
                 }
             }
-            BookCache.updateBook(bookId, book.resolved)
+            BookCache.updateBook(book, updateSeries = false)
         }
 
         logger.info("New book '${epub.title}' uploaded by ${call.user?.username}")
@@ -126,18 +127,20 @@ fun Route.bookManagement(index: BookIndex) {
     patch("/{id}") {
         val id = UUID.fromString(call.parameters["id"])
         val request = call.receive<BookPatchRequest>()
-        transaction {
+        val book = transaction {
             val book = Book.findById(id) ?: return@transaction null
             book.title = request.title
             book.author = request.author
             book.series = request.series
             book.orderInSeries = request.orderInSeries
-
-            BookCache.updateBook(id, book.resolved)
+            book
         } ?: return@patch call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
         )
+
+        BookCache.updateBook(book)
+
         call.respond(
             mapOf("message" to "Book information was successfully updated")
         )
@@ -240,7 +243,7 @@ fun Route.bookManagement(index: BookIndex) {
                 }
             }
 
-            BookCache.updateBook(id, book.resolved)
+            BookCache.updateBook(book, updateSeries = false)
         } ?: return@put call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
@@ -291,7 +294,7 @@ fun Route.bookManagement(index: BookIndex) {
                 ?: BookStyle.STRIP_CLASS
         }
 
-        transaction {
+        val book = transaction {
             val book = Book.findById(id) ?: return@transaction null
 
             ClassMappings.deleteWhere { ClassMappings.book eq book.id }
@@ -306,11 +309,13 @@ fun Route.bookManagement(index: BookIndex) {
 
             book.searchable = false
 
-            BookCache.updateBook(id, book.resolved)
+            book
         } ?: return@put call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
         )
+
+        BookCache.updateBook(book, updateSeries = false)
 
         call.respond(mapOf(
             "id" to id
@@ -318,10 +323,7 @@ fun Route.bookManagement(index: BookIndex) {
     }
 
     suspend fun index(book: Book, user: String?) {
-        val id = transaction {
-            book.indexing = true
-            book.id.value
-        }
+        val id = transaction { book.id.value }
 
         val normalized = transaction {
             val classMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
@@ -363,17 +365,15 @@ fun Route.bookManagement(index: BookIndex) {
         index.prepare()
 
         // Only index when necessary
-        if (!transaction { book.indexing }) {
-            transaction {
-                book.indexing = true
-                BookCache.updateBook(id, book.resolved)
-            }
-            GlobalScope.launch(indexing) {
-                index(book, call.user?.username)
-                transaction {
-                    BookCache.updateBook(id, book.resolved)
-                }
-            }
+        transaction {
+            book.indexing = true
+        }
+
+        BookCache.updateBook(book)
+
+        GlobalScope.launch(indexing) {
+            index(book, call.user?.username)
+            BookCache.updateBook(book)
         }
 
         call.respond(mapOf(
@@ -387,12 +387,12 @@ fun Route.bookManagement(index: BookIndex) {
         index.prepare()
 
         val books = transaction {
-            Book.all().filter { !it.indexing }.also {
-                it.forEach { b ->
-                    b.indexing = true
-                    BookCache.updateBook(b.id.value, b.resolved)
-                }
-            }
+            Books.update { it[this.indexing] = true }
+            Book.all().toList()
+        }
+
+        for (book in books) {
+            BookCache.updateBook(book)
         }
 
         GlobalScope.launch {

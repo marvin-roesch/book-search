@@ -32,17 +32,7 @@ class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Searc
 
         baseQuery.highlighter(buildHighlighter())
 
-        val baseResponse = supervisorScope {
-            try {
-                suspendCoroutine<SearchResponse> {
-                    client.searchAsync(SearchRequest("paragraphs").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
-                }
-            } catch (e: ResponseException) {
-                null
-            } catch (e: ElasticsearchStatusException) {
-                null
-            }
-        } ?: return null
+        val baseResponse = search(baseQuery) ?: return null
 
         return SearchResults(baseResponse.hits.totalHits.value, gatherContext(baseResponse.hits))
     }
@@ -60,17 +50,7 @@ class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Searc
                     .size(1000)
             )
 
-        val baseResponse = supervisorScope {
-            try {
-                suspendCoroutine<SearchResponse> {
-                    client.searchAsync(SearchRequest("paragraphs").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
-                }
-            } catch (e: ResponseException) {
-                null
-            } catch (e: ElasticsearchStatusException) {
-                null
-            }
-        } ?: return null
+        val baseResponse = search(baseQuery) ?: return null
 
         val totalHits = baseResponse.hits.totalHits.value
         val groups = baseResponse.aggregations.get<Terms>("groups").buckets
@@ -81,6 +61,20 @@ class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Searc
                 GroupSearchResult(UUID.fromString(it.keyAsString), it.docCount.absoluteValue)
             }
         )
+    }
+
+    private suspend fun search(baseQuery: SearchSourceBuilder): SearchResponse? {
+        return supervisorScope {
+            try {
+                suspendCoroutine<SearchResponse> {
+                    client.searchAsync(SearchRequest("paragraphs").source(baseQuery), RequestOptions.DEFAULT, SuspendingActionListener(it))
+                }
+            } catch (e: ResponseException) {
+                null
+            } catch (e: ElasticsearchStatusException) {
+                null
+            }
+        }
     }
 
     private suspend fun gatherContext(hits: Iterable<SearchHit>): List<SearchResult> {

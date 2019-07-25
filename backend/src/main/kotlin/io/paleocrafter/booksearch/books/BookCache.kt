@@ -23,7 +23,7 @@ object BookCache {
         transaction {
             rebuildSeries()
             bookCache.clear()
-            seriesCache.flatMap { it.books }.forEach {
+            seriesPaths.values.flatMap { it.books }.forEach {
                 bookCache[it.id] = it
             }
         }
@@ -66,11 +66,21 @@ object BookCache {
         return bookCache[id]
     }
 
-    fun updateBook(id: UUID, book: ResolvedBook) {
-        val oldBook = bookCache[id]
-        bookCache[id] = book
+    fun updateBook(book: Book, updateSeries: Boolean = true) {
+        val resolved = transaction { book.resolved }
+        val oldBook = bookCache[resolved.id]
+        bookCache[resolved.id] = resolved
+
         if (oldBook === null || oldBook.series != book.series) {
-            rebuildSeries()
+            if (updateSeries) {
+                rebuildSeries()
+            }
+        } else {
+            val series = seriesPaths[Optional.ofNullable(book.series)] ?: return
+            series.books[series.books.indexOfFirst { it.id == resolved.id }] = resolved
+            if (resolved.orderInSeries != oldBook.orderInSeries) {
+                series.books.sortBy { it.orderInSeries }
+            }
         }
     }
 
