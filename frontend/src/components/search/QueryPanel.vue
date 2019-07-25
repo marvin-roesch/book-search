@@ -28,16 +28,23 @@
           handler() { filterVisible = false; }
         }"
           v-if="filterVisible">
-          <a class="query-panel-filter-action" href="#" @click.prevent="$refs.filter.selectAll()">
+          <a class="query-panel-filter-action" href="#"
+             @click.prevent="$refs.filter.selectAll()">
             All
           </a>
-          <a class="query-panel-filter-action" href="#" @click.prevent="$refs.filter.deselectAll()">
+          &middot;
+          <a class="query-panel-filter-action" href="#"
+             @click.prevent="$refs.filter.deselectAll()">
             None
           </a>
-          <book-filter
-            :root="true" :series="series"
-            @filtered="$emit('filter', $event)" ref="filter">
-          </book-filter>
+          <div class="query-panel-filter-scrollable" v-bar>
+            <div>
+              <book-filter
+                :root="true" :series="series"
+                @filtered="$emit('filter', $event)" ref="filter">
+              </book-filter>
+            </div>
+          </div>
         </div>
       </transition>
     </div>
@@ -144,6 +151,7 @@ export default {
 
   &-search {
     position: relative;
+    min-width: 0;
   }
 
   &-options {
@@ -229,7 +237,7 @@ export default {
       margin-top: -0.5rem;
       background: var(--section-bg);
       border-radius: 3px;
-      padding: 2rem 0.5rem 0.5rem;
+      padding: 1.75rem 0.5rem 0.5rem;
       border: 1px solid rgba(0, 0, 0, 0.1);
       z-index: 2000;
       width: calc(100% + 1rem);
@@ -240,9 +248,50 @@ export default {
       }
     }
 
+    &-scrollable {
+      height: 30vh;
+    }
+
     @media (max-width: 640px) {
       margin-right: 0;
     }
   }
+}
+
+.vb > .vb-dragger {
+  z-index: 5;
+  width: 0.5rem;
+  right: 0;
+}
+
+.vb > .vb-dragger > .vb-dragger-styler {
+  backface-visibility: hidden;
+  transform: rotate3d(0, 0, 0, 0);
+  transition: background-color 100ms ease-out, margin 100ms ease-out, height 100ms ease-out;
+  background-color: rgba($primary, .1);
+  margin: 0.5rem 0;
+  border-radius: 20px;
+  height: calc(100% - 1rem);
+  display: block;
+}
+
+.vb.vb-scrolling-phantom > .vb-dragger > .vb-dragger-styler {
+  background-color: rgba($primary, .3);
+}
+
+.vb > .vb-dragger:hover > .vb-dragger-styler {
+  background-color: rgba($primary, .5);
+  margin: 0;
+  height: 100%;
+}
+
+.vb.vb-dragging > .vb-dragger > .vb-dragger-styler {
+  background-color: rgba($primary, .5);
+  margin: 0;
+  height: 100%;
+}
+
+.vb.vb-dragging-phantom > .vb-dragger > .vb-dragger-styler {
+  background-color: rgba($primary, .5);
 }
 </style>

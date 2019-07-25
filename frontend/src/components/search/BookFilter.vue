@@ -138,6 +138,7 @@ export default {
   flex-wrap: wrap;
   padding: 0;
   margin: 0;
+  flex-direction: column;
 
   &-series {
     margin-right: 1rem;
@@ -154,7 +155,6 @@ export default {
   }
 
   &-child {
-    flex-direction: column;
     padding-left: 1rem;
 
     .book-filter-series {
