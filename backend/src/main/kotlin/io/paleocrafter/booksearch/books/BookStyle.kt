@@ -20,6 +20,7 @@ enum class BookStyle(val group: String, val id: String, val description: String)
 
     FULL_WIDTH_IMAGE("Images", "fullWidthImage", "Full width image"),
     CENTRED_IMAGE("Images", "centeredImage", "Centered image"),
+    HEADING_TABLE_ICON("Images", "iconImage", "Icon"),
 
     GRAPHIC_NOVEL_LINE("Graphic Novel/Comic", "graphicNovelLine", "Spoken line (paragraph)"),
     GRAPHIC_NOVEL_THOUGHT("Graphic Novel/Comic", "graphicNovelThought", "Thought (paragraph)"),

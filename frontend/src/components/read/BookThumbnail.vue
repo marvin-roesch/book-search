@@ -8,11 +8,13 @@
       <img :src="`/api/books/${book.id}/cover`" :alt="`'${book.title}' Cover`" v-if="hasCover">
     </transition>
   </div>
-  <div class="book-thumbnail-title">
-    {{ book.title }}
-  </div>
-  <div class="book-thumbnail-author">
-    {{ book.author }}
+  <div class="book-thumbnail-metadata">
+    <div class="book-thumbnail-title">
+      {{ book.title }}
+    </div>
+    <div class="book-thumbnail-author">
+      {{ book.author }}
+    </div>
   </div>
 </router-link>
 </template>
@@ -45,9 +47,11 @@ export default {
 
 <style lang="scss">
 .book-thumbnail {
-  display: block;
+  display: table;
   cursor: pointer;
+  position: relative;
   color: var(--base-text-color);
+  width: fit-content;
 
   &-cover {
     position: relative;
@@ -82,10 +86,16 @@ export default {
     }
   }
 
+  &-metadata {
+    display: table-caption;
+    caption-side: bottom;
+  }
+
   &-title {
     box-sizing: border-box;
     padding: 0.25rem 0 0;
     font-weight: bold;
+    max-width: 100%;
   }
 
   &-author {

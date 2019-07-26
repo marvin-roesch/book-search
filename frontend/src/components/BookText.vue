@@ -246,7 +246,7 @@ export default {
     margin: 0 auto;
   }
 
-  .centeredImage, .fullWidthImage {
+  .centeredImage, .fullWidthImage, .iconImage {
     text-align: center;
   }
 
@@ -256,6 +256,10 @@ export default {
 
   .fullWidthImage img {
     max-width: 100%;
+  }
+
+  .iconImage img {
+    max-width: 20%;
   }
 
   p.epigraphText {
