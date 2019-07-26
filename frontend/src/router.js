@@ -19,6 +19,7 @@ import BookOverview from '@/views/BookOverview.vue';
 import BookChapters from '@/views/BookChapters.vue';
 import BookDictionary from '@/views/BookDictionary.vue';
 import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
+import ReuploadBook from '@/components/management/wizard/ReuploadBook.vue';
 
 Vue.use(Router);
 
@@ -72,6 +73,12 @@ const router = new Router({
               path: '/',
               name: 'book-metadata',
               component: MetadataEditor,
+            },
+            {
+              path: 'reupload',
+              name: 'book-reupload',
+              component: ReuploadBook,
+              meta: { requiresAuth: true, requiresBookPerms: true },
             },
             {
               path: 'table-of-contents',

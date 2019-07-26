@@ -1,24 +1,22 @@
 <template>
-<div class="book-wizard">
+<Card class="book-wizard">
   <transition name="slide">
     <router-view></router-view>
   </transition>
-</div>
+</Card>
 </template>
 
 <script>
+import Card from '@/components/Card.vue';
+
 export default {
   name: 'BookWizard',
+  components: { Card },
 };
 </script>
 
 <style lang="scss">
 .book-wizard {
-  padding: 2rem;
-  background: var(--section-bg);
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 0.75rem 1rem rgba(0, 0, 0, 0.1);
   width: 50vw;
   max-width: $max-content-width;
   display: flex;
@@ -26,7 +24,6 @@ export default {
   position: relative;
   max-height: 80vh;
   margin: 0 auto;
-  box-sizing: border-box;
 
   @media (max-width: $max-content-width) {
     width: 100%;

@@ -24,6 +24,12 @@
             <Edit2Icon :width="20" :height="20"></Edit2Icon>
             Edit
           </router-link>
+          <router-link
+            class="series-entry-book-action"
+            :to="{name: 'book-reupload', params: {id: book.id}}">
+            <UploadIcon :width="20" :height="20"></UploadIcon>
+            New version
+          </router-link>
           <a href="#" class="series-entry-book-action" @click.prevent="deleteBook(book.id)">
             <XIcon :width="20" :height="20"></XIcon>
             Delete
@@ -37,11 +43,11 @@
 </template>
 
 <script>
-import { AlertTriangleIcon, Edit2Icon, RefreshCcwIcon, XIcon } from 'vue-feather-icons';
+import { AlertTriangleIcon, Edit2Icon, RefreshCcwIcon, UploadIcon, XIcon } from 'vue-feather-icons';
 
 export default {
   name: 'SeriesEntry',
-  components: { RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon },
+  components: { RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon, UploadIcon },
   props: {
     series: Array,
   },

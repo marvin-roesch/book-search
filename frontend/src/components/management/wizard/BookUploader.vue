@@ -1,5 +1,5 @@
 <template>
-<Card class="book-uploader" title="Upload new book">
+<div class="book-uploader">
   <input
     id="book-upload-field"
     type="file"
@@ -27,15 +27,15 @@
   </svg>
   <label for="book-upload-field" v-if="selectedFileName === null">Drop your .epub file here</label>
   <label for="book-upload-field" v-else>Uploading {{ selectedFileName }}...</label>
-</Card>
+</div>
 </template>
 
 <script>
-import Card from '@/components/Card.vue';
-
 export default {
   name: 'BookUploader',
-  components: { Card },
+  props: {
+    bookId: String,
+  },
   data() {
     return {
       selectedFileName: null,
@@ -54,19 +54,26 @@ export default {
       const formData = new FormData();
       formData.append('book', file);
       try {
-        const { data: { id } } = await this.$api.put(
-          '/books',
+        const { data: { id, message } } = await this.$api.put(
+          this.bookId ? `/books/${this.bookId}` : '/books',
           formData,
           {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
-            onUploadProgress: (function (progressEvent) {
+            onUploadProgress: (function onProgress(progressEvent) {
               this.uploadProgress = progressEvent.loaded / progressEvent.total;
             }).bind(this),
           },
         );
-        this.$router.push({ name: 'book-metadata', params: { id } });
+        if (message) {
+          this.$notifications.success(message);
+        }
+        if (this.bookId) {
+          this.$router.push({ name: 'table-of-contents', params: { id } });
+        } else {
+          this.$router.push({ name: 'book-metadata', params: { id } });
+        }
       } catch (error) {
         this.$handleApiError(error);
       }
@@ -83,7 +90,6 @@ export default {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  margin: 0 auto;
   min-width: 50vw;
 
   @media (max-width: $max-content-width) {

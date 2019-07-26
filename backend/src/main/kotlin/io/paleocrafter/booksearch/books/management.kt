@@ -1,5 +1,6 @@
 package io.paleocrafter.booksearch.books
 
+import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -14,6 +15,7 @@ import io.ktor.routing.get
 import io.ktor.routing.patch
 import io.ktor.routing.post
 import io.ktor.routing.put
+import io.ktor.util.pipeline.PipelineContext
 import io.paleocrafter.booksearch.auth.user
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
@@ -43,12 +45,15 @@ import java.nio.charset.Charset
 import java.nio.file.Paths
 import java.util.UUID
 import javax.sql.rowset.serial.SerialBlob
+import nl.siegmann.epublib.domain.Book as Epub
 
 private val logger = LoggerFactory.getLogger("BookManagement")
 
 private fun TOCReference.buildId(parent: String, index: Int): String = "$parent.$index-$title"
 
-val indexing = newFixedThreadPoolContext(4, "indexing")
+private val indexing = newFixedThreadPoolContext(4, "indexing")
+
+class ManagementError(message: String) : RuntimeException(message)
 
 fun Route.bookManagement(index: BookIndex) {
     delete("/{id}") {
@@ -82,34 +87,43 @@ fun Route.bookManagement(index: BookIndex) {
         )
     }
 
+    suspend fun PipelineContext<Unit, ApplicationCall>.receiveEpub(): Pair<Epub, ByteArray>? {
+        return coroutineScope {
+            val multipart = call.receiveMultipart()
+            val channel = Channel<PartData>()
+            launch {
+                multipart.forEachPart { channel.send(it) }
+                channel.close()
+            }
+            val file = channel
+                .mapNotNull { it as? PartData.FileItem }
+                .find { it.name == "book" && File(it.originalFileName).extension == "epub" }
+                ?: return@coroutineScope null.also {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        mapOf("message" to "Must provide epub file")
+                    )
+                }
+            val buffer = file.streamProvider().use { it.readBytes() }
+            val epubReader = EpubReader()
+            return@coroutineScope try {
+                epubReader.readEpub(buffer.inputStream()) to buffer
+            } catch (exception: Exception) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "Must provide valid epub file")
+                )
+                return@coroutineScope null
+            }
+        }
+    }
+
     put("/") {
-        val multipart = call.receiveMultipart()
-        val channel = Channel<PartData>()
-        launch {
-            multipart.forEachPart { channel.send(it) }
-            channel.close()
-        }
-        val file = channel
-            .mapNotNull { it as? PartData.FileItem }
-            .find { it.name == "book" && File(it.originalFileName).extension == "epub" }
-            ?: return@put call.respond(
-                HttpStatusCode.BadRequest,
-                mapOf("message" to "Must provide epub file")
-            )
-        val buffer = file.streamProvider().use { it.readBytes() }
-        val epubReader = EpubReader()
-        val epub = try {
-            epubReader.readEpub(buffer.inputStream())
-        } catch (exception: Exception) {
-            return@put call.respond(
-                HttpStatusCode.BadRequest,
-                mapOf("message" to "Must provide valid epub file")
-            )
-        }
+        val (epub, buffer) = receiveEpub() ?: return@put
         val bookId = UUID.randomUUID()
         val authorName = epub.metadata.authors.firstOrNull()?.let { "${it.firstname} ${it.lastname}" } ?: ""
-        transaction {
-            val book = Book.new(bookId) {
+        val book = transaction {
+            Book.new(bookId) {
                 content = SerialBlob(buffer)
                 title = epub.title
                 author = authorName
@@ -118,12 +132,41 @@ fun Route.bookManagement(index: BookIndex) {
                     coverMime = it.mediaType.name
                 }
             }
-            BookCache.updateBook(book, updateSeries = false)
         }
+
+        BookCache.updateBook(book)
 
         logger.info("New book '${epub.title}' uploaded by ${call.user?.username}")
 
         call.respond(mapOf("id" to bookId))
+    }
+
+    put("/{id}") {
+        val id = UUID.fromString(call.parameters["id"])
+        val (epub, buffer) = receiveEpub() ?: return@put
+        val book = transaction {
+            val book = Book.findById(id) ?: return@transaction null
+            book.content = SerialBlob(buffer)
+
+            val cover = epub.coverImage
+            if (epub.coverImage != null) {
+                book.cover = SerialBlob(cover.data)
+                book.coverMime = cover.mediaType.name
+            }
+
+            book.searchable = false
+
+            book
+        } ?: return@put call.respond(
+            HttpStatusCode.NotFound,
+            mapOf("message" to "Book with ID '$id' does not exist")
+        )
+
+        BookCache.updateBook(book, updateSeries = false)
+
+        logger.info("New version of '${epub.title}' uploaded by ${call.user?.username}")
+
+        call.respond(mapOf("id" to id, "message" to "A new version of the book was successfully uploaded!"))
     }
 
     patch("/{id}") {
@@ -225,7 +268,9 @@ fun Route.bookManagement(index: BookIndex) {
 
                     val name = Paths.get(uri.path).fileName.toString().urlDecoded
                     val resourcePath = uri.path.urlDecoded
-                    val data = epub.resources.getByHref(resourcePath).data
+                    val resource = epub.resources.getByHref(resourcePath)
+                        ?: throw ManagementError("Invalid image reference found in epub: $resourcePath")
+                    val data = resource.data
                     Images.insertIgnore {
                         it[Images.book] = book.id
                         it[Images.name] = name

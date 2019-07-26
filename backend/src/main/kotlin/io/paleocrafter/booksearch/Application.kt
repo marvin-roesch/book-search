@@ -13,13 +13,13 @@ import io.ktor.features.ConditionalHeaders
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.DefaultHeaders
 import io.ktor.features.StatusPages
-import io.ktor.features.gzip
 import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.CachingOptions
 import io.ktor.jackson.jackson
 import io.ktor.response.respond
+import io.paleocrafter.booksearch.books.ManagementError
 import org.jetbrains.exposed.sql.Database
 import java.util.concurrent.TimeUnit
 
@@ -65,6 +65,14 @@ fun Application.main() {
     install(StatusPages) {
         exception<NotImplementedError> { call.respond(HttpStatusCode.NotImplemented) }
         exception<JsonMappingException> { call.respond(HttpStatusCode.BadRequest, it.message ?: "") }
+        exception<ManagementError> {
+            call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf(
+                    "message" to (it.message ?: "An unknown error has occurred while editing this book")
+                )
+            )
+        }
     }
     install(ContentNegotiation) {
         jackson {
