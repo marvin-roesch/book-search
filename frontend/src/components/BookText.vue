@@ -31,14 +31,12 @@ export default {
   mounted() {
     document.addEventListener('selectionchange', this.onSelectionChange);
     document.addEventListener('mouseup', this.showPopup);
-    document.addEventListener('touchend', this.showPopup);
-    document.addEventListener('touchcancel', this.showPopup);
+    document.addEventListener('touchstart', this.showPopup);
   },
   destroyed() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
     document.removeEventListener('mouseup', this.showPopup);
-    document.removeEventListener('touchend', this.showPopup);
-    document.removeEventListener('touchcancel', this.showPopup);
+    document.removeEventListener('touchstart', this.showPopup);
   },
   methods: {
     onSelectionChange() {
@@ -196,6 +194,25 @@ export default {
       border: 1px solid rgba(0, 0, 0, 0.1);
       border-top: none;
       border-left: none;
+    }
+
+    @media (max-width: $max-content-width) {
+      position: fixed;
+      left: 0 !important;
+      right: 0 !important;
+      top: auto !important;
+      bottom: 0 !important;
+      margin-top: 0;
+      padding: 1rem;
+      transform: none;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      border-bottom: none;
+
+      &:after {
+        display: none;
+      }
     }
   }
 
