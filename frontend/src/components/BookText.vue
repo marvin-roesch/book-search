@@ -126,9 +126,8 @@ export default {
     },
     copyDiscordQuote() {
       this.copySelection(
-        '',
-        `\n> \n> *${this.bookTitle} - ${this.chapterTitle}*`,
-        s => s.split('\n').map(l => `> ${l}`).join('\n'),
+        '>>> ',
+        `\n*${this.bookTitle} - ${this.chapterTitle}*`,
       );
     },
     copyWikiQuote() {
@@ -137,10 +136,10 @@ export default {
         `\n| ${this.bookTitle} - ${this.chapterTitle}\n}}`,
       );
     },
-    copySelection(prefix, suffix, transform = s => s) {
+    copySelection(prefix, suffix) {
       const el = document.createElement('textarea');
       const selection = this.normalizeText(document.getSelection().toString().trim());
-      el.value = `${prefix}${transform(selection)}${suffix}`;
+      el.value = `${prefix}${selection}${suffix}`;
       document.body.appendChild(el);
       el.select();
 
