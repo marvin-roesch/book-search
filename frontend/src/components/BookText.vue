@@ -127,7 +127,7 @@ export default {
     copyDiscordQuote() {
       this.copySelection(
         '>>> ',
-        `\n*${this.bookTitle} - ${this.chapterTitle}*`,
+        `\n\n*${this.bookTitle} - ${this.chapterTitle}*`,
       );
     },
     copyWikiQuote() {
