@@ -552,7 +552,7 @@ private fun Document.extractClasses(resources: Resources): List<HtmlClass> {
         .joinToString("\n") { String(it.data, Charset.forName(it.inputEncoding)) }
 
     return this.body().allElements
-        .filter { it.`is`("p") || it.parents().any { p -> p.`is`("p") } }
+        .filterNot { it.`is`("body") }
         .flatMap { el ->
             el.classNames().map { HtmlClass(it, el.outerHtml(), styles) }
         }
