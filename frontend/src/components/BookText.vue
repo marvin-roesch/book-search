@@ -163,6 +163,7 @@ export default {
 .book-text {
   font-family: 'Lora', serif;
   position: relative;
+  word-break: break-word;
 
   &-popup {
     position: absolute;
