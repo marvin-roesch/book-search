@@ -58,6 +58,7 @@ const actions = {
   },
   async refreshTags({ commit }) {
     const { data: tags } = await api.get('/books/tags');
+    tags.sort();
     commit('setTags', tags);
   },
 };
