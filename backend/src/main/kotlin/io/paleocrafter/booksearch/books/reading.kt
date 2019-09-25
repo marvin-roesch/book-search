@@ -11,6 +11,7 @@ import io.ktor.routing.get
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.Locale
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -106,6 +107,8 @@ data class Series(
     val books: MutableList<ResolvedBook>,
     val children: ConcurrentHashMap<Optional<String>, Series>
 ) {
+    val sortableName = name.sortable
+
     fun toJson(): Map<String, Any> =
         mapOf(
             "name" to name,
@@ -113,3 +116,16 @@ data class Series(
             "children" to children.map { it.value.toJson() }
         )
 }
+
+
+private val WHITESPACE = Regex("\\s")
+private val ARTICLES = setOf("the", "a", "an")
+
+val String.sortable: String
+    get()  = this.split(WHITESPACE, 2).let { words ->
+        when {
+            words.size <= 1 -> this
+            words.first().toLowerCase(Locale.ROOT) in ARTICLES -> "${words.last()}, ${words.first()}"
+            else -> this
+        }
+    }

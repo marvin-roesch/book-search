@@ -125,7 +125,7 @@ fun Route.bookSearch(index: BookIndex) {
                 .sortedWith(
                     compareBy<Pair<ResolvedBook, GroupSearchResult>, Iterable<String>>(naturalOrder<String>().lexicographical()) {
                         (it.first.series ?: "").split("\\")
-                    }.thenBy { it.first.orderInSeries }.thenBy { it.first.title }
+                    }.thenBy { it.first.orderInSeries }.thenBy { it.first.sortableTitle }
                 )
                 .map { (book, bookResult) ->
                     book.toJson() + ("totalOccurrences" to bookResult.occurrences)

@@ -46,9 +46,9 @@ object BookCache {
         }
         seriesCache = seriesPaths.entries
             .filter { it.value.root }
-            .sortedWith(compareBy({ it.key.isPresent }, { it.value.name }))
+            .sortedWith(compareBy({ it.key.isPresent }, { it.value.sortableName }))
             .map { it.value }
-        seriesPaths.values.forEach { series -> series.books.sortWith(compareBy({ it.orderInSeries }, { it.title })) }
+        seriesPaths.values.forEach { series -> series.books.sortWith(compareBy({ it.orderInSeries }, { it.sortableTitle })) }
     }
 
     private fun buildSeries(path: String?): Series? {
@@ -97,7 +97,7 @@ object BookCache {
             val series = seriesPaths[Optional.ofNullable(resolved.series)] ?: return
             series.books[series.books.indexOfFirst { it.id == resolved.id }] = resolved
             if (resolved.orderInSeries != oldBook.orderInSeries) {
-                series.books.sortWith(compareBy({ it.orderInSeries }, { it.title }))
+                series.books.sortWith(compareBy({ it.orderInSeries }, { it.sortableTitle }))
             }
         }
 

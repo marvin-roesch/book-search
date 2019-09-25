@@ -58,6 +58,8 @@ data class ResolvedBook(
     val indexing: Boolean,
     val tags: Set<String>
 ) {
+    val sortableTitle = title.sortable
+
     fun toJson() =
         mapOf(
             "id" to id,
