@@ -58,8 +58,13 @@ const actions = {
   },
   async refreshTags({ commit }) {
     const { data: tags } = await api.get('/books/tags');
-    tags.sort();
-    commit('setTags', tags);
+
+    const ordered = {};
+    Object.keys(tags).sort().forEach((key) => {
+      ordered[key] = tags[key];
+    });
+
+    commit('setTags', ordered);
   },
 };
 
