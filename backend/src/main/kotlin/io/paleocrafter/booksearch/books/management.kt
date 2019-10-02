@@ -2,13 +2,16 @@ package io.paleocrafter.booksearch.books
 
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
+import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
 import io.ktor.request.receive
 import io.ktor.request.receiveMultipart
+import io.ktor.response.header
 import io.ktor.response.respond
 import io.ktor.response.respondBytes
 import io.ktor.routing.Route
@@ -95,14 +98,23 @@ fun Route.bookManagement(index: BookIndex) {
 
     get("/{id}/file") {
         val id = UUID.fromString(call.parameters["id"])
-        val contentStream = transaction {
-            Book.findById(id)?.content?.binaryStream ?: return@transaction null
+        val book = transaction {
+            Book.findById(id) ?: return@transaction null
         } ?: return@get call.respond(
             HttpStatusCode.NotFound,
             mapOf("message" to "Book with ID '$id' does not exist")
         )
 
-        val content = withContext(Dispatchers.IO) { contentStream.use { it.readBytes() } }
+        val fileName = transaction { "${book.author} - ${book.title}.epub" }
+        val content = withContext(Dispatchers.IO) {
+            val stream = book.content.binaryStream
+            stream.use { it.readBytes() }
+        }
+
+        call.response.header(
+            HttpHeaders.ContentDisposition,
+            ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, fileName).toString()
+        )
 
         call.respondBytes(epubType) { content }
     }
