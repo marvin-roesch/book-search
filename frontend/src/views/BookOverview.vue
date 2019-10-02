@@ -47,6 +47,12 @@
           Dictionary
         </router-link>
       </li>
+      <li :key="'download'" v-if="book !== null && mayDownload">
+        <a :href="`/api/books/${bookId}/file`">
+          <DownloadIcon></DownloadIcon>
+          Download
+        </a>
+      </li>
     </transition-group>
   </div>
   <h1>{{ $route.meta.title }}</h1>
@@ -58,14 +64,15 @@
 
 <script>
 import UserPanel from '@/components/UserPanel.vue';
-import { BookIcon, ListIcon, SearchIcon, XIcon } from 'vue-feather-icons';
+import { BookIcon, DownloadIcon, ListIcon, SearchIcon, XIcon } from 'vue-feather-icons';
 import { scrollAware } from '@/custom-directives';
+import { mapState } from 'vuex';
 
 export default {
   name: 'book-overview',
   mixins: [scrollAware],
   components: {
-    SearchIcon, BookIcon, ListIcon, UserPanel, XIcon,
+    SearchIcon, BookIcon, ListIcon, UserPanel, XIcon, DownloadIcon,
   },
   data() {
     return {
@@ -77,6 +84,7 @@ export default {
       fromOldCover: false,
     };
   },
+  computed: mapState('auth', { mayDownload: state => state.identity.canManageBooks }),
   mounted() {
     this.bookId = this.$route.params.id;
     this.loadBook();
@@ -218,6 +226,7 @@ export default {
     flex-direction: column;
     list-style-type: none;
     padding: 0;
+    flex-wrap: wrap;
 
     li {
       padding-bottom: 0.5rem;
@@ -248,6 +257,10 @@ export default {
 
     li:nth-child(3) {
       transition-delay: 0.7s;
+    }
+
+    li:nth-child(4) {
+      transition-delay: 0.9s;
     }
   }
 
@@ -313,9 +326,9 @@ export default {
       left: 0;
       right: 0;
       bottom: auto;
-      padding: 3.5rem 1rem 0.5rem;
+      padding: 3.5rem 2.5rem 0.5rem 1rem;
       width: 100%;
-      height: 7rem;
+      min-height: 7rem;
       flex-direction: row;
       align-items: center;
     }
@@ -330,10 +343,19 @@ export default {
 
     .book-metadata {
       margin-right: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      flex-shrink: 1;
+      flex-basis: 0;
+      min-width: 0;
     }
 
     &-title {
       padding: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .book-cover {
@@ -360,13 +382,18 @@ export default {
 
     &-sidebar {
       flex-direction: column;
-      height: 8.5rem;
+      min-height: 8.5rem;
+      align-items: initial;
     }
 
     .book-metadata {
       display: flex;
       align-items: baseline;
       margin-bottom: 0.5rem;
+    }
+
+    &-nav {
+      justify-content: center;
     }
 
     &-title {

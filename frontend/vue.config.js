@@ -2,7 +2,11 @@ const path = require('path');
 
 module.exports = {
   devServer: {
-    proxy: 'http://localhost:3080',
+    proxy: {
+      '^/api': {
+        target: 'http://localhost:3080',
+      },
+    },
   },
   pluginOptions: {
     'style-resources-loader': {

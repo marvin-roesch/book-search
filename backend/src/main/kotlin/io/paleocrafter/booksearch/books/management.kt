@@ -2,13 +2,18 @@ package io.paleocrafter.booksearch.books
 
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
+import io.ktor.http.ContentDisposition
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
 import io.ktor.request.receive
 import io.ktor.request.receiveMultipart
+import io.ktor.response.header
 import io.ktor.response.respond
+import io.ktor.response.respondBytes
 import io.ktor.routing.Route
 import io.ktor.routing.delete
 import io.ktor.routing.get
@@ -17,6 +22,7 @@ import io.ktor.routing.post
 import io.ktor.routing.put
 import io.ktor.util.pipeline.PipelineContext
 import io.paleocrafter.booksearch.auth.user
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.find
@@ -24,6 +30,7 @@ import kotlinx.coroutines.channels.mapNotNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
+import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
@@ -85,6 +92,31 @@ fun Route.bookManagement(index: BookIndex) {
                 "message" to "Book '$title' was successfully deleted!"
             )
         )
+    }
+
+    val epubType = ContentType.parse("application/epub+zip")
+
+    get("/{id}/file") {
+        val id = UUID.fromString(call.parameters["id"])
+        val book = transaction {
+            Book.findById(id) ?: return@transaction null
+        } ?: return@get call.respond(
+            HttpStatusCode.NotFound,
+            mapOf("message" to "Book with ID '$id' does not exist")
+        )
+
+        val fileName = transaction { "${book.author} - ${book.title}.epub" }
+        val content = withContext(Dispatchers.IO) {
+            val stream = book.content.binaryStream
+            stream.use { it.readBytes() }
+        }
+
+        call.response.header(
+            HttpHeaders.ContentDisposition,
+            ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, fileName).toString()
+        )
+
+        call.respondBytes(epubType) { content }
     }
 
     suspend fun PipelineContext<Unit, ApplicationCall>.receiveEpub(): Pair<Epub, ByteArray>? {
