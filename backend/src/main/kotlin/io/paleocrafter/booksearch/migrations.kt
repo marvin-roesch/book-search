@@ -20,6 +20,7 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
+import java.sql.ResultSet
 
 object DbMigrations : Table() {
     private val logger = LoggerFactory.getLogger("DbMigrations")
@@ -70,6 +71,16 @@ fun Table.createOrModifyColumns(vararg columns: Column<*>) {
             exec(statement)
         }
     }
+}
+
+fun <T : Any> String.execAndMap(transform: (ResultSet) -> T): List<T> {
+    val result = arrayListOf<T>()
+    TransactionManager.current().exec(this) { rs ->
+        while (rs.next()) {
+            result += transform(rs)
+        }
+    }
+    return result
 }
 
 private object ExecutedMigrations : Table() {

@@ -104,12 +104,12 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     var position by Chapters.position
 
     val previous: Chapter?
-        get() = Chapter.find {
+        get() = find {
             (Chapters.book eq book.id) and (Chapters.position eq (position - 1))
         }.limit(1).firstOrNull()
 
     val next: Chapter?
-        get() = Chapter.find {
+        get() = find {
             (Chapters.book eq book.id) and (Chapters.position eq (position + 1))
         }.limit(1).firstOrNull()
 

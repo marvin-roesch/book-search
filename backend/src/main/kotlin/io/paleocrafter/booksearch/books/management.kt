@@ -168,7 +168,7 @@ fun Route.bookManagement(index: BookIndex) {
 
         BookCache.updateBook(book)
 
-        logger.info("New book '${epub.title}' uploaded by ${call.user?.username}")
+        logger.info("New book '${epub.title}' uploaded by ${call.user.username}")
 
         call.respond(mapOf("id" to bookId))
     }
@@ -196,7 +196,7 @@ fun Route.bookManagement(index: BookIndex) {
 
         BookCache.updateBook(book, updateSeries = false)
 
-        logger.info("New version of '${epub.title}' uploaded by ${call.user?.username}")
+        logger.info("New version of '${epub.title}' uploaded by ${call.user.username}")
 
         call.respond(mapOf("id" to id, "message" to "A new version of the book was successfully uploaded!"))
     }
@@ -409,7 +409,7 @@ fun Route.bookManagement(index: BookIndex) {
         ))
     }
 
-    suspend fun index(book: Book, user: String?) {
+    suspend fun index(book: Book, user: String) {
         val id = transaction { book.id.value }
 
         val normalized = transaction {
@@ -459,7 +459,7 @@ fun Route.bookManagement(index: BookIndex) {
         BookCache.updateBook(book)
 
         GlobalScope.launch(indexing) {
-            index(book, call.user?.username)
+            index(book, call.user.username)
             BookCache.updateBook(book)
         }
 
@@ -486,7 +486,7 @@ fun Route.bookManagement(index: BookIndex) {
             coroutineScope {
                 for (book in books) {
                     launch(indexing) {
-                        index(book, call.user?.username)
+                        index(book, call.user.username)
                     }
                 }
             }
@@ -507,7 +507,7 @@ private data class BookPatchRequest(val title: String, val author: String, val s
 private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
     val result = mutableListOf<SplitChapter>()
 
-    for (i in 0 until this.size) {
+    for (i in this.indices) {
         val (tocId, tocReference) = this[i]
         val content = Jsoup.parse(String(tocReference.resource.data))
 

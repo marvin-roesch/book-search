@@ -1,22 +1,11 @@
 package io.paleocrafter.booksearch.books
 
 import io.ktor.application.Application
-import io.ktor.application.call
 import io.ktor.auth.authenticate
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.ByteArrayContent
-import io.ktor.http.fromFilePath
-import io.ktor.response.respond
-import io.ktor.routing.get
 import io.ktor.routing.route
 import io.ktor.routing.routing
-import io.paleocrafter.booksearch.auth.authorize
+import io.paleocrafter.booksearch.auth.requirePermissions
 import org.apache.http.HttpHost
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.UUID
 
 fun Application.books() {
     val elasticConfig = environment.config.propertyOrNull("elasticsearch.hosts")?.getList()
@@ -33,7 +22,7 @@ fun Application.books() {
 
                 bookSearch(index)
 
-                authorize({ it.canManageBooks }) {
+                requirePermissions("books.manage") {
                     bookManagement(index)
                 }
             }
