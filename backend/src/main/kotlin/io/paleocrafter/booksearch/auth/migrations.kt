@@ -16,3 +16,9 @@ object AddSearchSettingsMigration : DbMigration("add-search-settings") {
         Users.createOrModifyColumns(Users.defaultSearchScope, Users.groupResultsByDefault)
     }
 }
+
+object CreatePermissionsTablesMigration : DbMigration("create-permissions-tables") {
+    override fun apply() {
+        SchemaUtils.createMissingTablesAndColumns(Roles, UserRoles, Permissions, RolePermissions)
+    }
+}
