@@ -1,16 +1,21 @@
 <template>
-<div class="read-overview">
+<div class="library-overview">
   <UserPanel></UserPanel>
+  <ul class="library-overview-quicklinks">
+    <li v-for="s in series" :key="s.name">
+      <a :href="`#${s.name}`">{{ s.name }}</a>
+    </li>
+  </ul>
   <transition-group name="fade-slide-up">
-    <SeriesTree :series="s" v-for="s in series" :key="s.name"></SeriesTree>
+    <SeriesTree :series="s" :include-anchor="true" v-for="s in series" :key="s.name"></SeriesTree>
   </transition-group>
 </div>
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import SeriesTree from '@/components/read/SeriesTree.vue';
 import UserPanel from '@/components/UserPanel.vue';
-import { mapState } from 'vuex';
 
 let updaterTimeout = null;
 
@@ -113,12 +118,37 @@ export default {
 </script>
 
 <style lang="scss">
-.read-overview {
+.library-overview {
   box-sizing: border-box;
   padding: 0.5rem 2rem 2rem;
   width: 100%;
 
-  .user-panel {
+  &-quicklinks {
+    list-style-type: none;
+    padding: 0 0 0 0.5rem;
+    margin: 0;
+
+    &:before {
+      content: 'Jump to:';
+      margin-right: 0.5rem;
+    }
+
+    display: flex;
+    flex-wrap: wrap;
+
+    li {
+      margin-right: 0.25rem;
+
+      &:after {
+        display: inline-block;
+        content: "\B7";
+        margin-left: 0.25rem;
+      }
+
+      &:last-child:after {
+        content: '';
+      }
+    }
   }
 
   .expandable-content {
@@ -131,6 +161,10 @@ export default {
 
     .user-panel {
       padding: 0;
+    }
+
+    &-quicklinks {
+      margin-top: 0.5rem;
     }
   }
 }
