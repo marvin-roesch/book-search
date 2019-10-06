@@ -64,6 +64,7 @@ export default {
     flex-direction: row;
     padding: 1rem 0.5rem;
     align-items: center;
+    position: relative;
 
     .checkbox {
       margin: 0;

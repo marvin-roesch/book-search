@@ -1,6 +1,8 @@
 <template>
 <Expandable start-expanded class="series-tree">
-  <template slot="header">{{ series.name }}</template>
+  <template slot="header">
+    <a :name="series.name" class="series-tree-anchor" v-if="includeAnchor"></a> {{ series.name }}
+  </template>
   <div class="series-tree-content">
     <BookGrid :books="series.books"></BookGrid>
     <SeriesTree :series="s" v-for="s in series.children" :key="s.name"></SeriesTree>
@@ -17,6 +19,10 @@ export default {
   components: { BookGrid, Expandable },
   props: {
     series: Object,
+    includeAnchor: {
+      type: Boolean,
+      default: false,
+    },
   },
 };
 </script>
@@ -30,6 +36,13 @@ export default {
 
   &-content {
     padding-bottom: 1rem;
+  }
+
+  &-anchor {
+    position: absolute;
+    visibility: hidden;
+    top: 0;
+    left: 0;
   }
 }
 </style>
