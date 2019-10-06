@@ -32,7 +32,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var defaultSearchScope by Users.defaultSearchScope
     var groupResultsByDefault by Users.groupResultsByDefault
 
-    val roles by Role via UserRoles
+    var roles by Role via UserRoles
 
     val view: UserView
         get() = UserView(id.value, username, canManageBooks, canManageUsers, defaultSearchScope, groupResultsByDefault)
@@ -56,7 +56,7 @@ class Role(id: EntityID<UUID>) : UUIDEntity(id) {
 
     var name by Roles.name
 
-    val permissions by Permission via RolePermissions
+    var permissions by Permission via RolePermissions
 }
 
 object UserRoles : Table() {

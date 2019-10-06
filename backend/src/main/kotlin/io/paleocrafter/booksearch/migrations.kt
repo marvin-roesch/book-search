@@ -1,6 +1,7 @@
 package io.paleocrafter.booksearch
 
 import io.paleocrafter.booksearch.auth.AddSearchSettingsMigration
+import io.paleocrafter.booksearch.auth.ConvertFlagsToPermissionsMigration
 import io.paleocrafter.booksearch.auth.CreateAuthTablesMigration
 import io.paleocrafter.booksearch.auth.CreatePermissionsTablesMigration
 import io.paleocrafter.booksearch.books.AddCoverMigration
@@ -28,7 +29,7 @@ object DbMigrations : Table() {
         2 to listOf(AddSearchSettingsMigration),
         3 to listOf(AddIndexingIndicatorMigration),
         4 to listOf(AddTagsTableMigration),
-        5 to listOf(CreatePermissionsTablesMigration)
+        5 to listOf(CreatePermissionsTablesMigration, ConvertFlagsToPermissionsMigration)
     ).toSortedMap()
 
     fun run(db: Database) {
