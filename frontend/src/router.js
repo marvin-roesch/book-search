@@ -203,9 +203,10 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  const { canManageBooks, canManageUsers } = identity;
+  const hasPermission = store.getters['auth/hasPermission'];
+
   if (to.matched.some(record => record.meta.requiresBookPerms)) {
-    if (!canManageBooks) {
+    if (!hasPermission('books.manage')) {
       store.dispatch(
         'notifications/push',
         { type: 'error', message: 'You are not authorized to view the requested page!' },
@@ -215,7 +216,7 @@ router.beforeEach((to, from, next) => {
       next();
     }
   } else if (to.matched.some(record => record.meta.requiresUserPerms)) {
-    if (!canManageUsers) {
+    if (!hasPermission('users.manage')) {
       store.dispatch(
         'notifications/push',
         { type: 'error', message: 'You are not authorized to view the requested page!' },

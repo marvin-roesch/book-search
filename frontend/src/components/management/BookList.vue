@@ -1,9 +1,11 @@
 <template>
 <Card class="book-list">
   <template slot="title">
-    Books
-    <span v-if="identity.canManageUsers">&middot;</span>
-    <router-link :to="{name: 'user-management'}" v-if="identity.canManageUsers">Users</router-link>
+  Books
+  <span v-if="hasPermission('users.manage')">&middot;</span>
+  <router-link :to="{name: 'user-management'}" v-if="hasPermission('users.manage')">
+    Users
+  </router-link>
   </template>
   <SeriesEntry :series="series" class="book-list-root" @book-deleted="refresh"></SeriesEntry>
   <template slot="footer">
@@ -19,10 +21,10 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import Card from '@/components/Card.vue';
 import SeriesEntry from '@/components/management/SeriesEntry.vue';
 import Button from '@/components/Button.vue';
-import { mapState } from 'vuex';
 
 export default {
   name: 'BookList',
@@ -33,7 +35,7 @@ export default {
       reindexing: false,
     };
   },
-  computed: mapState('auth', ['identity']),
+  computed: mapGetters('auth', ['hasPermission']),
   async mounted() {
     await this.refresh();
   },

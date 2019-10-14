@@ -1,8 +1,10 @@
 <template>
 <Card class="user-list">
   <template slot="title">
-  <router-link :to="{name: 'book-management'}" v-if="identity.canManageBooks">Books</router-link>
-  <span v-if="identity.canManageBooks">&middot;</span>
+  <router-link :to="{name: 'book-management'}" v-if="hasPermission('books.manage')">
+    Books
+  </router-link>
+  <span v-if="hasPermission('books.manage')">&middot;</span>
   Users
   </template>
   <div class="user-table">
@@ -74,12 +76,12 @@
 </template>
 
 <script>
+import { mapGetters, mapState } from 'vuex';
+import { LockIcon, UserIcon } from 'vue-feather-icons';
 import Card from '@/components/Card.vue';
 import CheckBox from '@/components/CheckBox.vue';
 import TextField from '@/components/TextField.vue';
-import { LockIcon, UserIcon } from 'vue-feather-icons';
 import Button from '@/components/Button.vue';
-import { mapState } from 'vuex';
 
 export default {
   name: 'UserList',
@@ -94,7 +96,7 @@ export default {
       creating: false,
     };
   },
-  computed: mapState('auth', ['identity']),
+  computed: { ...mapState('auth', ['identity']), ...mapGetters('auth', ['hasPermission']) },
   async mounted() {
     try {
       const { data: users } = await this.$api.get('/auth/users');
@@ -180,10 +182,6 @@ export default {
   h2 {
     display: flex;
     align-items: center;
-
-    span {
-      margin-left: 0.25rem;
-    }
 
     a {
       margin-left: 0.25rem;

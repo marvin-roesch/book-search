@@ -8,6 +8,9 @@ const getters = {
   authorized(state) {
     return state.identity !== null;
   },
+  hasPermission(state) {
+    return permission => state.identity.permissions.includes(permission);
+  },
 };
 
 const actions = {
