@@ -20,6 +20,7 @@ import BookChapters from '@/views/BookChapters.vue';
 import BookDictionary from '@/views/BookDictionary.vue';
 import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 import ReuploadBook from '@/components/management/wizard/ReuploadBook.vue';
+import RoleManagement from '@/views/RoleManagement.vue';
 
 Vue.use(Router);
 
@@ -49,24 +50,24 @@ const router = new Router({
         path: '/users',
         name: 'user-management',
         component: UserManagement,
-        meta: { requiresAuth: true, requiresUserPerms: true },
+        meta: { requiresAuth: true, requiredPermissions: 'users.manage' },
       },
       {
         path: '/books',
         name: 'book-management',
         component: BookManagement,
-        meta: { requiresAuth: true, requiresBookPerms: true },
+        meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
       },
       ...withPrefix('/books', [
         {
           path: '/new',
           name: 'book-upload',
           component: NewBook,
-          meta: { requiresAuth: true, requiresBookPerms: true },
+          meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
         },
         {
           path: '/edit/:id',
-          meta: { requiresAuth: true, requiresBookPerms: true },
+          meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
           component: EditBook,
           children: [
             {
@@ -78,7 +79,7 @@ const router = new Router({
               path: 'reupload',
               name: 'book-reupload',
               component: ReuploadBook,
-              meta: { requiresAuth: true, requiresBookPerms: true },
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
             },
             {
               path: 'table-of-contents',
@@ -205,18 +206,8 @@ router.beforeEach((to, from, next) => {
 
   const hasPermission = store.getters['auth/hasPermission'];
 
-  if (to.matched.some(record => record.meta.requiresBookPerms)) {
-    if (!hasPermission('books.manage')) {
-      store.dispatch(
-        'notifications/push',
-        { type: 'error', message: 'You are not authorized to view the requested page!' },
-      );
-      next(from.name === null ? '/' : false);
-    } else {
-      next();
-    }
-  } else if (to.matched.some(record => record.meta.requiresUserPerms)) {
-    if (!hasPermission('users.manage')) {
+  if (to.matched.some(record => record.meta.requiredPermissions)) {
+    if (!hasPermission(to.meta.requiredPermissions)) {
       store.dispatch(
         'notifications/push',
         { type: 'error', message: 'You are not authorized to view the requested page!' },
