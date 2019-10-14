@@ -9,6 +9,7 @@ import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.select
 import java.util.UUID
 
@@ -37,7 +38,9 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
             username,
             defaultSearchScope,
             groupResultsByDefault,
-            Users.innerJoin(UserRoles).innerJoin(RolePermissions).innerJoin(Permissions)
+            Users.innerJoin(UserRoles, { id }, { user })
+                .innerJoin(RolePermissions, { UserRoles.role }, { role })
+                .innerJoin(Permissions, { RolePermissions.permission }, { id })
                 .slice(Permissions.id)
                 .select { Users.id eq id }
                 .withDistinct()
