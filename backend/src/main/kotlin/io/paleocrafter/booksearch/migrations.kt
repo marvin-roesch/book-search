@@ -8,6 +8,7 @@ import io.paleocrafter.booksearch.books.AddCoverMigration
 import io.paleocrafter.booksearch.books.AddIndexingIndicatorMigration
 import io.paleocrafter.booksearch.books.AddTagsTableMigration
 import io.paleocrafter.booksearch.books.CreateBookTablesMigration
+import io.paleocrafter.booksearch.books.RestrictedBooksMigration
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -30,7 +31,8 @@ object DbMigrations : Table() {
         2 to listOf(AddSearchSettingsMigration),
         3 to listOf(AddIndexingIndicatorMigration),
         4 to listOf(AddTagsTableMigration),
-        5 to listOf(CreatePermissionsTablesMigration, ConvertFlagsToPermissionsMigration)
+        5 to listOf(CreatePermissionsTablesMigration, ConvertFlagsToPermissionsMigration),
+        6 to listOf(RestrictedBooksMigration)
     ).toSortedMap()
 
     fun run(db: Database) {

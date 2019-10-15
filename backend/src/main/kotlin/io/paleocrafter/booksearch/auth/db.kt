@@ -8,7 +8,10 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.UUIDTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.select
 import java.util.UUID
@@ -106,6 +109,11 @@ object UserRoles : Table() {
 object Permissions : IdTable<String>() {
     override val id: Column<EntityID<String>> = varchar("id", 255).primaryKey().entityId()
     val description = varchar("description", 255)
+
+    fun deleteById(id: String) {
+        RolePermissions.deleteWhere { RolePermissions.permission eq id }
+        deleteWhere { Permissions.id eq id }
+    }
 }
 
 class Permission(id: EntityID<String>) : Entity<String>(id) {

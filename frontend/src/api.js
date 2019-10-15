@@ -17,7 +17,7 @@ client.interceptors.response.use(
     const { response: { status } } = error;
 
     if (status === 401) {
-      client.login()
+      client.login();
     }
 
     return Promise.reject(error);

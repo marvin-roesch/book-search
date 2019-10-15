@@ -5,6 +5,11 @@
     <ul class="series-entry-books">
       <li v-for="book in s.books" :key="book.id">
         <span class="series-entry-book-title">
+          <LockIcon
+            class="series-entry-book-restricted"
+            :width="20" :height="20"
+            v-if="book.restricted">
+          </LockIcon>
           <AlertTriangleIcon
             class="series-entry-book-unsearchable"
             :width="20" :height="20"
@@ -43,11 +48,18 @@
 </template>
 
 <script>
-import { AlertTriangleIcon, Edit2Icon, RefreshCcwIcon, UploadIcon, XIcon } from 'vue-feather-icons';
+import {
+  AlertTriangleIcon,
+  Edit2Icon,
+  LockIcon,
+  RefreshCcwIcon,
+  UploadIcon,
+  XIcon,
+} from 'vue-feather-icons';
 
 export default {
   name: 'SeriesEntry',
-  components: { RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon, UploadIcon },
+  components: { RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon, UploadIcon, LockIcon },
   props: {
     series: Array,
   },
@@ -107,6 +119,10 @@ export default {
     &-title {
       display: flex;
       align-items: center;
+    }
+
+    &-restricted {
+      margin-right: 0.25rem;
     }
 
     &-unsearchable {

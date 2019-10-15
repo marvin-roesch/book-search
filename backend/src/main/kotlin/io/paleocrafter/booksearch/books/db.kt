@@ -1,5 +1,6 @@
 package io.paleocrafter.booksearch.books
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -19,10 +20,13 @@ object Books : UUIDTable() {
     val cover = blob("cover").nullable()
     val coverMime = varchar("cover_mime_type", 255).nullable()
     val indexing = bool("indexing").default(false)
+    val restricted = bool("restricted").default(false)
 }
 
 class Book(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<Book>(Books)
+    companion object : UUIDEntityClass<Book>(Books) {
+        fun readingPermission(id: UUID) = "books.$id.read"
+    }
 
     var content by Books.content
     var title by Books.title
@@ -33,6 +37,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var cover by Books.cover
     var coverMime by Books.coverMime
     var indexing by Books.indexing
+    var restricted by Books.restricted
     val tags by BookTag referrersOn BookTags.book
 
     val resolved: ResolvedBook
@@ -44,6 +49,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             orderInSeries,
             searchable,
             indexing,
+            restricted,
             tags.mapTo(mutableSetOf()) { it.tag }
         )
 }
@@ -56,6 +62,7 @@ data class ResolvedBook(
     val orderInSeries: Int,
     val searchable: Boolean,
     val indexing: Boolean,
+    val restricted: Boolean,
     val tags: Set<String>
 ) {
     val sortableTitle = title.sortable
@@ -68,7 +75,8 @@ data class ResolvedBook(
             "series" to series,
             "orderInSeries" to orderInSeries,
             "searchable" to searchable,
-            "indexing" to indexing
+            "indexing" to indexing,
+            "restricted" to restricted
         )
 }
 

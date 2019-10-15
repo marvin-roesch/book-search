@@ -209,12 +209,12 @@ fun Application.auth() {
                 }
             }
 
+            get("/roles") {
+                call.respond(transaction { Role.all().map { it.view } })
+            }
+
             requirePermissions("users.manage") {
                 route("/roles") {
-                    get("/") {
-                        call.respond(transaction { Role.all().map { it.view } })
-                    }
-
                     patch("/{id}") {
                         val id = UUID.fromString(call.parameters["id"])
                         val request = call.receive<PatchRoleRequest>()
@@ -396,10 +396,10 @@ val ApplicationCall.user: UserView
         }
     }
 
-fun Route.authorize(check: (UserView) -> Boolean, build: Route.() -> Unit): Route {
+fun Route.authorize(check: ApplicationCall.(UserView) -> Boolean, build: Route.() -> Unit): Route {
     return authenticate {
         intercept(ApplicationCallPipeline.Call) {
-            if (!check(call.user)) {
+            if (!call.check(call.user)) {
                 call.respond(HttpStatusCode.Forbidden)
                 return@intercept finish()
             }

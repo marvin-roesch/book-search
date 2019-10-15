@@ -80,6 +80,7 @@ const router = new Router({
               path: '/',
               name: 'book-metadata',
               component: MetadataEditor,
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
             },
             {
               path: 'reupload',
@@ -91,11 +92,13 @@ const router = new Router({
               path: 'table-of-contents',
               name: 'table-of-contents',
               component: TableOfContents,
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
             },
             {
               path: 'classes',
               name: 'book-classes',
               component: ClassMapper,
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
             },
           ],
         },
