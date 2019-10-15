@@ -66,6 +66,13 @@ class Role(id: EntityID<UUID>) : UUIDEntity(id) {
     var name by Roles.name
 
     var permissions by Permission via RolePermissions
+
+    val view: Map<String, Any>
+        get() = mapOf(
+            "id" to id.value,
+            "name" to name,
+            "permissions" to permissions.map { it.id.value }
+        )
 }
 
 object UserRoles : Table() {
@@ -82,6 +89,12 @@ class Permission(id: EntityID<String>) : Entity<String>(id) {
     companion object : EntityClass<String, Permission>(Permissions)
 
     var description by Permissions.description
+
+    val view: Map<String, Any>
+        get() = mapOf(
+            "id" to id.value,
+            "description" to description
+        )
 }
 
 object RolePermissions : Table() {

@@ -64,7 +64,14 @@ fun Application.main() {
     install(Compression)
     install(StatusPages) {
         exception<NotImplementedError> { call.respond(HttpStatusCode.NotImplemented) }
-        exception<JsonMappingException> { call.respond(HttpStatusCode.BadRequest, it.message ?: "") }
+        exception<JsonMappingException> {
+            call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf(
+                    "message" to (it.message ?: "")
+                )
+            )
+        }
         exception<ManagementError> {
             call.respond(
                 HttpStatusCode.BadRequest,

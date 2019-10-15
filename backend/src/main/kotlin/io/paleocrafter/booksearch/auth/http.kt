@@ -33,6 +33,7 @@ import io.ktor.util.AttributeKey
 import io.ktor.util.hex
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.util.UUID
@@ -209,6 +210,90 @@ fun Application.auth() {
             }
 
             requirePermissions("users.manage") {
+                route("/roles") {
+                    get("/") {
+                        call.respond(transaction { Role.all().map { it.view } })
+                    }
+
+                    patch("/{id}") {
+                        val id = UUID.fromString(call.parameters["id"])
+                        val request = call.receive<PatchRoleRequest>()
+
+                        val roleName = transaction {
+                            val role = Role.findById(id) ?: return@transaction null
+
+                            role.permissions = Permission.find { Permissions.id inList request.permissions }
+
+                            role.name
+                        } ?: return@patch call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("message" to "Role with ID '$id' does not exist!")
+                        )
+
+                        call.respond(
+                            mapOf("message" to "Permissions for role '$roleName' were successfully updated!")
+                        )
+                    }
+
+                    delete("/{id}") {
+                        val id = UUID.fromString(call.parameters["id"])
+
+                        val roleName = transaction {
+                            val role = Role.findById(id) ?: return@transaction null
+                            val name = role.name
+
+                            UserRoles.deleteWhere { UserRoles.role eq role.id }
+                            RolePermissions.deleteWhere { RolePermissions.role eq role.id }
+                            role.delete()
+
+                            name
+                        } ?: return@delete call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("message" to "Role with ID '$id' does not exist!")
+                        )
+
+                        call.respond(
+                            mapOf("message" to "Role '$roleName' was successfully deleted!")
+                        )
+                    }
+
+                    put("/") {
+                        val request = call.receive<CreateRoleRequest>()
+
+                        if (request.name.isEmpty()) {
+                            return@put call.respond(
+                                HttpStatusCode.BadRequest,
+                                mapOf("message" to "Role name must not be empty!")
+                            )
+                        }
+
+                        if (transaction { Role.find { Roles.name eq request.name }.any() }) {
+                            return@put call.respond(
+                                HttpStatusCode.Conflict,
+                                mapOf("message" to "Role with name '${request.name}' already exists!")
+                            )
+                        }
+
+                        val role = transaction {
+                            Role.new {
+                                name = request.name
+                                permissions = Permission.find { Permissions.id inList request.initialPermissions }
+                            }.view
+                        }
+
+                        call.respond(
+                            mapOf(
+                                "message" to "Role '${request.name}' was successfully created!",
+                                "role" to role
+                            )
+                        )
+                    }
+                }
+
+                get("/permissions") {
+                    call.respond(transaction { Permission.all().map { it.view } })
+                }
+
                 route("/users") {
                     get("/") {
                         call.respond(transaction { User.all().map { it.view } })
@@ -230,7 +315,7 @@ fun Application.auth() {
                         )
 
                         call.respond(
-                            mapOf("message" to "Permissions for user '$userName' were successfully updated!")
+                            mapOf("message" to "Roles for user '$userName' were successfully updated!")
                         )
                     }
 
@@ -247,6 +332,7 @@ fun Application.auth() {
                             val user = User.findById(id) ?: return@transaction null
                             val name = user.username
 
+                            UserRoles.deleteWhere { UserRoles.user eq user.id }
                             user.delete()
 
                             name
@@ -281,6 +367,7 @@ fun Application.auth() {
                             User.new {
                                 username = request.username
                                 password = hash(request.password)
+                                roles = Role.find { Roles.id inList request.initialRoles }
                             }.view
                         }
 
@@ -331,7 +418,11 @@ fun Route.requirePermissions(vararg permissions: String, build: Route.() -> Unit
 
 data class LoginRequest(val username: String, val password: String)
 
-data class CreateUserRequest(val username: String, val password: String)
+data class CreateRoleRequest(val name: String, val initialPermissions: List<String>)
+
+data class PatchRoleRequest(val permissions: List<String>)
+
+data class CreateUserRequest(val username: String, val password: String, val initialRoles: List<UUID>)
 
 data class PatchUserRequest(val roles: List<UUID>)
 
