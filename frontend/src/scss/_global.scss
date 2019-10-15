@@ -173,6 +173,10 @@ input {
   line-height: 1;
   background: $primary;
 
+  &-no-icon {
+    padding-right: 0.625rem;
+  }
+
   &:last-child {
     margin-right: 0;
   }

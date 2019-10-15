@@ -296,7 +296,7 @@ fun Application.auth() {
 
                 route("/users") {
                     get("/") {
-                        call.respond(transaction { User.all().map { it.view } })
+                        call.respond(transaction { User.all().map { it.adminView } })
                     }
 
                     patch("/{id}") {
@@ -368,7 +368,7 @@ fun Application.auth() {
                                 username = request.username
                                 password = hash(request.password)
                                 roles = Role.find { Roles.id inList request.initialRoles }
-                            }.view
+                            }.adminView
                         }
 
                         call.respond(

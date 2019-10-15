@@ -38,6 +38,21 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
             username,
             defaultSearchScope,
             groupResultsByDefault,
+            permissions
+        )
+
+    val adminView: AdminUserView
+        get() = AdminUserView(
+            id.value,
+            username,
+            defaultSearchScope,
+            groupResultsByDefault,
+            permissions,
+            roles.mapTo(mutableSetOf()) { it.id.value }
+        )
+
+    private val permissions: Set<String>
+        get() =
             Users.innerJoin(UserRoles, { id }, { user })
                 .innerJoin(RolePermissions, { UserRoles.role }, { role })
                 .innerJoin(Permissions, { RolePermissions.permission }, { id })
@@ -45,7 +60,6 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
                 .select { Users.id eq id }
                 .withDistinct()
                 .mapTo(mutableSetOf()) { it[Permissions.id].value }
-        )
 }
 
 data class UserView(
@@ -54,6 +68,15 @@ data class UserView(
     val defaultSearchScope: String,
     val groupResultsByDefault: Boolean,
     val permissions: Set<String>
+)
+
+data class AdminUserView(
+    val id: UUID,
+    val username: String,
+    val defaultSearchScope: String,
+    val groupResultsByDefault: Boolean,
+    val permissions: Set<String>,
+    val roles: Set<UUID>
 )
 
 object Roles : UUIDTable() {

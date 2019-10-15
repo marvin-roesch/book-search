@@ -27,7 +27,14 @@
         track-by="id"
         :close-on-select="false"
         :clear-on-select="false"
+        :limit="5"
+        @close="updateRole(role)"
       >
+        <template slot="tag" slot-scope="{ option }">
+        <span class="multiselect__tag multiselect__tag-no-icon" :key="option.id">
+          <span>{{ option.description }}</span>
+        </span>
+        </template>
       </multiselect>
     </div>
     <div class="role-table-cell" :key="`${role.id}-actions`">
@@ -51,7 +58,7 @@
       track-by="id"
       :close-on-select="false"
       :clear-on-select="false"
-      :limit="1"
+      :limit="5"
     >
     </multiselect>
     <div class="card-footer">
@@ -103,6 +110,19 @@ export default {
     }
   },
   methods: {
+    async updateRole(role) {
+      try {
+        const { data: { message } } = await this.$api.patch(
+          `/auth/roles/${role.id}`,
+          {
+            permissions: role.selectedPermissions.map(p => p.id),
+          },
+        );
+        this.$notifications.success(message);
+      } catch (error) {
+        this.$handleApiError(error);
+      }
+    },
     async deleteRole(roleId) {
       try {
         const { data: { message } } = await this.$api.delete(`/auth/roles/${roleId}`);
