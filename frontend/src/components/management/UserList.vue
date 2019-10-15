@@ -1,11 +1,13 @@
 <template>
 <Card class="user-list">
   <template slot="title">
-  <router-link :to="{name: 'book-management'}" v-if="hasPermission('books.manage')">
-    Books
-  </router-link>
-  <span v-if="hasPermission('books.manage')">&middot;</span>
-  Users
+  <template v-if="hasPermission('books.manage')">
+  <router-link :to="{name: 'book-management'}">Books</router-link>
+  <span>&middot;</span>
+  </template>
+  <span>Users</span>
+  <span>&middot;</span>
+  <router-link :to="{name: 'role-management'}">Roles</router-link>
   </template>
   <div class="user-table">
     <div class="user-table-header">Username</div>
@@ -149,7 +151,7 @@ export default {
       this.creating = true;
       try {
         const { data: { message, user } } = await this.$api.put(
-          `/auth/users`,
+          '/auth/users',
           {
             username: this.newUsername,
             password: this.newPassword,
@@ -182,6 +184,10 @@ export default {
   h2 {
     display: flex;
     align-items: center;
+
+    span {
+      margin-left: 0.25rem;
+    }
 
     a {
       margin-left: 0.25rem;

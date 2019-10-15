@@ -53,6 +53,12 @@ const router = new Router({
         meta: { requiresAuth: true, requiredPermissions: 'users.manage' },
       },
       {
+        path: '/roles',
+        name: 'role-management',
+        component: RoleManagement,
+        meta: { requiresAuth: true, requiredPermissions: 'users.manage' },
+      },
+      {
         path: '/books',
         name: 'book-management',
         component: BookManagement,

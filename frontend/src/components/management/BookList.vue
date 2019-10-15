@@ -2,10 +2,12 @@
 <Card class="book-list">
   <template slot="title">
   Books
-  <span v-if="hasPermission('users.manage')">&middot;</span>
-  <router-link :to="{name: 'user-management'}" v-if="hasPermission('users.manage')">
-    Users
-  </router-link>
+  <template v-if="hasPermission('users.manage')">
+  <span>&middot;</span>
+  <router-link :to="{name: 'user-management'}">Users</router-link>
+  <span>&middot;</span>
+  <router-link :to="{name: 'role-management'}">Roles</router-link>
+  </template>
   </template>
   <SeriesEntry :series="series" class="book-list-root" @book-deleted="refresh"></SeriesEntry>
   <template slot="footer">
