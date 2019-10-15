@@ -29,15 +29,19 @@
     <li>
       <router-link :to="{name: 'library'}">Library</router-link>
     </li>
-    <li v-if="identity.canManageBooks">
-      <router-link :to="{name: 'book-management'}">Manage</router-link>
+    <li v-if="hasPermission('books.manage') || hasPermission('users.manage')">
+      <router-link
+        :to="{name: hasPermission('books.manage') ? 'book-management' : 'user-management'}"
+      >
+        Manage
+      </router-link>
     </li>
   </ul>
 </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 import { UserIcon } from 'vue-feather-icons';
 
 export default {
@@ -48,7 +52,7 @@ export default {
       menuVisible: false,
     };
   },
-  computed: mapState('auth', ['identity']),
+  computed: { ...mapState('auth', ['identity']), ...mapGetters('auth', ['hasPermission']) },
   methods: {
     async logout() {
       try {

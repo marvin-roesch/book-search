@@ -29,8 +29,11 @@ import io.ktor.sessions.directorySessionStorage
 import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
+import io.ktor.util.AttributeKey
 import io.ktor.util.hex
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.util.UUID
@@ -53,11 +56,19 @@ fun Application.auth() {
             val defaultPassword = environment.config.propertyOrNull("auth.admin-password")?.getString()
                 ?: throw IllegalStateException("There are no users yet and no default admin password is set! " +
                     "Either specify it as 'auth.admin-password' in config file or pass DEFAULT_PASSWORD env variable.")
+
+            val manageBooksPermission = Permission.new("books.manage") { description = "Manage books" }
+            val manageUsersPermission = Permission.new("users.manage") { description = "Manage users" }
+
+            val adminRole = Role.new(UUID.randomUUID()) {
+                name = "Admin"
+                permissions = SizedCollection(manageBooksPermission, manageUsersPermission)
+            }
+
             User.new {
                 username = "admin"
                 password = hash(defaultPassword)
-                canManageBooks = true
-                canManageUsers = true
+                roles = SizedCollection(adminRole)
             }
 
             environment.log.info("Superuser 'admin' was created with the provided default password!")
@@ -130,23 +141,11 @@ fun Application.auth() {
                 }
 
                 get("/identity") {
-                    val user = call.user ?: return@get call.respond(
-                        HttpStatusCode.Unauthorized,
-                        mapOf(
-                            "message" to "You need to be logged in to view this page!"
-                        )
-                    )
-
-                    call.respond(user)
+                    call.respond(call.user)
                 }
 
                 patch("/password") {
-                    val user = call.user ?: return@patch call.respond(
-                        HttpStatusCode.Unauthorized,
-                        mapOf(
-                            "message" to "You need to be logged in to view this page!"
-                        )
-                    )
+                    val user = call.user
                     val request = call.receive<ChangePasswordRequest>()
 
                     if (transaction { User.findById(user.id)?.password != hash(request.oldPassword) }) {
@@ -184,12 +183,7 @@ fun Application.auth() {
                 }
 
                 patch("/search-settings") {
-                    val userId = call.userId ?: return@patch call.respond(
-                        HttpStatusCode.Unauthorized,
-                        mapOf(
-                            "message" to "You need to be logged in to view this page!"
-                        )
-                    )
+                    val userId = call.userId
                     val request = call.receive<ChangeSearchSettingsRequest>()
 
                     val view = transaction {
@@ -215,10 +209,94 @@ fun Application.auth() {
                 }
             }
 
-            authorize({ it.canManageUsers }) {
+            get("/roles") {
+                call.respond(transaction { Role.all().map { it.view } })
+            }
+
+            requirePermissions("users.manage") {
+                route("/roles") {
+                    patch("/{id}") {
+                        val id = UUID.fromString(call.parameters["id"])
+                        val request = call.receive<PatchRoleRequest>()
+
+                        val roleName = transaction {
+                            val role = Role.findById(id) ?: return@transaction null
+
+                            role.permissions = Permission.find { Permissions.id inList request.permissions }
+
+                            role.name
+                        } ?: return@patch call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("message" to "Role with ID '$id' does not exist!")
+                        )
+
+                        call.respond(
+                            mapOf("message" to "Permissions for role '$roleName' were successfully updated!")
+                        )
+                    }
+
+                    delete("/{id}") {
+                        val id = UUID.fromString(call.parameters["id"])
+
+                        val roleName = transaction {
+                            val role = Role.findById(id) ?: return@transaction null
+                            val name = role.name
+
+                            UserRoles.deleteWhere { UserRoles.role eq role.id }
+                            RolePermissions.deleteWhere { RolePermissions.role eq role.id }
+                            role.delete()
+
+                            name
+                        } ?: return@delete call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("message" to "Role with ID '$id' does not exist!")
+                        )
+
+                        call.respond(
+                            mapOf("message" to "Role '$roleName' was successfully deleted!")
+                        )
+                    }
+
+                    put("/") {
+                        val request = call.receive<CreateRoleRequest>()
+
+                        if (request.name.isEmpty()) {
+                            return@put call.respond(
+                                HttpStatusCode.BadRequest,
+                                mapOf("message" to "Role name must not be empty!")
+                            )
+                        }
+
+                        if (transaction { Role.find { Roles.name eq request.name }.any() }) {
+                            return@put call.respond(
+                                HttpStatusCode.Conflict,
+                                mapOf("message" to "Role with name '${request.name}' already exists!")
+                            )
+                        }
+
+                        val role = transaction {
+                            Role.new {
+                                name = request.name
+                                permissions = Permission.find { Permissions.id inList request.initialPermissions }
+                            }.view
+                        }
+
+                        call.respond(
+                            mapOf(
+                                "message" to "Role '${request.name}' was successfully created!",
+                                "role" to role
+                            )
+                        )
+                    }
+                }
+
+                get("/permissions") {
+                    call.respond(transaction { Permission.all().map { it.view } })
+                }
+
                 route("/users") {
                     get("/") {
-                        call.respond(transaction { User.all().map { it.view } })
+                        call.respond(transaction { User.all().map { it.adminView } })
                     }
 
                     patch("/{id}") {
@@ -228,8 +306,7 @@ fun Application.auth() {
                         val userName = transaction {
                             val user = User.findById(id) ?: return@transaction null
 
-                            user.canManageBooks = request.canManageBooks
-                            user.canManageUsers = request.canManageUsers
+                            user.roles = Role.find { Roles.id inList request.roles }
 
                             user.username
                         } ?: return@patch call.respond(
@@ -238,7 +315,7 @@ fun Application.auth() {
                         )
 
                         call.respond(
-                            mapOf("message" to "Permissions for user '$userName' were successfully updated!")
+                            mapOf("message" to "Roles for user '$userName' were successfully updated!")
                         )
                     }
 
@@ -255,6 +332,7 @@ fun Application.auth() {
                             val user = User.findById(id) ?: return@transaction null
                             val name = user.username
 
+                            UserRoles.deleteWhere { UserRoles.user eq user.id }
                             user.delete()
 
                             name
@@ -289,9 +367,8 @@ fun Application.auth() {
                             User.new {
                                 username = request.username
                                 password = hash(request.password)
-                                canManageBooks = request.canManageBooks
-                                canManageUsers = request.canManageUsers
-                            }.view
+                                roles = Role.find { Roles.id inList request.initialRoles }
+                            }.adminView
                         }
 
                         call.respond(
@@ -307,17 +384,22 @@ fun Application.auth() {
     }
 }
 
-val ApplicationCall.userId: UUID?
-    get() = authentication.principal<UserId>()?.id
+val ApplicationCall.userId: UUID
+    get() = authentication.principal<UserId>()?.id ?: throw RuntimeException("Cannot retrieve user ID from request")
 
-val ApplicationCall.user: UserView?
-    get() = transaction { User.findById(userId ?: return@transaction null)?.view }
+val USER_KEY = AttributeKey<UserView>("User")
 
-fun Route.authorize(check: (UserView) -> Boolean, build: Route.() -> Unit): Route {
+val ApplicationCall.user: UserView
+    get() = this.attributes.computeIfAbsent(USER_KEY) {
+        transaction {
+            User.findById(userId)?.view ?: throw RuntimeException("Cannot find user $userId")
+        }
+    }
+
+fun Route.authorize(check: ApplicationCall.(UserView) -> Boolean, build: Route.() -> Unit): Route {
     return authenticate {
         intercept(ApplicationCallPipeline.Call) {
-            val user = call.user
-            if (user != null && !check(user)) {
+            if (!call.check(call.user)) {
                 call.respond(HttpStatusCode.Forbidden)
                 return@intercept finish()
             }
@@ -327,11 +409,22 @@ fun Route.authorize(check: (UserView) -> Boolean, build: Route.() -> Unit): Rout
     }
 }
 
+fun Route.requirePermissions(vararg permissions: String, build: Route.() -> Unit): Route {
+    return authorize(
+        { user -> permissions.all { it in user.permissions } },
+        build
+    )
+}
+
 data class LoginRequest(val username: String, val password: String)
 
-data class CreateUserRequest(val username: String, val password: String, val canManageBooks: Boolean, val canManageUsers: Boolean)
+data class CreateRoleRequest(val name: String, val initialPermissions: List<String>)
 
-data class PatchUserRequest(val canManageBooks: Boolean, val canManageUsers: Boolean)
+data class PatchRoleRequest(val permissions: List<String>)
+
+data class CreateUserRequest(val username: String, val password: String, val initialRoles: List<UUID>)
+
+data class PatchUserRequest(val roles: List<UUID>)
 
 data class ChangePasswordRequest(val oldPassword: String, val newPassword: String, val newPasswordRepeat: String)
 

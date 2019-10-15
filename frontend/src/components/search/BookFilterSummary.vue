@@ -12,7 +12,7 @@ export default {
   name: 'BookFilterSummary',
   props: {
     series: Array,
-    tags: Array,
+    tags: Object,
   },
   data() {
     return {

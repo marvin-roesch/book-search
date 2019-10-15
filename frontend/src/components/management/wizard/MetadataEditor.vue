@@ -32,6 +32,18 @@
     <HashIcon></HashIcon>
     </template>
   </TextField>
+  <multiselect
+    v-model="bookRoles"
+    :options="roles"
+    :multiple="true"
+    placeholder="Everybody may access this book, add roles to restrict access"
+    label="name"
+    track-by="id"
+    :close-on-select="false"
+    :clear-on-select="false"
+    :limit="5"
+  >
+  </multiselect>
   <div class="button-bar">
     <Button slim :to="{name: 'book-management'}" :disabled="updating">Back</Button>
     <Button slim @click="updateMetadata" :loading="updating" :disabled="updating">Next</Button>
@@ -40,13 +52,23 @@
 </template>
 
 <script>
+import Multiselect from 'vue-multiselect';
+import { BarChartIcon, GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
-import { BarChartIcon, GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
 
 export default {
   name: 'MetadataEditor',
-  components: { UserIcon, TypeIcon, TextField, Button, HashIcon, GridIcon, BarChartIcon },
+  components: {
+    UserIcon,
+    TypeIcon,
+    TextField,
+    Button,
+    HashIcon,
+    GridIcon,
+    BarChartIcon,
+    Multiselect,
+  },
   async mounted() {
     this.updating = true;
     const { id } = this.$route.params;
@@ -62,12 +84,16 @@ export default {
         },
       } = await this.$api.get(`/books/${id}`);
 
+      const { data: roles } = await this.$api.get('/auth/roles');
+      this.roles = roles;
+
       this.bookId = id;
       this.title = title;
       this.author = author;
       this.series = series;
       this.orderInSeries = orderInSeries.toString();
       this.tags = tags.join(', ');
+      this.bookRoles = roles.filter(r => r.permissions.includes(`books.${id}.read`));
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -82,6 +108,7 @@ export default {
       series: '',
       orderInSeries: '1',
       tags: '',
+      bookRoles: [],
       updating: false,
     };
   },
@@ -97,6 +124,7 @@ export default {
             series: this.series,
             orderInSeries: Number(this.orderInSeries),
             tags: this.tags.split(',').map(tag => tag.trim()),
+            permittedRoles: this.bookRoles.map(role => role.id),
           },
           {
             headers: {

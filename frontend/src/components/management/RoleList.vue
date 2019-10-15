@@ -1,66 +1,60 @@
 <template>
-<Card class="user-list">
+<Card class="role-list">
   <template slot="title">
   <template v-if="hasPermission('books.manage')">
   <router-link :to="{name: 'book-management'}">Books</router-link>
   <span>&middot;</span>
   </template>
-  <span>Users</span>
+  <router-link :to="{name: 'user-management'}">Users</router-link>
   <span>&middot;</span>
-  <router-link :to="{name: 'role-management'}">Roles</router-link>
+  <span>Roles</span>
   </template>
-  <div class="user-table">
-    <div class="user-table-header">Username</div>
-    <div class="user-table-header">Roles</div>
-    <div class="user-table-header">Actions</div>
-    <template v-for="user in users">
-    <div class="user-table-cell" :key="`${user.id}-name`">
-      {{ user.username }}
+  <div class="role-table">
+    <div class="role-table-header">Name</div>
+    <div class="role-table-header">Permissions</div>
+    <div class="role-table-header">Actions</div>
+    <template v-for="role in roles">
+    <div class="role-table-cell" :key="`${role.id}-name`">
+      {{ role.name }}
     </div>
-    <div class="user-table-cell" :key="`${user.id}-roles`">
+    <div class="role-table-cell" :key="`${role.id}-permissions`">
       <multiselect
-        v-model="user.selectedRoles"
-        :options="roles"
+        v-model="role.selectedPermissions"
+        :options="permissions"
         :multiple="true"
-        placeholder="Select roles"
-        label="name"
+        placeholder="Select permissions"
+        label="description"
         track-by="id"
         :close-on-select="false"
         :clear-on-select="false"
         :limit="5"
-        @close="updateUser(user)"
+        @close="updateRole(role)"
       >
         <template slot="tag" slot-scope="{ option }">
         <span class="multiselect__tag multiselect__tag-no-icon" :key="option.id">
-          <span>{{ option.name }}</span>
+          <span>{{ option.description }}</span>
         </span>
         </template>
       </multiselect>
     </div>
-    <div class="user-table-cell" :key="`${user.id}-actions`">
-      <a href="#" @click.prevent="deleteUser(user.id)" v-if="user.id !== identity.id">Delete</a>
+    <div class="role-table-cell" :key="`${role.id}-actions`">
+      <a href="#" @click.prevent="deleteRole(role.id)">Delete</a>
     </div>
     </template>
   </div>
-  <form class="user-list-form">
-    <h3>Create new user</h3>
-    <TextField name="new-user-username" placeholder="Username" v-model="newUsername">
+  <form class="role-list-form">
+    <h3>Create new role</h3>
+    <TextField name="new-role-name" placeholder="Name" v-model="newName">
       <template slot="icon">
-      <UserIcon></UserIcon>
-      </template>
-    </TextField>
-    <TextField type="password" name="new-user-password" placeholder="Default password"
-               v-model="newPassword">
-      <template slot="icon">
-      <LockIcon></LockIcon>
+      <TypeIcon></TypeIcon>
       </template>
     </TextField>
     <multiselect
-      v-model="newRoles"
-      :options="roles"
+      v-model="newPermissions"
+      :options="permissions"
       :multiple="true"
-      placeholder="Select roles"
-      label="name"
+      placeholder="Select permissions"
+      label="description"
       track-by="id"
       :close-on-select="false"
       :clear-on-select="false"
@@ -71,8 +65,8 @@
       <a href="#" @click.prevent="$router.back()">Back</a>
       <Button
         slim
-        :disabled="creating || newUsername.length === 0 || newPassword.length === 0"
-        @click="createUser"
+        :disabled="creating || newName.length === 0"
+        @click="createRole"
       >
         Create
       </Button>
@@ -83,46 +77,45 @@
 
 <script>
 import { mapGetters, mapState } from 'vuex';
-import { LockIcon, UserIcon } from 'vue-feather-icons';
+import { TypeIcon } from 'vue-feather-icons';
 import Multiselect from 'vue-multiselect';
 import Card from '@/components/Card.vue';
 import TextField from '@/components/TextField.vue';
 import Button from '@/components/Button.vue';
 
 export default {
-  name: 'UserList',
-  components: { Button, UserIcon, LockIcon, TextField, Card, Multiselect },
+  name: 'RoleList',
+  components: { Button, TypeIcon, TextField, Card, Multiselect },
   data() {
     return {
-      users: [],
       roles: [],
-      newUsername: '',
-      newPassword: '',
-      newRoles: [],
+      permissions: [],
+      newName: '',
+      newPermissions: [],
       creating: false,
     };
   },
   computed: { ...mapState('auth', ['identity']), ...mapGetters('auth', ['hasPermission']) },
   async mounted() {
     try {
-      const { data: users } = await this.$api.get('/auth/users');
       const { data: roles } = await this.$api.get('/auth/roles');
-      this.users = users.map(u => ({
-        ...u,
-        selectedRoles: roles.filter(r => u.roles.includes(r.id)),
+      const { data: permissions } = await this.$api.get('/auth/permissions');
+      this.roles = roles.map(r => ({
+        ...r,
+        selectedPermissions: permissions.filter(p => r.permissions.includes(p.id)),
       }));
-      this.roles = roles;
+      this.permissions = permissions;
     } catch (error) {
       this.$handleApiError(error);
     }
   },
   methods: {
-    async updateUser(user) {
+    async updateRole(role) {
       try {
         const { data: { message } } = await this.$api.patch(
-          `/auth/users/${user.id}`,
+          `/auth/roles/${role.id}`,
           {
-            roles: user.selectedRoles.map(r => r.id),
+            permissions: role.selectedPermissions.map(p => p.id),
           },
         );
         this.$notifications.success(message);
@@ -130,29 +123,28 @@ export default {
         this.$handleApiError(error);
       }
     },
-    async deleteUser(userId) {
+    async deleteRole(roleId) {
       try {
-        const { data: { message } } = await this.$api.delete(`/auth/users/${userId}`);
-        this.users = this.users.filter(u => u.id !== userId);
+        const { data: { message } } = await this.$api.delete(`/auth/roles/${roleId}`);
+        this.roles = this.roles.filter(r => r.id !== roleId);
         this.$notifications.success(message);
       } catch (error) {
         this.$handleApiError(error);
       }
     },
-    async createUser() {
+    async createRole() {
       this.creating = true;
       try {
-        const { data: { message, user } } = await this.$api.put(
-          '/auth/users',
+        const { data: { message, role } } = await this.$api.put(
+          '/auth/roles',
           {
-            username: this.newUsername,
-            password: this.newPassword,
-            initialRoles: this.newRoles.map(r => r.id),
+            name: this.newName,
+            initialPermissions: this.newPermissions.map(p => p.id),
           },
         );
-        this.users.push({
-          ...user,
-          selectedRoles: this.roles.filter(r => user.roles.includes(r.id)),
+        this.roles.push({
+          ...role,
+          selectedPermissions: this.permissions.filter(p => role.permissions.includes(p.id)),
         });
         this.$notifications.success(message);
       } catch (error) {
@@ -165,7 +157,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.user-list {
+.role-list {
   margin: 0 auto;
   width: 50vw;
   max-width: $max-content-width;
@@ -188,7 +180,7 @@ export default {
     }
   }
 
-  .user-table {
+  .role-table {
     padding: 0;
     margin: 0;
     width: 100%;
@@ -245,9 +237,6 @@ export default {
 
   &-form {
     padding-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
 
     h3 {
       padding: 0;

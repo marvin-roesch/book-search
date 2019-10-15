@@ -1,20 +1,14 @@
 package io.paleocrafter.booksearch.books
 
 import io.ktor.application.Application
-import io.ktor.application.call
+import io.ktor.application.ApplicationCall
 import io.ktor.auth.authenticate
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.ByteArrayContent
-import io.ktor.http.fromFilePath
-import io.ktor.response.respond
-import io.ktor.routing.get
+import io.ktor.routing.Route
 import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.paleocrafter.booksearch.auth.authorize
+import io.paleocrafter.booksearch.auth.requirePermissions
 import org.apache.http.HttpHost
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 
@@ -33,10 +27,29 @@ fun Application.books() {
 
                 bookSearch(index)
 
-                authorize({ it.canManageBooks }) {
+                requirePermissions("books.manage") {
                     bookManagement(index)
                 }
             }
         }
     }
+}
+
+fun Route.requireBookPermissions(paramName: String = "id", build: Route.() -> Unit): Route {
+    return requireBookPermissions({ Book.findById(UUID.fromString(it.parameters[paramName])) }, build)
+}
+
+fun Route.requireBookPermissions(bookProvider: (call: ApplicationCall) -> Book?, build: Route.() -> Unit): Route {
+    return authorize(
+        { user ->
+            val call = this
+
+            transaction {
+                val book = bookProvider(call) ?: return@transaction true
+
+                !book.restricted || Book.readingPermission(book.id.value) in user.permissions
+            }
+        },
+        build
+    )
 }

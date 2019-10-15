@@ -10,3 +10,333 @@ a {
     color: saturate($primary, 10%);
   }
 }
+
+input {
+  font-family: 'Nunito Sans', Helvetica, Arial, sans-serif;
+}
+
+.multiselect {
+  box-sizing: border-box;
+  font-size: 1rem;
+  display: block;
+  position: relative;
+  width: 100%;
+  min-height: 2.5rem;
+  text-align: left;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  &__placeholder {
+    display: block;
+    color: var(--muted-text-color);
+    font-size: 1rem;
+
+    .multiselect--active & {
+      display: none;
+    }
+  }
+
+  &__tags {
+    padding: 0.75rem;
+    border-bottom: 2px solid var(--muted-text-color);
+    transition: border-bottom-color 0.2s ease-in-out;
+    background: var(--section-bg);
+  }
+
+  &__tags-wrap {
+    display: inline-block;
+    box-decoration-break: clone;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:hover, &:focus {
+    cursor: pointer;
+
+    .multiselect__tags {
+      border-bottom-color: $primary;
+    }
+  }
+
+  &--active {
+    z-index: 52;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.2);
+
+    .multiselect__tags {
+      .multiselect__input, .multiselect__single, .multiselect__tags-wrap, .multiselect__strong {
+        position: relative;
+        z-index: 52;
+      }
+
+      &:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 51;
+        background: var(--section-bg);
+        pointer-events: none;
+      }
+    }
+
+    .multiselect__select {
+      z-index: 52;
+      transform: rotateZ(180deg);
+    }
+  }
+}
+
+.multiselect__spinner {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 3rem;
+  height: 2.1875rem;
+  background: #fff;
+  display: block;
+
+  &:before,
+  &:after {
+    position: absolute;
+    content: "";
+    top: 50%;
+    left: 50%;
+    margin: 0.875rem 0 0 0.875rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 100%;
+    border-color: #41B883 transparent transparent;
+    border-style: solid;
+    border-width: 2px;
+    box-shadow: 0 0 0 1px transparent;
+  }
+
+  &:before {
+    animation: spinning 2.4s cubic-bezier(0.41, 0.26, 0.2, 0.62);
+    animation-iteration-count: infinite;
+  }
+
+  &:after {
+    animation: spinning 2.4s cubic-bezier(0.51, 0.09, 0.21, 0.8);
+    animation-iteration-count: infinite;
+  }
+}
+
+.multiselect__loading-transition {
+  transition: opacity 0.4s ease-in-out;
+  opacity: 1;
+}
+
+.multiselect__loading-enter,
+.multiselect__loading-leave {
+  opacity: 0;
+}
+
+.multiselect__input,
+.multiselect__single {
+  position: relative;
+  display: block;
+  border: none;
+  width: auto;
+  transition: border 0.1s ease;
+  background: none;
+  font-size: 1rem;
+  box-sizing: border-box;
+  color: inherit;
+
+  &::placeholder {
+    color: var(--muted-text-color);
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.multiselect__tags-wrap:not(:empty) ~ .multiselect__input {
+  padding-top: 0.75rem;
+}
+
+.multiselect__tag {
+  position: relative;
+  display: inline-block;
+  padding: 0.25rem 1.625rem 0.25rem 0.625rem;
+  border-radius: 0.3125rem;
+  margin-right: 0.625rem;
+  color: #fff;
+  line-height: 1;
+  background: $primary;
+
+  &-no-icon {
+    padding-right: 0.625rem;
+  }
+
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+.multiselect__tag-icon {
+  cursor: pointer;
+  margin-left: 7px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  font: {
+    weight: 700;
+    style: initial;
+  };
+  width: 1.375rem;
+  text-align: center;
+  line-height: 1.375rem;
+  transition: all 0.2s ease;
+  border-radius: 0.3125rem;
+
+  &:after {
+    content: "×";
+    color: darken($primary, 20%);
+    font-size: 0.875rem;
+  }
+
+  &:focus, &:hover {
+    background: saturate($primary, 20%);
+
+    &:after {
+      color: white;
+    }
+  }
+}
+
+.multiselect__current {
+  line-height: 1rem;
+  min-height: 2.5rem;
+  box-sizing: border-box;
+  display: block;
+  overflow: hidden;
+  padding: 0.5rem 0.75rem 0;
+  padding-right: 1.875rem;
+  white-space: nowrap;
+  margin: 0;
+  text-decoration: none;
+  border-radius: 0.3125rem;
+  border: 1px solid #E8E8E8;
+  cursor: pointer;
+}
+
+.multiselect__select {
+  line-height: 1rem;
+  display: block;
+  position: absolute;
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.375rem;
+  right: 1px;
+  top: 5px;
+  padding: 0.25rem 0.5rem;
+  margin: 0;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:before {
+    position: relative;
+    right: 0;
+    top: 65%;
+    color: #999;
+    margin-top: 0.25rem;
+    border-style: solid;
+    border-width: 0.3125rem 0.3125rem 0 0.3125rem;
+    border-color: #999999 transparent transparent transparent;
+    content: "";
+  }
+}
+
+.multiselect__content {
+  position: absolute;
+  list-style: none;
+  display: block;
+  background: var(--section-bg);
+  width: 100%;
+  max-height: 15rem;
+  overflow: auto;
+  padding: 0;
+  margin: 0;
+  border-top: none;
+  z-index: 50;
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.2);
+
+  &::webkit-scrollbar {
+    display: none;
+  }
+}
+
+.multiselect__option {
+  display: block;
+  padding: 0.75rem;
+  min-height: 2.5rem;
+  line-height: 1rem;
+  font-weight: 300;
+  text-decoration: none;
+  text-transform: none;
+  vertical-align: middle;
+  position: relative;
+  cursor: pointer;
+
+  &:after {
+    top: 0;
+    right: 0;
+    position: absolute;
+    line-height: 2.5rem;
+    padding-right: 0.75rem;
+    padding-left: 1.25rem;
+  }
+
+  &--highlight {
+    background: #41B883;
+    outline: none;
+    color: white;
+
+    &:after {
+      content: attr(data-select);
+      color: white;
+    }
+  }
+
+  &--selected {
+    font-weight: bold;
+
+    &:after {
+      content: attr(data-selected);
+      font-weight: 300;
+      color: var(--muted-text-color);
+    }
+  }
+}
+
+.multiselect__option--selected.multiselect__option--highlight {
+  background: #FF6A6A;
+  color: #fff;
+  font-weight: lighter;
+
+  &:after {
+    content: attr(data-deselect);
+    color: #fff;
+  }
+}
+
+.multiselect-transition {
+  transition: all 0.3s ease;
+}
+
+.multiselect-enter, .multiselect-leave {
+  opacity: 0;
+  max-height: 0 !important;
+}

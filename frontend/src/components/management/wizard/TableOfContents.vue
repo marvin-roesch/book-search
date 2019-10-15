@@ -97,6 +97,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  min-height: 0;
 
   &-root {
     overflow-y: auto;

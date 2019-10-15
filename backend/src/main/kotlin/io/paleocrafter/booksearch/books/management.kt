@@ -21,6 +21,10 @@ import io.ktor.routing.patch
 import io.ktor.routing.post
 import io.ktor.routing.put
 import io.ktor.util.pipeline.PipelineContext
+import io.paleocrafter.booksearch.auth.Permission
+import io.paleocrafter.booksearch.auth.Permissions
+import io.paleocrafter.booksearch.auth.Role
+import io.paleocrafter.booksearch.auth.Roles
 import io.paleocrafter.booksearch.auth.user
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -34,6 +38,7 @@ import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -63,60 +68,62 @@ private val indexing = newFixedThreadPoolContext(4, "indexing")
 class ManagementError(message: String) : RuntimeException(message)
 
 fun Route.bookManagement(index: BookIndex) {
-    delete("/{id}") {
-        val id = UUID.fromString(call.parameters["id"])
-        val book = transaction {
-            Book.findById(id) ?: return@transaction null
-        } ?: return@delete call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-
-        index.prepare()
-        index.deleteBook(id)
-
-        val title = book.title
-
-        transaction {
-            Images.deleteWhere { Images.book eq book.id }
-            Chapters.deleteWhere { Chapters.book eq book.id }
-            ClassMappings.deleteWhere { ClassMappings.book eq book.id }
-            BookTags.deleteWhere { BookTags.book eq book.id }
-            book.delete()
-        }
-
-        BookCache.removeBook(id)
-
-        call.respond(
-            mapOf(
-                "message" to "Book '$title' was successfully deleted!"
+    requireBookPermissions {
+        delete("/{id}") {
+            val id = UUID.fromString(call.parameters["id"])
+            val book = transaction {
+                Book.findById(id) ?: return@transaction null
+            } ?: return@delete call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
             )
-        )
-    }
 
-    val epubType = ContentType.parse("application/epub+zip")
+            index.prepare()
+            index.deleteBook(id)
 
-    get("/{id}/file") {
-        val id = UUID.fromString(call.parameters["id"])
-        val book = transaction {
-            Book.findById(id) ?: return@transaction null
-        } ?: return@get call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
+            val title = book.title
 
-        val fileName = transaction { "${book.author} - ${book.title}.epub" }
-        val content = withContext(Dispatchers.IO) {
-            val stream = book.content.binaryStream
-            stream.use { it.readBytes() }
+            transaction {
+                Images.deleteWhere { Images.book eq book.id }
+                Chapters.deleteWhere { Chapters.book eq book.id }
+                ClassMappings.deleteWhere { ClassMappings.book eq book.id }
+                BookTags.deleteWhere { BookTags.book eq book.id }
+                book.delete()
+            }
+
+            BookCache.removeBook(id)
+
+            call.respond(
+                mapOf(
+                    "message" to "Book '$title' was successfully deleted!"
+                )
+            )
         }
 
-        call.response.header(
-            HttpHeaders.ContentDisposition,
-            ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, fileName).toString()
-        )
+        val epubType = ContentType.parse("application/epub+zip")
 
-        call.respondBytes(epubType) { content }
+        get("/{id}/file") {
+            val id = UUID.fromString(call.parameters["id"])
+            val book = transaction {
+                Book.findById(id) ?: return@transaction null
+            } ?: return@get call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            val fileName = transaction { "${book.author} - ${book.title}.epub" }
+            val content = withContext(Dispatchers.IO) {
+                val stream = book.content.binaryStream
+                stream.use { it.readBytes() }
+            }
+
+            call.response.header(
+                HttpHeaders.ContentDisposition,
+                ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, fileName).toString()
+            )
+
+            call.respondBytes(epubType) { content }
+        }
     }
 
     suspend fun PipelineContext<Unit, ApplicationCall>.receiveEpub(): Pair<Epub, ByteArray>? {
@@ -168,248 +175,264 @@ fun Route.bookManagement(index: BookIndex) {
 
         BookCache.updateBook(book)
 
-        logger.info("New book '${epub.title}' uploaded by ${call.user?.username}")
+        logger.info("New book '${epub.title}' uploaded by ${call.user.username}")
 
         call.respond(mapOf("id" to bookId))
     }
 
-    put("/{id}") {
-        val id = UUID.fromString(call.parameters["id"])
-        val (epub, buffer) = receiveEpub() ?: return@put
-        val book = transaction {
-            val book = Book.findById(id) ?: return@transaction null
-            book.content = SerialBlob(buffer)
+    requireBookPermissions {
+        put("/{id}") {
+            val id = UUID.fromString(call.parameters["id"])
+            val (epub, buffer) = receiveEpub() ?: return@put
+            val book = transaction {
+                val book = Book.findById(id) ?: return@transaction null
+                book.content = SerialBlob(buffer)
 
-            val cover = epub.coverImage
-            if (epub.coverImage != null) {
-                book.cover = SerialBlob(cover.data)
-                book.coverMime = cover.mediaType.name
-            }
-
-            book.searchable = false
-
-            book
-        } ?: return@put call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-
-        BookCache.updateBook(book, updateSeries = false)
-
-        logger.info("New version of '${epub.title}' uploaded by ${call.user?.username}")
-
-        call.respond(mapOf("id" to id, "message" to "A new version of the book was successfully uploaded!"))
-    }
-
-    patch("/{id}") {
-        val id = UUID.fromString(call.parameters["id"])
-        val request = call.receive<BookPatchRequest>()
-        val book = transaction {
-            val book = Book.findById(id) ?: return@transaction null
-            book.title = request.title
-            book.author = request.author
-            book.series = request.series
-            book.orderInSeries = request.orderInSeries
-
-            BookTags.deleteWhere { BookTags.book eq book.id }
-            BookTags.batchInsert(request.tags) {
-                this[BookTags.book] = book.id
-                this[BookTags.tag] = it
-            }
-
-            book
-        } ?: return@patch call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-
-        BookCache.updateBook(book)
-        BookCache.rebuildTags()
-
-        call.respond(
-            mapOf("message" to "Book information was successfully updated")
-        )
-    }
-
-    get("/{id}/table-of-contents") {
-        val id = UUID.fromString(call.parameters["id"])
-        val epubReader = EpubReader()
-        val (epub, existingChapters) = transaction {
-            val book = Book.findById(id) ?: return@transaction null
-
-            epubReader.readEpub(book.content.binaryStream) to Chapter.find { Chapters.book eq book.id }.map { it.tocReference }
-        } ?: return@get call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-
-        fun serializeTableOfContents(id: String, toc: TOCReference): Map<String, Any> {
-            return mapOf(
-                "id" to id,
-                "title" to toc.title,
-                "selected" to (existingChapters.contains(id) || existingChapters.isEmpty()),
-                "children" to toc.children.mapIndexed { index, tocReference ->
-                    serializeTableOfContents(tocReference.buildId(id, index), tocReference)
+                val cover = epub.coverImage
+                if (epub.coverImage != null) {
+                    book.cover = SerialBlob(cover.data)
+                    book.coverMime = cover.mediaType.name
                 }
+
+                book.searchable = false
+
+                book
+            } ?: return@put call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
             )
-        }
-
-        call.respond(
-            mapOf(
-                "id" to id,
-                "toc" to epub.tableOfContents.tocReferences.mapIndexed { index, tocReference ->
-                    serializeTableOfContents(tocReference.buildId("", index), tocReference)
-                }
-            )
-        )
-    }
-
-    put("/{id}/chapters") {
-        val id = UUID.fromString(call.parameters["id"])
-        val entries = call.receive<Set<String>>()
-        val epubReader = EpubReader()
-        transaction {
-            val book = Book.findById(id) ?: return@transaction null
-
-            Chapters.deleteWhere { Chapters.book eq id }
-            Images.deleteWhere { Images.book eq id }
-            book.searchable = false
-
-            fun linearizeTableOfContents(id: String, toc: TOCReference): List<Pair<String, TOCReference>> {
-                return listOf(id to toc) + toc.children.withIndex().flatMap { (index, tocReference) ->
-                    linearizeTableOfContents(tocReference.buildId(id, index), tocReference)
-                }
-            }
-
-            val epub = epubReader.readEpub(book.content.binaryStream)
-            val chapters = epub.tableOfContents.tocReferences
-                .withIndex()
-                .flatMap { (index, tocReference) -> linearizeTableOfContents(tocReference.buildId("", index), tocReference) }
-                .filter { it.first in entries }
-                .splitOffFragments()
-
-            for ((position, entry) in chapters.withIndex()) {
-                val (tocId, chapter, content) = entry
-
-                content.extractImages(id) { path ->
-                    val uri = chapter.resource.href.resolveHref(path)
-
-                    if (uri.isAbsolute) {
-                        return@extractImages null
-                    }
-
-                    val name = Paths.get(uri.path).fileName.toString().urlDecoded
-                    val resourcePath = uri.path.urlDecoded
-                    val resource = epub.resources.getByHref(resourcePath)
-                        ?: throw ManagementError("Invalid image reference found in epub: $resourcePath")
-                    val data = resource.data
-                    Images.insertIgnore {
-                        it[Images.book] = book.id
-                        it[Images.name] = name
-                        it[Images.data] = SerialBlob(data)
-                    }
-                    name
-                }
-
-                content.resolveStylesheets {
-                    val uri = chapter.resource.href.resolveHref(it)
-
-                    if (uri.isAbsolute) {
-                        return@resolveStylesheets null
-                    }
-
-                    uri.path.urlDecoded
-                }
-
-                Chapter.new(UUID.randomUUID()) {
-                    this.book = book
-                    this.tocReference = tocId
-                    this.title = chapter.title
-                    this.content = content.outerHtml()
-                    this.position = position
-                }
-            }
 
             BookCache.updateBook(book, updateSeries = false)
-        } ?: return@put call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
 
-        call.respond(mapOf(
-            "id" to id,
-            "message" to "Table of contents for book was successfully updated"
-        ))
-    }
+            logger.info("New version of '${epub.title}' uploaded by ${call.user.username}")
 
-    get("/{id}/available-classes") {
-        val id = UUID.fromString(call.parameters["id"])
-        val epubReader = EpubReader()
-        val classes = transaction {
-            val book = Book.findById(id) ?: return@transaction null
-
-            val epub = epubReader.readEpub(book.content.binaryStream)
-            val chapters = Chapter.find { Chapters.book eq book.id }
-                .map { Jsoup.parse(it.content) }
-
-            val existingMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
-                it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping]).id
-            }
-
-            chapters
-                .flatMap { chapter ->
-                    chapter.extractClasses(epub.resources)
-                }
-                .groupBy { it.name }
-                .map { it.value.first().copy(mapping = existingMappings[it.key] ?: "no-selection", occurrences = it.value.size) }
-        } ?: return@get call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-
-        call.respond(mapOf(
-            "id" to id,
-            "classes" to classes,
-            "mappings" to BookStyle.values().groupBy { it.group }
-        ))
-    }
-
-    put("/{id}/class-mappings") {
-        val id = UUID.fromString(call.parameters["id"])
-        val classMappings = call.receive<Map<String, String>>().mapValues {
-            BookStyle.fromJson(it.value)
-                ?: BookStyle.STRIP_CLASS
+            call.respond(mapOf("id" to id, "message" to "A new version of the book was successfully uploaded!"))
         }
 
-        val book = transaction {
-            val book = Book.findById(id) ?: return@transaction null
+        patch("/{id}") {
+            val id = UUID.fromString(call.parameters["id"])
+            val request = call.receive<BookPatchRequest>()
+            val book = transaction {
+                val book = Book.findById(id) ?: return@transaction null
+                book.title = request.title
+                book.author = request.author
+                book.series = request.series
+                book.orderInSeries = request.orderInSeries
+                book.restricted = request.permittedRoles.isNotEmpty()
 
-            ClassMappings.deleteWhere { ClassMappings.book eq book.id }
+                val permissionId = Book.readingPermission(id)
+                if (book.restricted) {
+                    val permission = Permission.findById(permissionId) ?: Permission.new(permissionId) {
+                        description = """Read "${book.title}" by ${book.author}"""
+                    }
 
-            for ((className, style) in classMappings) {
-                ClassMappings.insert {
-                    it[ClassMappings.book] = book.id
-                    it[ClassMappings.className] = className
-                    it[mapping] = style.name
+                    Role.find { Roles.id inList request.permittedRoles }.forUpdate().forEach {
+                        it.permissions = SizedCollection(it.permissions.toSet() + permission)
+                    }
+                } else {
+                    Permissions.deleteById(permissionId)
                 }
+
+                BookTags.deleteWhere { BookTags.book eq book.id }
+                BookTags.batchInsert(request.tags) {
+                    this[BookTags.book] = book.id
+                    this[BookTags.tag] = it
+                }
+
+                book
+            } ?: return@patch call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            BookCache.updateBook(book)
+            BookCache.rebuildTags()
+
+            call.respond(
+                mapOf("message" to "Book information was successfully updated")
+            )
+        }
+
+        get("/{id}/table-of-contents") {
+            val id = UUID.fromString(call.parameters["id"])
+            val epubReader = EpubReader()
+            val (epub, existingChapters) = transaction {
+                val book = Book.findById(id) ?: return@transaction null
+
+                epubReader.readEpub(book.content.binaryStream) to Chapter.find { Chapters.book eq book.id }.map { it.tocReference }
+            } ?: return@get call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            fun serializeTableOfContents(id: String, toc: TOCReference): Map<String, Any> {
+                return mapOf(
+                    "id" to id,
+                    "title" to toc.title,
+                    "selected" to (existingChapters.contains(id) || existingChapters.isEmpty()),
+                    "children" to toc.children.mapIndexed { index, tocReference ->
+                        serializeTableOfContents(tocReference.buildId(id, index), tocReference)
+                    }
+                )
             }
 
-            book.searchable = false
+            call.respond(
+                mapOf(
+                    "id" to id,
+                    "toc" to epub.tableOfContents.tocReferences.mapIndexed { index, tocReference ->
+                        serializeTableOfContents(tocReference.buildId("", index), tocReference)
+                    }
+                )
+            )
+        }
 
-            book
-        } ?: return@put call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
+        put("/{id}/chapters") {
+            val id = UUID.fromString(call.parameters["id"])
+            val entries = call.receive<Set<String>>()
+            val epubReader = EpubReader()
+            transaction {
+                val book = Book.findById(id) ?: return@transaction null
 
-        BookCache.updateBook(book, updateSeries = false)
+                Chapters.deleteWhere { Chapters.book eq id }
+                Images.deleteWhere { Images.book eq id }
+                book.searchable = false
 
-        call.respond(mapOf(
-            "id" to id
-        ))
+                fun linearizeTableOfContents(id: String, toc: TOCReference): List<Pair<String, TOCReference>> {
+                    return listOf(id to toc) + toc.children.withIndex().flatMap { (index, tocReference) ->
+                        linearizeTableOfContents(tocReference.buildId(id, index), tocReference)
+                    }
+                }
+
+                val epub = epubReader.readEpub(book.content.binaryStream)
+                val chapters = epub.tableOfContents.tocReferences
+                    .withIndex()
+                    .flatMap { (index, tocReference) -> linearizeTableOfContents(tocReference.buildId("", index), tocReference) }
+                    .filter { it.first in entries }
+                    .splitOffFragments()
+
+                for ((position, entry) in chapters.withIndex()) {
+                    val (tocId, chapter, content) = entry
+
+                    content.extractImages(id) { path ->
+                        val uri = chapter.resource.href.resolveHref(path)
+
+                        if (uri.isAbsolute) {
+                            return@extractImages null
+                        }
+
+                        val name = Paths.get(uri.path).fileName.toString().urlDecoded
+                        val resourcePath = uri.path.urlDecoded
+                        val resource = epub.resources.getByHref(resourcePath)
+                            ?: throw ManagementError("Invalid image reference found in epub: $resourcePath")
+                        val data = resource.data
+                        Images.insertIgnore {
+                            it[Images.book] = book.id
+                            it[Images.name] = name
+                            it[Images.data] = SerialBlob(data)
+                        }
+                        name
+                    }
+
+                    content.resolveStylesheets {
+                        val uri = chapter.resource.href.resolveHref(it)
+
+                        if (uri.isAbsolute) {
+                            return@resolveStylesheets null
+                        }
+
+                        uri.path.urlDecoded
+                    }
+
+                    Chapter.new(UUID.randomUUID()) {
+                        this.book = book
+                        this.tocReference = tocId
+                        this.title = chapter.title
+                        this.content = content.outerHtml()
+                        this.position = position
+                    }
+                }
+
+                BookCache.updateBook(book, updateSeries = false)
+            } ?: return@put call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            call.respond(mapOf(
+                "id" to id,
+                "message" to "Table of contents for book was successfully updated"
+            ))
+        }
+
+        get("/{id}/available-classes") {
+            val id = UUID.fromString(call.parameters["id"])
+            val epubReader = EpubReader()
+            val classes = transaction {
+                val book = Book.findById(id) ?: return@transaction null
+
+                val epub = epubReader.readEpub(book.content.binaryStream)
+                val chapters = Chapter.find { Chapters.book eq book.id }
+                    .map { Jsoup.parse(it.content) }
+
+                val existingMappings = ClassMappings.select { ClassMappings.book eq book.id }.associate {
+                    it[ClassMappings.className] to BookStyle.valueOf(it[ClassMappings.mapping]).id
+                }
+
+                chapters
+                    .flatMap { chapter ->
+                        chapter.extractClasses(epub.resources)
+                    }
+                    .groupBy { it.name }
+                    .map { it.value.first().copy(mapping = existingMappings[it.key] ?: "no-selection", occurrences = it.value.size) }
+            } ?: return@get call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            call.respond(mapOf(
+                "id" to id,
+                "classes" to classes,
+                "mappings" to BookStyle.values().groupBy { it.group }
+            ))
+        }
+
+        put("/{id}/class-mappings") {
+            val id = UUID.fromString(call.parameters["id"])
+            val classMappings = call.receive<Map<String, String>>().mapValues {
+                BookStyle.fromJson(it.value)
+                    ?: BookStyle.STRIP_CLASS
+            }
+
+            val book = transaction {
+                val book = Book.findById(id) ?: return@transaction null
+
+                ClassMappings.deleteWhere { ClassMappings.book eq book.id }
+
+                for ((className, style) in classMappings) {
+                    ClassMappings.insert {
+                        it[ClassMappings.book] = book.id
+                        it[ClassMappings.className] = className
+                        it[mapping] = style.name
+                    }
+                }
+
+                book.searchable = false
+
+                book
+            } ?: return@put call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            BookCache.updateBook(book, updateSeries = false)
+
+            call.respond(mapOf(
+                "id" to id
+            ))
+        }
     }
 
-    suspend fun index(book: Book, user: String?) {
+    suspend fun index(book: Book, user: String) {
         val id = transaction { book.id.value }
 
         val normalized = transaction {
@@ -442,31 +465,33 @@ fun Route.bookManagement(index: BookIndex) {
         logger.info("Book '${book.title}' indexed by $user")
     }
 
-    put("/{id}/index") {
-        val id = UUID.fromString(call.parameters["id"])
-        val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
+    requireBookPermissions {
+        put("/{id}/index") {
+            val id = UUID.fromString(call.parameters["id"])
+            val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
 
-        index.prepare()
+            index.prepare()
 
-        // Only index when necessary
-        transaction {
-            book.indexing = true
-        }
+            // Only index when necessary
+            transaction {
+                book.indexing = true
+            }
 
-        BookCache.updateBook(book)
-
-        GlobalScope.launch(indexing) {
-            index(book, call.user?.username)
             BookCache.updateBook(book)
-        }
 
-        call.respond(mapOf(
-            "id" to id,
-            "message" to "Indexing of '${book.title}' was successfully started and will soon be searchable!"
-        ))
+            GlobalScope.launch(indexing) {
+                index(book, call.user.username)
+                BookCache.updateBook(book)
+            }
+
+            call.respond(mapOf(
+                "id" to id,
+                "message" to "Indexing of '${book.title}' was successfully started and will soon be searchable!"
+            ))
+        }
     }
 
     post("/reindex-all") {
@@ -486,7 +511,7 @@ fun Route.bookManagement(index: BookIndex) {
             coroutineScope {
                 for (book in books) {
                     launch(indexing) {
-                        index(book, call.user?.username)
+                        index(book, call.user.username)
                     }
                 }
             }
@@ -502,12 +527,12 @@ fun Route.bookManagement(index: BookIndex) {
     }
 }
 
-private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int, val tags: Set<String>)
+private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int, val tags: Set<String>, val permittedRoles: Set<UUID>)
 
 private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
     val result = mutableListOf<SplitChapter>()
 
-    for (i in 0 until this.size) {
+    for (i in this.indices) {
         val (tocId, tocReference) = this[i]
         val content = Jsoup.parse(String(tocReference.resource.data))
 

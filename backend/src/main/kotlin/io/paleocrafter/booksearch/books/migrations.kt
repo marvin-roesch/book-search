@@ -40,3 +40,9 @@ object AddTagsTableMigration : DbMigration("add-tags-table") {
         SchemaUtils.createMissingTablesAndColumns(BookTags)
     }
 }
+
+object RestrictedBooksMigration : DbMigration("restricted-books-schema") {
+    override fun apply() {
+        Books.createOrModifyColumns(Books.restricted)
+    }
+}

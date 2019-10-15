@@ -25,7 +25,7 @@ const cachedTags = window.localStorage.getItem('tags');
 const initialState = {
   darkMode: window.localStorage.getItem('darkMode') === 'true',
   series: !cachedSeries ? [] : JSON.parse(cachedSeries),
-  tags: !cachedTags ? [] : JSON.parse(cachedTags),
+  tags: !cachedTags ? {} : JSON.parse(cachedTags),
 };
 
 const mutations = {
