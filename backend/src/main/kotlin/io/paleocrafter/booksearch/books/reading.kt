@@ -26,25 +26,25 @@ fun Route.bookReading() {
         call.respond(BookCache.tags)
     }
 
-    get("/{id}") {
-        val id = UUID.fromString(call.parameters["id"])
-        val book = BookCache.find(id) ?: return@get call.respond(
-            HttpStatusCode.NotFound,
-            mapOf("message" to "Book with ID '$id' does not exist")
-        )
-        call.respond(
-            mapOf(
-                "id" to id,
-                "title" to book.title,
-                "author" to book.author,
-                "series" to book.series,
-                "orderInSeries" to book.orderInSeries,
-                "tags" to book.tags
-            )
-        )
-    }
-
     requireBookPermissions {
+        get("/{id}") {
+            val id = UUID.fromString(call.parameters["id"])
+            val book = BookCache.find(id) ?: return@get call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+            call.respond(
+                mapOf(
+                    "id" to id,
+                    "title" to book.title,
+                    "author" to book.author,
+                    "series" to book.series,
+                    "orderInSeries" to book.orderInSeries,
+                    "tags" to book.tags
+                )
+            )
+        }
+
         get("/{id}/chapters") {
             val id = UUID.fromString(call.parameters["id"])
             val chapters = transaction {
