@@ -3,7 +3,7 @@
   <div class="search-bar-icon">
     <SearchIcon></SearchIcon>
   </div>
-  <input type="search" :value="query" @keydown.enter="search" ref="search">
+  <input type="text" :value="query" @keydown.enter="search" ref="search">
   <div class="search-bar-help-icon">
     <HelpCircleIcon @click="showHelpDialog = !showHelpDialog" ref="help-icon"></HelpCircleIcon>
   </div>
