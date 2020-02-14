@@ -107,10 +107,20 @@ export default {
         return;
       }
 
-      let x = startMarker.offsetLeft;
-      let y = Math.min(startMarker.offsetTop, endMarker.offsetTop);
-      if (y < startMarker.offsetTop) {
-        x = endMarker.offsetLeft;
+      let offsetElement = startMarker;
+      if (startMarker.offsetTop > endMarker.offsetTop
+        || (startMarker.offsetTop === endMarker.offsetTop
+          && endMarker.offsetLeft <= startMarker.offsetLeft)) {
+        offsetElement = endMarker;
+      }
+      let x = offsetElement.offsetLeft;
+
+      const endOfLine = offsetElement.offsetParent.clientWidth === offsetElement.offsetLeft;
+      let y = offsetElement.offsetTop;
+
+      if (endOfLine) {
+        x = 0;
+        y += offsetElement.offsetHeight;
       }
 
       if (event instanceof TouchEvent) {
@@ -163,6 +173,7 @@ export default {
   font-family: 'Lora', serif;
   position: relative;
   word-break: break-word;
+  overflow: visible;
 
   &-popup {
     position: absolute;
@@ -177,6 +188,7 @@ export default {
     z-index: 2000;
     max-width: 1000px;
     user-select: none;
+    white-space: nowrap;
 
     &:after {
       position: absolute;
