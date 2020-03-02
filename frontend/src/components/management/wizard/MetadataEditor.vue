@@ -124,7 +124,7 @@ export default {
             author: this.author,
             series: this.series,
             orderInSeries: Number(this.orderInSeries),
-            tags: this.tags.split(',').map(tag => tag.trim()),
+            tags: this.tags.split(',').map(tag => tag.trim()).filter(t => t.length > 0),
             permittedRoles: this.bookRoles.map(role => role.id),
           },
           {
