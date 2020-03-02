@@ -1,7 +1,7 @@
 <template>
 <div class="book-text" ref="text">
   <slot>
-    <div v-html="content"></div>
+    <div v-html="content" role="button"></div>
   </slot>
   <transition name="fade">
     <div class="book-text-popup" v-show="displayPopup" ref="popup">
@@ -32,11 +32,15 @@ export default {
     document.addEventListener('selectionchange', this.onSelectionChange);
     document.addEventListener('mouseup', this.showPopup);
     document.addEventListener('touchstart', this.showPopup);
+    document.addEventListener('touchend', this.showPopup);
+    document.addEventListener('contextmenu', this.showPopup);
   },
   destroyed() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
     document.removeEventListener('mouseup', this.showPopup);
     document.removeEventListener('touchstart', this.showPopup);
+    document.removeEventListener('touchend', this.showPopup);
+    document.removeEventListener('contextmenu', this.showPopup);
   },
   methods: {
     onSelectionChange() {
@@ -98,12 +102,12 @@ export default {
     hidePopup() {
       this.displayPopup = false;
     },
-    showPopup(event) {
+    showPopup() {
       const { popup } = this.$refs;
       const startMarker = document.getElementById('selection-start-marker');
       const endMarker = document.getElementById('selection-end-marker');
 
-      if (startMarker === null || !this.$refs.text.contains(startMarker)) {
+      if (!startMarker || !this.$refs.text || !this.$refs.text.contains(startMarker)) {
         return;
       }
 
@@ -123,10 +127,6 @@ export default {
         y += offsetElement.offsetHeight;
       }
 
-      if (event instanceof TouchEvent) {
-        y += 50;
-      }
-
       popup.style.left = `${x}px`;
       popup.style.top = `${y}px`;
       this.displayPopup = true;
@@ -142,14 +142,15 @@ export default {
     },
     copyWikiQuote() {
       this.copySelection(
-        '{{quote\n| ',
-        `\n| ${this.bookTitle} - ${this.chapterTitle}\n}}`,
+        '{{quote\n',
+        `\n|${this.bookTitle} - ${this.chapterTitle}\n}}`,
+        s => s.split('\n').map(l => `|${l}`).join('\n'),
       );
     },
-    copySelection(prefix, suffix) {
+    copySelection(prefix, suffix, transform = s => s) {
       const el = document.createElement('textarea');
       const selection = this.normalizeText(document.getSelection().toString().trim());
-      el.value = `${prefix}${selection}${suffix}`;
+      el.value = `${prefix}${transform(selection)}${suffix}`;
       document.body.appendChild(el);
       el.select();
 
