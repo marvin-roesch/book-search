@@ -1,6 +1,5 @@
 package io.paleocrafter.booksearch.books
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -21,6 +20,7 @@ object Books : UUIDTable() {
     val coverMime = varchar("cover_mime_type", 255).nullable()
     val indexing = bool("indexing").default(false)
     val restricted = bool("restricted").default(false)
+    val citationTemplate = varchar("citation_template", 255).nullable()
 }
 
 class Book(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -39,6 +39,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var indexing by Books.indexing
     var restricted by Books.restricted
     val tags by BookTag referrersOn BookTags.book
+    var citationTemplate by Books.citationTemplate
 
     val resolved: ResolvedBook
         get() = ResolvedBook(
@@ -50,7 +51,8 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             searchable,
             indexing,
             restricted,
-            tags.mapTo(mutableSetOf()) { it.tag }
+            tags.mapTo(mutableSetOf()) { it.tag },
+            citationTemplate
         )
 }
 
@@ -63,7 +65,8 @@ data class ResolvedBook(
     val searchable: Boolean,
     val indexing: Boolean,
     val restricted: Boolean,
-    val tags: Set<String>
+    val tags: Set<String>,
+    val citationTemplate: String?
 ) {
     val sortableTitle = title.sortable
 
@@ -76,7 +79,8 @@ data class ResolvedBook(
             "orderInSeries" to orderInSeries,
             "searchable" to searchable,
             "indexing" to indexing,
-            "restricted" to restricted
+            "restricted" to restricted,
+            "citationTemplate" to citationTemplate
         )
 }
 
@@ -99,6 +103,7 @@ object Chapters : UUIDTable() {
     val content = text("content")
     val indexedContent = text("indexed_content").nullable()
     val position = integer("position")
+    val citationParameter = varchar("citation_parameter", 255).nullable()
 }
 
 class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -110,6 +115,7 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     var content by Chapters.content
     var indexedContent by Chapters.indexedContent
     var position by Chapters.position
+    var citationParameter by Chapters.citationParameter
 
     val previous: Chapter?
         get() = find {
@@ -124,7 +130,8 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
     fun toJson() =
         mapOf(
             "id" to id.value,
-            "title" to title
+            "title" to title,
+            "citationParameter" to citationParameter
         )
 }
 

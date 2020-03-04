@@ -40,6 +40,7 @@ fun Route.bookReading() {
                     "author" to book.author,
                     "series" to book.series,
                     "orderInSeries" to book.orderInSeries,
+                    "citationTemplate" to book.citationTemplate,
                     "tags" to book.tags
                 )
             )
@@ -142,3 +143,25 @@ val String.sortable: String
             else -> this
         }
     }
+
+private val NUMERIC_CITATION_PARAM = Regex("^(?:[A-Za-z]+ )?0*([0-9]+)(?:[.:] ?.*?)?$")
+private val TEXT_CITATION_PARAM = Regex("^(?:[A-Za-z]+ )?([A-Za-z-]+)(?:[.:] ?.*?)?$")
+
+fun extractCitationParameter(chapterTitle: String) =
+    NUMERIC_CITATION_PARAM.find(chapterTitle)?.groupValues?.get(1)
+        ?: TEXT_CITATION_PARAM.find(chapterTitle)?.groupValues?.get(1)?.let { parseNumber(it) }
+        ?: chapterTitle.toLowerCase()
+
+private val UNITS = listOf(
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen"
+).withIndex().associate { it.value to it.index }
+private val TENS = listOf("twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+    .withIndex().associate { it.value to (it.index + 2) * 10 }
+
+private val NUMBER_WORDS = UNITS + TENS
+
+private fun parseNumber(text: String): String? {
+    return text.toLowerCase().split("-").fold(0) { acc, number -> NUMBER_WORDS[number]?.let { acc + it } ?: return null }.toString()
+}

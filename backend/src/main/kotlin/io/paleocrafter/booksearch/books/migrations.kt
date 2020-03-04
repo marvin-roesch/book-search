@@ -46,3 +46,20 @@ object RestrictedBooksMigration : DbMigration("restricted-books-schema") {
         Books.createOrModifyColumns(Books.restricted)
     }
 }
+
+object CreateCitationsMigrations : DbMigration("create-citations") {
+    override fun apply() {
+        Books.createOrModifyColumns(Books.citationTemplate)
+        Chapters.createOrModifyColumns(Chapters.citationParameter)
+
+        val booksMissingCitations = Book.find { Books.citationTemplate.isNull() }
+        for (book in booksMissingCitations) {
+            book.citationTemplate = book.title.toLowerCase()
+        }
+
+        val chaptersMissingCitations = Chapter.find { Chapters.citationParameter.isNull() }
+        for (chapter in chaptersMissingCitations) {
+            chapter.citationParameter = extractCitationParameter(chapter.title)
+        }
+    }
+}

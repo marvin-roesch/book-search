@@ -17,6 +17,14 @@
         :height="20"
         @click.prevent.stop="share">
       </Share2Icon>
+      <Button
+        v-if="buildCitation() !== null"
+        slim
+        class="chapter-overlay-header-cite"
+        @click="cite"
+      >
+        Cite
+      </Button>
       <XIcon class="chapter-overlay-header-close-icon" @click.prevent.stop="close"></XIcon>
     </div>
   </div>
@@ -27,6 +35,7 @@
         :book-title="book.title"
         :chapter-title="chapter.title"
         :content="content"
+        :citation="buildCitation()"
         ref="text">
       </BookText>
     </Card>
@@ -39,10 +48,12 @@ import Card from '@/components/Card.vue';
 import { Share2Icon, XIcon } from 'vue-feather-icons';
 import BookText from '@/components/BookText.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
+import { buildCitation, copyText } from '@/utils';
+import Button from '@/components/Button.vue';
 
 export default {
   name: 'chapter-overlay',
-  components: { Share2Icon, BookText, XIcon, Card, LoadingSpinner },
+  components: { Button, Share2Icon, BookText, XIcon, Card, LoadingSpinner },
   data() {
     return {
       book: null,
@@ -92,16 +103,15 @@ export default {
     share() {
       const baseUrl = window.location.origin;
       const link = `${baseUrl}/chapters/${this.id}?q=${encodeURIComponent(this.$route.query.q)}`;
-
-      const el = document.createElement('textarea');
-      el.value = link;
-      document.body.appendChild(el);
-      el.select();
-
-      document.execCommand('copy');
-
-      document.body.removeChild(el);
+      copyText(link);
       this.$notifications.success('A link to this chapter has been copied to your clipboard!');
+    },
+    cite() {
+      copyText(this.buildCitation());
+      this.$notifications.success('A citation for this chapter has been copied to your clipboard!');
+    },
+    buildCitation() {
+      return buildCitation(this.book, this.chapter);
     },
   },
   beforeRouteLeave(to, from, next) {
@@ -174,6 +184,13 @@ export default {
     &-share-icon {
       margin-left: 0.5rem;
       cursor: pointer;
+    }
+
+    &-cite {
+      margin-left: 0.5rem;
+      height: auto;
+      padding: 0.5rem;
+      font-size: 0.9rem;
     }
 
     &-close-icon {

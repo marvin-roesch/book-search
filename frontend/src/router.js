@@ -21,6 +21,7 @@ import BookDictionary from '@/views/BookDictionary.vue';
 import ChapterOverlay from '@/components/search/ChapterOverlay.vue';
 import ReuploadBook from '@/components/management/wizard/ReuploadBook.vue';
 import RoleManagement from '@/views/RoleManagement.vue';
+import ChapterCitations from '@/components/management/wizard/ChapterCitations.vue';
 
 Vue.use(Router);
 
@@ -92,6 +93,12 @@ const router = new Router({
               path: 'table-of-contents',
               name: 'table-of-contents',
               component: TableOfContents,
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+            },
+            {
+              path: 'citations',
+              name: 'chapter-citations',
+              component: ChapterCitations,
               meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
             },
             {

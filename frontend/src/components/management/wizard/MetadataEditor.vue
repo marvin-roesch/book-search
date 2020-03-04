@@ -27,7 +27,16 @@
     <BarChartIcon></BarChartIcon>
     </template>
   </TextField>
-  <TextField name="book-series" placeholder="Tags" v-model="tags">
+  <TextField
+    name="book-citation-template"
+    placeholder="Citation Template"
+    v-model="citationTemplate"
+  >
+    <template slot="icon">
+    <Link2Icon></Link2Icon>
+    </template>
+  </TextField>
+  <TextField name="book-tags" placeholder="Tags" v-model="tags">
     <template slot="icon">
     <HashIcon></HashIcon>
     </template>
@@ -53,7 +62,7 @@
 
 <script>
 import Multiselect from 'vue-multiselect';
-import { BarChartIcon, GridIcon, HashIcon, TypeIcon, UserIcon } from 'vue-feather-icons';
+import { BarChartIcon, GridIcon, HashIcon, Link2Icon, TypeIcon, UserIcon } from 'vue-feather-icons';
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
 
@@ -68,6 +77,7 @@ export default {
     GridIcon,
     BarChartIcon,
     Multiselect,
+    Link2Icon,
   },
   async mounted() {
     this.updating = true;
@@ -80,7 +90,7 @@ export default {
     try {
       const {
         data: {
-          title, author, series, orderInSeries, tags,
+          title, author, series, orderInSeries, citationTemplate, tags,
         },
       } = await this.$api.get(`/books/${id}`);
 
@@ -92,6 +102,7 @@ export default {
       this.author = author;
       this.series = series;
       this.orderInSeries = orderInSeries.toString();
+      this.citationTemplate = citationTemplate;
       this.tags = tags.join(', ');
       this.bookRoles = roles.filter(r => r.permissions.includes(`books.${id}.read`));
     } catch (error) {
@@ -107,6 +118,7 @@ export default {
       author: '',
       series: '',
       orderInSeries: '1',
+      citationTemplate: null,
       tags: '',
       bookRoles: [],
       updating: false,
@@ -124,6 +136,7 @@ export default {
             author: this.author,
             series: this.series,
             orderInSeries: Number(this.orderInSeries),
+            citationTemplate: (this.citationTemplate || '').length === 0 ? null : this.citationTemplate,
             tags: this.tags.split(',').map(tag => tag.trim()).filter(t => t.length > 0),
             permittedRoles: this.bookRoles.map(role => role.id),
           },

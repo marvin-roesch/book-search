@@ -63,7 +63,7 @@ export default {
       const entries = this.linearizeSelectedEntries(this.toc);
       this.updating = true;
       try {
-        await this.$api.put(
+        const { data: { showCitations } } = await this.$api.put(
           `/books/${this.bookId}/chapters`,
           entries,
           {
@@ -72,7 +72,8 @@ export default {
             },
           },
         );
-        this.$router.push({ name: 'book-classes', params: { id: this.bookId } });
+        const route = showCitations ? 'chapter-citations' : 'book-classes';
+        this.$router.push({ name: route, params: { id: this.bookId } });
       } catch (error) {
         this.$handleApiError(error);
         this.updating = false;

@@ -12,7 +12,11 @@
       {{ result.book.title }} - {{ result.chapter.title }}
     </router-link>
   </h2>
-  <BookText :book-title="result.book.title" :chapter-title="result.chapter.title">
+  <BookText
+    :book-title="result.book.title"
+    :chapter-title="result.chapter.title"
+    :citation="buildCitation()"
+  >
     <BidirectionalExpandable :expanded="showSiblings" :visible-height="24">
       <template slot="start">
       <p :class="paragraph.classes" v-html="paragraph.text"
@@ -42,6 +46,7 @@
 <script>
 import BidirectionalExpandable from '@/components/BidirectionalExpandable.vue';
 import BookText from '@/components/BookText.vue';
+import { buildCitation } from '@/utils';
 
 export default {
   name: 'search-result',
@@ -67,6 +72,9 @@ export default {
       if (window.getSelection().type !== 'Range') {
         this.showSiblings = !this.showSiblings;
       }
+    },
+    buildCitation() {
+      return buildCitation(this.result.book, this.result.chapter);
     },
   },
 };

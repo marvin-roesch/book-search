@@ -9,18 +9,24 @@
       <a href="#" @click.prevent.stop="copyPlainQuote">Plain</a> &middot;
       <a href="#" @click.prevent.stop="copyDiscordQuote">Discord</a> &middot;
       <a href="#" @click.prevent.stop="copyWikiQuote">Wiki</a>
+      <template v-if="citation !== null">
+      &middot; <a href="#" @click.prevent.stop="copyWikiCitation">Wiki Citation</a>
+      </template>
     </div>
   </transition>
 </div>
 </template>
 
 <script>
+import { copyText } from '@/utils';
+
 export default {
   name: 'BookText',
   props: {
     bookTitle: String,
     chapterTitle: String,
     content: String,
+    citation: String,
   },
   data() {
     return {
@@ -143,21 +149,17 @@ export default {
     copyWikiQuote() {
       this.copySelection(
         '{{quote\n',
-        `\n|${this.bookTitle} - ${this.chapterTitle}\n}}`,
+        this.citation === null ? '\n}}' : `\n|${this.citation || ''}\n}}`,
         s => s.split('\n').map(l => `|${l}`).join('\n'),
       );
     },
+    copyWikiCitation() {
+      copyText(this.citation);
+      this.$notifications.success('The citation has been successfully copied to your clipboard!');
+    },
     copySelection(prefix, suffix, transform = s => s) {
-      const el = document.createElement('textarea');
       const selection = this.normalizeText(document.getSelection().toString().trim());
-      el.value = `${prefix}${transform(selection)}${suffix}`;
-      document.body.appendChild(el);
-      el.select();
-
-      document.execCommand('copy');
-
-      document.body.removeChild(el);
-
+      copyText(`${prefix}${transform(selection)}${suffix}`);
       this.$notifications.success('The quote has been successfully copied to your clipboard!');
     },
     normalizeText(text) {

@@ -8,6 +8,14 @@
     <div class="chapter-toolbar">
       <div class="chapter-toolbar-title" v-if="book !== null">
         <h2>{{ book.title }} - {{ chapter.title }}</h2>
+        <Button
+          v-if="buildCitation() !== null"
+          slim
+          class="chapter-toolbar-title-cite"
+          @click="cite"
+        >
+          Cite
+        </Button>
         <XIcon
           class="chapter-toolbar-close-icon"
           @click.prevent.stop="$router.push({ name: 'book-chapters', params: { id: book.id } })">
@@ -26,7 +34,10 @@
         <BookText
           :book-title="book.title"
           :chapter-title="chapter.title"
-          :content="content" ref="text">
+          :content="content"
+          :citation="buildCitation()"
+          ref="text"
+        >
         </BookText>
       </Card>
     </transition>
@@ -46,11 +57,14 @@ import SearchBar from '@/components/search/SearchBar.vue';
 import { XIcon } from 'vue-feather-icons';
 import QuickHelp from '@/components/search/QuickHelp.vue';
 import ChapterNavigation from '@/components/ChapterNavigation.vue';
+import { buildCitation, copyText } from '@/utils';
+import Button from '@/components/Button.vue';
 
 export default {
   name: 'chapter',
   mixins: [scrollAware],
   components: {
+    Button,
     ChapterNavigation,
     QuickHelp,
     SearchBar,
@@ -121,6 +135,13 @@ export default {
         }
         this.$handleApiError(error);
       }
+    },
+    cite() {
+      copyText(this.buildCitation());
+      this.$notifications.success('A citation for this chapter has been copied to your clipboard!');
+    },
+    buildCitation() {
+      return buildCitation(this.book, this.chapter);
     },
   },
   watch: {
@@ -236,9 +257,17 @@ export default {
 
       &-title {
         display: flex;
-        align-items: stretch;
+        align-items: center;
         padding-top: 0.6rem;
         padding-bottom: 0.5rem;
+
+        &-cite {
+          margin-left: 0.5rem;
+          height: auto;
+          padding: 0.5rem;
+          font-size: 0.9rem;
+          align-self: center;
+        }
 
         @media (max-width: 1200px) {
           padding-top: 0;

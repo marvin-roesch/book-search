@@ -39,6 +39,8 @@ import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -219,6 +221,7 @@ fun Route.bookManagement(index: BookIndex) {
                 book.series = request.series
                 book.orderInSeries = request.orderInSeries
                 book.restricted = request.permittedRoles.isNotEmpty()
+                book.citationTemplate = request.citationTemplate
 
                 val permissionId = Book.readingPermission(id)
                 if (book.restricted) {
@@ -293,6 +296,8 @@ fun Route.bookManagement(index: BookIndex) {
             transaction {
                 val book = Book.findById(id) ?: return@transaction null
 
+                val existingCitationParameters = Chapter.find { Chapters.book eq id }.associate { it.tocReference to it.citationParameter }
+
                 Chapters.deleteWhere { Chapters.book eq id }
                 Images.deleteWhere { Images.book eq id }
                 book.searchable = false
@@ -349,6 +354,7 @@ fun Route.bookManagement(index: BookIndex) {
                         this.title = chapter.title
                         this.content = content.outerHtml()
                         this.position = position
+                        this.citationParameter = existingCitationParameters[tocId]
                     }
                 }
 
@@ -358,10 +364,67 @@ fun Route.bookManagement(index: BookIndex) {
                 mapOf("message" to "Book with ID '$id' does not exist")
             )
 
+            val showCitations = transaction { Book.findById(id)?.citationTemplate } != null
+
             call.respond(mapOf(
                 "id" to id,
-                "message" to "Table of contents for book was successfully updated"
+                "message" to "Table of contents for book was successfully updated",
+                "showCitations" to showCitations
             ))
+        }
+
+        get("/{id}/chapter-citations") {
+            val id = UUID.fromString(call.parameters["id"])
+            val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@get call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            if (book.citationTemplate == null) {
+                return@get call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "Book with ID '$id' does not allow citations")
+                )
+            }
+
+            val chapters = transaction {
+                Chapter.find { Chapters.book eq book.id }.orderBy(Chapters.position to SortOrder.ASC).map {
+                    println(it.citationParameter)
+                    it.toJson() + ("citationParameterSuggestion" to extractCitationParameter(it.title))
+                }
+            }
+
+            call.respond(mapOf(
+                "id" to id,
+                "chapters" to chapters
+            ))
+        }
+
+        put("/{id}/chapter-citations") {
+            val id = UUID.fromString(call.parameters["id"])
+            val book = transaction { Book.findById(id) ?: return@transaction null } ?: return@put call.respond(
+                HttpStatusCode.NotFound,
+                mapOf("message" to "Book with ID '$id' does not exist")
+            )
+
+            if (book.citationTemplate == null) {
+                return@put call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("message" to "Book with ID '$id' does not allow citations")
+                )
+            }
+
+            val citations = call.receive<Map<String, String?>>()
+            transaction {
+                Chapters.update({ Chapters.book eq book.id }) { it[citationParameter] = null }
+                citations.forEach { (id, value) ->
+                    Chapters.update({ (Chapters.book eq book.id) and (Chapters.id eq UUID.fromString(id)) }) {
+                        it[citationParameter] = value
+                    }
+                }
+            }
+
+            call.respond(mapOf("id" to id))
         }
 
         get("/{id}/available-classes") {
@@ -527,7 +590,15 @@ fun Route.bookManagement(index: BookIndex) {
     }
 }
 
-private data class BookPatchRequest(val title: String, val author: String, val series: String?, val orderInSeries: Int, val tags: Set<String>, val permittedRoles: Set<UUID>)
+private data class BookPatchRequest(
+    val title: String,
+    val author: String,
+    val series: String?,
+    val orderInSeries: Int,
+    val tags: Set<String>,
+    val permittedRoles: Set<UUID>,
+    val citationTemplate: String?
+)
 
 private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
     val result = mutableListOf<SplitChapter>()
