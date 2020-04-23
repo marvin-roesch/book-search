@@ -144,7 +144,7 @@ class ParagraphSearch(private val client: RestHighLevelClient) : BookIndex.Searc
         query.aggregation(
             AggregationBuilders.terms(
                 "dictionary"
-            ).field("text.signature").size(999)
+            ).field("text.signature").size(2000)
         )
 
         val response = suspendCoroutine<SearchResponse> {

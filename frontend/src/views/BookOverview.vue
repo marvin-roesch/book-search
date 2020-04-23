@@ -1,8 +1,10 @@
 <template>
-<div :class="{
+<div
+  :class="{
     'book-overview': true,
     'book-overview-scrolled': scrolledDown
-  }">
+  }"
+>
   <div class="book-overview-header">
     <UserPanel></UserPanel>
     <h1>{{ $route.meta.title }}</h1>
@@ -13,7 +15,8 @@
     <div class="book-cover" ref="cover">
       <div v-show="hasOldCover && !hasCover" ref="coverDummy"></div>
       <transition
-        :name="fromOldCover ? '' : 'fade-slide-up'">
+        :name="fromOldCover ? '' : 'fade-slide-up'"
+      >
         <img :src="`/api/books/${bookId}/cover`" v-show="!hasOldCover && hasCover">
       </transition>
     </div>
@@ -30,7 +33,8 @@
     <transition-group tag="ul" class="book-overview-nav" name="fade-slide-up">
       <li :key="'search'" v-if="book !== null">
         <router-link
-          :to="{ name: 'search', query: { focus: 'true', q: '', series: '', books: bookId } }">
+          :to="{ name: 'search', query: { focus: 'true', q: '', series: '', books: bookId } }"
+        >
           <SearchIcon></SearchIcon>
           Search
         </router-link>
@@ -66,7 +70,6 @@
 import UserPanel from '@/components/UserPanel.vue';
 import { BookIcon, DownloadIcon, ListIcon, SearchIcon, XIcon } from 'vue-feather-icons';
 import { scrollAware } from '@/custom-directives';
-import { mapState } from 'vuex';
 
 export default {
   name: 'book-overview',
@@ -84,7 +87,11 @@ export default {
       fromOldCover: false,
     };
   },
-  computed: mapState('auth', { mayDownload: state => state.identity.canManageBooks }),
+  computed: {
+    mayDownload() {
+      return this.$store.getters['auth/hasPermission']('books.manage');
+    },
+  },
   mounted() {
     this.bookId = this.$route.params.id;
     this.loadBook();
