@@ -14,6 +14,7 @@
           :name="book.id"
           :value="book.selected"
           @input="toggleBook(book, $event.target.checked)"
+          :class="{ 'book-filter__book--optional': book.searchedByDefault === false }"
         >
           {{ book.title }}
         </CheckBox>
@@ -40,14 +41,14 @@ export default {
     series: Array,
   },
   methods: {
-    selectAll() {
-      this.series.forEach(s => this.toggleSeriesImpl(s, true));
+    selectAll(filter) {
+      this.series.forEach(s => this.toggleSeriesImpl(s, true, filter));
       if (this.root) {
         this.$emit('filtered', this.buildFilter());
       }
     },
-    deselectAll() {
-      this.series.forEach(s => this.toggleSeriesImpl(s, false));
+    deselectAll(filter) {
+      this.series.forEach(s => this.toggleSeriesImpl(s, false, filter));
       if (this.root) {
         this.$emit('filtered', this.buildFilter());
       }
@@ -63,19 +64,19 @@ export default {
         && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
     },
     toggleSeries(series, value) {
-      this.toggleSeriesImpl(series, value);
+      this.toggleSeriesImpl(series, value, () => true);
       if (this.root) {
         this.$emit('filtered', this.buildFilter());
       } else {
         this.$emit('filtered');
       }
     },
-    toggleSeriesImpl(series, value) {
-      series.books.forEach((b) => {
+    toggleSeriesImpl(series, value, filter) {
+      series.books.filter(filter).forEach((b) => {
         b.selected = value;
       });
       series.children.forEach((s) => {
-        this.toggleSeriesImpl(s, value);
+        this.toggleSeriesImpl(s, value, filter);
       });
     },
     toggleBooksImpl(series, books) {
@@ -144,7 +145,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
 .book-filter {
   box-sizing: border-box;
   list-style-type: none;
@@ -174,6 +175,10 @@ export default {
     .book-filter-series {
       margin: 0;
     }
+  }
+
+  &__book--optional .checkbox-label {
+    opacity: 0.5 !important;
   }
 }
 </style>

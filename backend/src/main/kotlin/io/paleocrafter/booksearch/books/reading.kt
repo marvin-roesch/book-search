@@ -33,17 +33,7 @@ fun Route.bookReading() {
                 HttpStatusCode.NotFound,
                 mapOf("message" to "Book with ID '$id' does not exist")
             )
-            call.respond(
-                mapOf(
-                    "id" to id,
-                    "title" to book.title,
-                    "author" to book.author,
-                    "series" to book.series,
-                    "orderInSeries" to book.orderInSeries,
-                    "citationTemplate" to book.citationTemplate,
-                    "tags" to book.tags
-                )
-            )
+            call.respond(book.toJson() + ("tags" to book.tags))
         }
 
         get("/{id}/chapters") {

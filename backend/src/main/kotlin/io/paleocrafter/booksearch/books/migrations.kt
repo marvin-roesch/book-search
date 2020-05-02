@@ -47,7 +47,7 @@ object RestrictedBooksMigration : DbMigration("restricted-books-schema") {
     }
 }
 
-object CreateCitationsMigrations : DbMigration("create-citations") {
+object CreateCitationsMigration : DbMigration("create-citations") {
     override fun apply() {
         Books.createOrModifyColumns(Books.citationTemplate)
         Chapters.createOrModifyColumns(Chapters.citationParameter)
@@ -61,5 +61,11 @@ object CreateCitationsMigrations : DbMigration("create-citations") {
         for (chapter in chaptersMissingCitations) {
             chapter.citationParameter = extractCitationParameter(chapter.title)
         }
+    }
+}
+
+object AddSearchByDefaultMigration : DbMigration("search-by-default") {
+    override fun apply() {
+        Books.createOrModifyColumns(Books.searchedByDefault)
     }
 }

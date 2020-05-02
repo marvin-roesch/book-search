@@ -41,6 +41,14 @@
     <HashIcon></HashIcon>
     </template>
   </TextField>
+  <CheckBox
+    name="searched-by-default"
+    :value="searchedByDefault"
+    @input="searchedByDefault = $event.target.checked"
+    class="metadata-editor__checkbox"
+  >
+    Include in search filter by default
+  </CheckBox>
   <multiselect
     v-model="bookRoles"
     :options="roles"
@@ -55,7 +63,10 @@
   </multiselect>
   <div class="button-bar">
     <Button slim :to="{name: 'book-management'}" :disabled="updating">Back</Button>
-    <Button slim @click="updateMetadata" :loading="updating" :disabled="updating">Next</Button>
+    <div class="card-button-group">
+      <Button slim @click="saveMetadata" :loading="updating" :disabled="updating">Save</Button>
+      <Button slim @click="gotoNext" :loading="updating" :disabled="updating">Next</Button>
+    </div>
   </div>
 </div>
 </template>
@@ -65,10 +76,12 @@ import Multiselect from 'vue-multiselect';
 import { BarChartIcon, GridIcon, HashIcon, Link2Icon, TypeIcon, UserIcon } from 'vue-feather-icons';
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
+import CheckBox from '@/components/CheckBox.vue';
 
 export default {
   name: 'MetadataEditor',
   components: {
+    CheckBox,
     UserIcon,
     TypeIcon,
     TextField,
@@ -90,7 +103,7 @@ export default {
     try {
       const {
         data: {
-          title, author, series, orderInSeries, citationTemplate, tags,
+          title, author, series, orderInSeries, citationTemplate, tags, searchedByDefault,
         },
       } = await this.$api.get(`/books/${id}`);
 
@@ -105,6 +118,7 @@ export default {
       this.citationTemplate = citationTemplate;
       this.tags = tags.join(', ');
       this.bookRoles = roles.filter(r => r.permissions.includes(`books.${id}.read`));
+      this.searchedByDefault = searchedByDefault;
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -123,10 +137,18 @@ export default {
       bookRoles: [],
       updating: false,
       roles: [],
+      searchedByDefault: true,
     };
   },
   methods: {
-    async updateMetadata() {
+    async saveMetadata() {
+      await this.updateMetadata({ name: 'book-management' });
+      this.$notifications.success('Book metadata was successfully updated!');
+    },
+    async gotoNext() {
+      await this.updateMetadata({ name: 'table-of-contents', params: { id: this.bookId } });
+    },
+    async updateMetadata(nextRoute) {
       this.updating = true;
       try {
         await this.$api.patch(
@@ -139,6 +161,7 @@ export default {
             citationTemplate: (this.citationTemplate || '').length === 0 ? null : this.citationTemplate,
             tags: this.tags.split(',').map(tag => tag.trim()).filter(t => t.length > 0),
             permittedRoles: this.bookRoles.map(role => role.id),
+            searchedByDefault: this.searchedByDefault,
           },
           {
             headers: {
@@ -146,7 +169,7 @@ export default {
             },
           },
         );
-        this.$router.push({ name: 'table-of-contents', params: { id: this.bookId } });
+        this.$router.push(nextRoute);
       } catch (error) {
         this.$handleApiError(error);
         this.updating = false;
@@ -167,6 +190,14 @@ export default {
     overflow-y: auto;
     flex-grow: 1;
     max-height: 100%;
+  }
+
+  &__checkbox {
+    margin-top: 0.5rem;
+  }
+
+  .button-bar .card-button-group .button:first-child {
+    margin-right: 0.5rem;
   }
 }
 </style>

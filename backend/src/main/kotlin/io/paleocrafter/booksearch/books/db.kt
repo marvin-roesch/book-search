@@ -21,6 +21,7 @@ object Books : UUIDTable() {
     val indexing = bool("indexing").default(false)
     val restricted = bool("restricted").default(false)
     val citationTemplate = varchar("citation_template", 255).nullable()
+    val searchedByDefault = bool("searched_by_default").default(true)
 }
 
 class Book(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -40,6 +41,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var restricted by Books.restricted
     val tags by BookTag referrersOn BookTags.book
     var citationTemplate by Books.citationTemplate
+    var searchedByDefault by Books.searchedByDefault
 
     val resolved: ResolvedBook
         get() = ResolvedBook(
@@ -52,7 +54,8 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             indexing,
             restricted,
             tags.mapTo(mutableSetOf()) { it.tag },
-            citationTemplate
+            citationTemplate,
+            searchedByDefault
         )
 }
 
@@ -66,7 +69,8 @@ data class ResolvedBook(
     val indexing: Boolean,
     val restricted: Boolean,
     val tags: Set<String>,
-    val citationTemplate: String?
+    val citationTemplate: String?,
+    val searchedByDefault: Boolean
 ) {
     val sortableTitle = title.sortable
 
@@ -80,7 +84,8 @@ data class ResolvedBook(
             "searchable" to searchable,
             "indexing" to indexing,
             "restricted" to restricted,
-            "citationTemplate" to citationTemplate
+            "citationTemplate" to citationTemplate,
+            "searchedByDefault" to searchedByDefault
         )
 }
 

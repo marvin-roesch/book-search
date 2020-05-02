@@ -4,20 +4,23 @@
   :class="{ 'query-panel': true, 'query-panel-toolbar': toolbar }"
   :duration="300"
   :easing="easing"
-  @animation-end="$emit('ready')">
+  @animation-end="$emit('ready')"
+>
   <div class="query-panel-search">
     <SearchBar
       :toolbar="toolbar"
       :auto-focus="autoFocus"
       :query="query"
-      @search="$emit('search', $event)">
+      @search="$emit('search', $event)"
+    >
     </SearchBar>
     <QuickHelp></QuickHelp>
     <div class="query-panel-filter">
       <span class="query-panel-filter-label">Filter:</span>
       <a
         class="query-panel-filter-trigger" href="#"
-        @click.prevent="filterVisible = !filterVisible" ref="filter-trigger">
+        @click.prevent="filterVisible = !filterVisible" ref="filter-trigger"
+      >
         <book-filter-summary :series="series" :tags="tags"></book-filter-summary>
       </a>
       <transition name="fade">
@@ -27,28 +30,36 @@
           exclude: ['filter-trigger'],
           handler() { filterVisible = false; }
         }"
-          v-if="filterVisible">
-          <a class="query-panel-filter-action" href="#"
-             @click.prevent="$refs.filter.selectAll()">
+          v-if="filterVisible"
+        >
+          <a
+            class="query-panel-filter-action" href="#"
+            @click.prevent="$refs.filter.selectAll(getSelectionFilter($event))"
+          >
             All
           </a>
           &middot;
-          <a class="query-panel-filter-action" href="#"
-             @click.prevent="$refs.filter.deselectAll()">
+          <a
+            class="query-panel-filter-action" href="#"
+            @click.prevent="$refs.filter.deselectAll(getSelectionFilter($event))"
+          >
             None
           </a>
           <template v-for="(books, tag) in tags">
-            &middot;
-            <a class="query-panel-filter-action" href="#"
-               @click.prevent="$refs.filter.select(books)" :key="tag">
-              {{ tag }}
-            </a>
+          &middot;
+          <a
+            class="query-panel-filter-action" href="#"
+            @click.prevent="$refs.filter.select(selectTagBooks($event, books))" :key="tag"
+          >
+            {{ tag }}
+          </a>
           </template>
           <div class="query-panel-filter-scrollable" v-bar>
             <div>
               <book-filter
                 :root="true" :series="series"
-                @filtered="$emit('filter', $event)" ref="filter">
+                @filtered="$emit('filter', $event)" ref="filter"
+              >
               </book-filter>
             </div>
           </div>
@@ -65,7 +76,8 @@
           id="query-panel-paragraphs-scope"
           value="paragraphs"
           :checked="!chapterScope"
-          @input="onScopeChange">
+          @input="onScopeChange"
+        >
         <label for="query-panel-paragraphs-scope">Paragraphs</label>
       </div>
       <div class="query-panel-scope">
@@ -74,7 +86,8 @@
           id="query-panel-chapters-scope"
           value="chapters"
           :checked="chapterScope"
-          @input="onScopeChange">
+          @input="onScopeChange"
+        >
         <label for="query-panel-chapters-scope">Chapters</label>
       </div>
     </div>
@@ -82,7 +95,8 @@
       <CheckBox
         name="group-results"
         :value="groupResults"
-        @input="$emit('group-results', $event.target.checked)">
+        @input="$emit('group-results', $event.target.checked)"
+      >
         Group results
       </CheckBox>
     </div>
@@ -91,18 +105,20 @@
 </template>
 
 <script>
+import { easeInOut as easing } from 'ramjet';
+import { mapState } from 'vuex';
 import BookFilterSummary from '@/components/search/BookFilterSummary.vue';
 import BookFilter from '@/components/search/BookFilter.vue';
 import CheckBox from '@/components/CheckBox.vue';
 import SearchBar from '@/components/search/SearchBar.vue';
 import SharedElement from '@/components/SharedElement.vue';
-import { easeInOut as easing } from 'ramjet';
 import QuickHelp from '@/components/search/QuickHelp.vue';
-import { mapState } from 'vuex';
 
 export default {
   name: 'QueryPanel',
-  components: { QuickHelp, SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary },
+  components: {
+    QuickHelp, SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary,
+  },
   props: {
     toolbar: Boolean,
     autoFocus: Boolean,
@@ -131,6 +147,28 @@ export default {
     },
     onScopeChange(event) {
       this.$emit('chapter-scope', event.target.value === 'chapters');
+    },
+    getSelectionFilter(event) {
+      if (event.shiftKey) {
+        return () => true;
+      }
+
+      if (event.altKey) {
+        return b => b.searchedByDefault === false;
+      }
+
+      return b => b.searchedByDefault;
+    },
+    selectTagBooks(event, tag) {
+      if (event.shiftKey) {
+        return [...tag.default, ...tag.optional];
+      }
+
+      if (event.altKey) {
+        return tag.optional;
+      }
+
+      return tag.default;
     },
   },
 };

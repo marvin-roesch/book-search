@@ -11,10 +11,10 @@ function prepareSeries(path, series, seriesFilter, bookFilter) {
     Vue.set(
       b,
       'selected',
-      (seriesFilter === null && bookFilter === null)
-      || bookFilter === null
-      || seriesFilter.some(f => path.match(f))
-      || bookFilter.includes(b.id),
+      (seriesFilter === null && bookFilter === null && b.searchedByDefault)
+      || (bookFilter === null && b.searchedByDefault)
+      || (b.searchedByDefault && seriesFilter.some(f => path.match(f)))
+      || (bookFilter !== null && bookFilter.includes(b.id)),
     );
   });
   series.children.forEach(s => prepareSeries(`${path}\\${s.name}`, s, seriesFilter, bookFilter));
@@ -22,10 +22,19 @@ function prepareSeries(path, series, seriesFilter, bookFilter) {
 
 const cachedSeries = window.localStorage.getItem('series');
 const cachedTags = window.localStorage.getItem('tags');
+let parsedTags = {};
+if (cachedTags) {
+  parsedTags = JSON.parse(cachedTags);
+  const keys = Object.keys(parsedTags);
+
+  if (keys.length > 0 && !parsedTags[keys[0]].default) {
+    parsedTags = {};
+  }
+}
 const initialState = {
   darkMode: window.localStorage.getItem('darkMode') === 'true',
   series: !cachedSeries ? [] : JSON.parse(cachedSeries),
-  tags: !cachedTags ? {} : JSON.parse(cachedTags),
+  tags: parsedTags,
 };
 
 const mutations = {

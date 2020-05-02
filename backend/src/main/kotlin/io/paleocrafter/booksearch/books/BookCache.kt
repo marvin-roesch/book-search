@@ -11,7 +11,7 @@ object BookCache {
     private val seriesPaths = ConcurrentHashMap<Optional<String>, Series>()
     private lateinit var seriesCache: List<Series>
     private val bookCache = ConcurrentHashMap<UUID, ResolvedBook>()
-    private val tagCache = ConcurrentHashMap<String, Set<UUID>>()
+    private val tagCache = ConcurrentHashMap<String, CachedTag>()
 
     val linearSeries: Collection<Series>
         get() = seriesPaths.values
@@ -22,7 +22,7 @@ object BookCache {
     val books: Collection<ResolvedBook>
         get() = bookCache.values
 
-    val tags: Map<String, Set<UUID>>
+    val tags: Map<String, CachedTag>
         get() = tagCache
 
     fun rebuild() {
@@ -72,10 +72,14 @@ object BookCache {
     fun rebuildTags() {
         tagCache.clear()
         transaction {
-            for (row in Books.innerJoin(BookTags, { id }, { book }).slice(BookTags.book, BookTags.tag).selectAll()) {
+            for (row in Books.innerJoin(BookTags, { id }, { book }).slice(BookTags.book, BookTags.tag, Books.searchedByDefault).selectAll()) {
                 val tag = row[BookTags.tag]
                 val book = row[BookTags.book].value
-                tagCache[tag] = tagCache.getOrPut(tag) { emptySet() } + book
+                val cache = tagCache.getOrPut(tag) { CachedTag(emptySet(), emptySet()) }
+                tagCache[tag] = if (row[Books.searchedByDefault])
+                    cache.copy(default = cache.default + book)
+                else
+                    cache.copy(optional = cache.optional + book)
             }
         }
     }
@@ -106,19 +110,31 @@ object BookCache {
             val obsolete = oldTags - resolved.tags
             val new = resolved.tags - oldTags
             for (tag in obsolete) {
-                val tagBooks = tagCache[tag] ?: continue
+                val cache = tagCache[tag] ?: continue
 
-                val newBooks = tagBooks - resolved.id
-                if (newBooks.isEmpty()) {
-                    tagCache.remove(tag)
+                if (resolved.searchedByDefault) {
+                    val newBooks = cache.default - resolved.id
+                    if (cache.optional.isEmpty() && newBooks.isEmpty()) {
+                        tagCache.remove(tag)
+                    } else {
+                        tagCache[tag] = cache.copy(default = newBooks)
+                    }
                 } else {
-                    tagCache[tag] = newBooks
+                    val newBooks = cache.optional - resolved.id
+                    if (cache.default.isEmpty() && newBooks.isEmpty()) {
+                        tagCache.remove(tag)
+                    } else {
+                        tagCache[tag] = cache.copy(optional = newBooks)
+                    }
                 }
             }
 
             for (tag in new) {
-                val tagBooks = tagCache.getOrPut(tag) { emptySet() }
-                tagCache[tag] = tagBooks + resolved.id
+                val cache = tagCache.getOrPut(tag) { CachedTag(emptySet(), emptySet()) }
+                tagCache[tag] = if (resolved.searchedByDefault)
+                    cache.copy(default = cache.default + resolved.id)
+                else
+                    cache.copy(optional = cache.optional + resolved.id)
             }
         }
     }
@@ -128,4 +144,6 @@ object BookCache {
         rebuildTags()
         rebuildSeries()
     }
+
+    data class CachedTag(val default: Set<UUID>, val optional: Set<UUID>)
 }

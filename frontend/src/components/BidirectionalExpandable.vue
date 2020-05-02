@@ -87,7 +87,7 @@ export default {
   }
 
   &:after {
-    bottom: 0;
+    bottom: -1px;
   }
 
   &-loader {

@@ -222,6 +222,7 @@ fun Route.bookManagement(index: BookIndex) {
                 book.orderInSeries = request.orderInSeries
                 book.restricted = request.permittedRoles.isNotEmpty()
                 book.citationTemplate = request.citationTemplate
+                book.searchedByDefault = request.searchedByDefault
 
                 val permissionId = Book.readingPermission(id)
                 if (book.restricted) {
@@ -597,7 +598,8 @@ private data class BookPatchRequest(
     val orderInSeries: Int,
     val tags: Set<String>,
     val permittedRoles: Set<UUID>,
-    val citationTemplate: String?
+    val citationTemplate: String?,
+    val searchedByDefault: Boolean
 )
 
 private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
