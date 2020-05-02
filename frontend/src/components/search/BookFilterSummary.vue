@@ -66,7 +66,11 @@ export default {
           (acc, s) => acc && this.allSelected(s, optionalBooks),
           true,
         );
-        if (allOptionalSelected && !optionalSelectedBooks.some(b => used.includes(b))) {
+        if (
+          allOptionalSelected
+          && !optionalSelectedBooks.some(b => used.includes(b))
+          && optionalSelectedBooks.length > 0
+        ) {
           this.optionalSummary.push('all optional books');
           return;
         }
