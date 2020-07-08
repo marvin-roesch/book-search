@@ -6,17 +6,17 @@ import notifications from '@/store/notifications';
 
 Vue.use(Vuex);
 
-function prepareSeries(path, series, seriesFilter, bookFilter, ignoreOptional) {
-  const includeOptional = ignoreOptional !== true;
-
+function prepareSeries(path, series, seriesFilter, bookFilter, excluded) {
   series.books.forEach((b) => {
     Vue.set(
       b,
       'selected',
-      (seriesFilter === null && bookFilter === null && (b.searchedByDefault || includeOptional))
-      || (bookFilter === null && b.searchedByDefault)
-      || ((b.searchedByDefault || includeOptional) && seriesFilter.some(f => path.match(f)))
-      || (bookFilter !== null && bookFilter.includes(b.id)),
+      (excluded === null || !excluded.includes(b.id)) && (
+        (seriesFilter === null && bookFilter === null)
+        || bookFilter === null
+        || (seriesFilter !== null && seriesFilter.some(f => path.match(f)))
+        || (bookFilter !== null && bookFilter.includes(b.id))
+      ),
     );
   });
   series.children.forEach(s => prepareSeries(
@@ -24,7 +24,7 @@ function prepareSeries(path, series, seriesFilter, bookFilter, ignoreOptional) {
     s,
     seriesFilter,
     bookFilter,
-    ignoreOptional,
+    excluded,
   ));
 }
 
@@ -58,11 +58,11 @@ const mutations = {
     state.tags = tags;
     window.localStorage.setItem('tags', JSON.stringify(tags));
   },
-  applySeriesFilter(state, { seriesFilter, bookFilter, ignoreOptional }) {
+  applySeriesFilter(state, { seriesFilter, bookFilter, excluded }) {
     if (state.series === null) {
       return;
     }
-    state.series.forEach(s => prepareSeries(s.name, s, seriesFilter, bookFilter, ignoreOptional));
+    state.series.forEach(s => prepareSeries(s.name, s, seriesFilter, bookFilter, excluded));
     window.localStorage.setItem('series', JSON.stringify(state.series));
   },
 };
@@ -85,10 +85,27 @@ const actions = {
   },
 };
 
+const getters = {
+  optionalBooks(state) {
+    const result = [];
+
+    function handleSeries(series) {
+      result.push(...series.books.filter(b => b.searchedByDefault !== true).map(b => b.id));
+
+      series.children.forEach(handleSeries);
+    }
+
+    state.series.forEach(handleSeries);
+
+    return result;
+  },
+};
+
 export default new Vuex.Store({
   state: initialState,
   mutations,
   actions,
+  getters,
   modules: {
     auth,
     notifications,

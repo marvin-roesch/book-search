@@ -45,6 +45,7 @@ export default {
     query: String,
     seriesFilter: Array,
     bookFilter: Array,
+    excluded: Array,
   },
   data() {
     return {
@@ -69,6 +70,7 @@ export default {
             query: this.query,
             seriesFilter: this.seriesFilter,
             bookFilter: this.bookFilter,
+            excluded: this.excluded,
           },
           {
             cancelToken: this.cancelToken.token,

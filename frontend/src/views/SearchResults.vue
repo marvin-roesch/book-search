@@ -28,6 +28,7 @@
     :query="$route.query.q"
     :series-filter="seriesFilter"
     :book-filter="bookFilter"
+    :excluded="excluded"
     :chapter-scope="chapterScope"
     v-if="groupResults && displayResults">
   </grouped-search-results>
@@ -35,6 +36,7 @@
     :query="$route.query.q"
     :series-filter="seriesFilter"
     :book-filter="bookFilter"
+    :excluded="excluded"
     :chapter-scope="chapterScope"
     v-else-if="displayResults">
   </flat-search-results>
@@ -72,6 +74,12 @@ export default {
       const { books } = this.$route.query;
       return books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
     },
+    excluded() {
+      const { excluded } = this.$route.query;
+      return excluded !== undefined
+        ? excluded.split('+').filter(s => s.length > 0)
+        : null;
+    },
     groupResults() {
       const { grouped } = this.$route.query;
       return grouped === true || grouped === 'true';
@@ -84,14 +92,20 @@ export default {
   },
   async mounted() {
     try {
-      const { seriesFilter, bookFilter } = this;
+      const { seriesFilter, bookFilter, excluded } = this;
 
       const seriesRegex = seriesFilter === null ? null : seriesFilter.map(
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
       );
 
-      this.$store.commit('applySeriesFilter', { seriesFilter: seriesRegex, bookFilter });
-      await this.$store.dispatch('refreshSeries', { seriesFilter: seriesRegex, bookFilter });
+      this.$store.commit(
+        'applySeriesFilter',
+        { seriesFilter: seriesRegex, bookFilter, excluded },
+      );
+      await this.$store.dispatch(
+        'refreshSeries',
+        { seriesFilter: seriesRegex, bookFilter, excluded },
+      );
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -106,13 +120,14 @@ export default {
         },
       });
     },
-    onFilter({ series, books }) {
+    onFilter({ series, books, excluded }) {
       this.$router.replace({
         name: 'search',
         query: {
           ...this.$route.query,
           series: series === undefined ? undefined : series.join('+'),
           books: books === undefined ? undefined : books.join('+'),
+          excluded: excluded === undefined ? undefined : excluded.join('+'),
         },
       });
     },

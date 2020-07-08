@@ -48,13 +48,13 @@
 
 <script>
 import axios from 'axios';
+import { XIcon } from 'vue-feather-icons';
 import Card from '@/components/Card.vue';
 import BookText from '@/components/BookText.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import UserPanel from '@/components/UserPanel.vue';
 import { scrollAware } from '@/custom-directives';
 import SearchBar from '@/components/search/SearchBar.vue';
-import { XIcon } from 'vue-feather-icons';
 import QuickHelp from '@/components/search/QuickHelp.vue';
 import ChapterNavigation from '@/components/ChapterNavigation.vue';
 import { buildCitation, copyText } from '@/utils';
@@ -119,6 +119,7 @@ export default {
               query,
               seriesFilter: null,
               bookFilter: null,
+              excluded: null,
             },
           );
 

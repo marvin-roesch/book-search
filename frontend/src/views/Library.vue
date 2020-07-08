@@ -40,7 +40,10 @@ export default {
   computed: mapState(['series']),
   async mounted() {
     try {
-      await this.$store.dispatch('refreshSeries', { seriesFilter: null, bookFilter: null });
+      await this.$store.dispatch(
+        'refreshSeries',
+        { seriesFilter: null, bookFilter: null, excluded: null },
+      );
     } catch (error) {
       this.$handleApiError(error);
     }

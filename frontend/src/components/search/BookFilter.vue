@@ -41,11 +41,6 @@ export default {
     root: Boolean,
     series: Array,
   },
-  mounted() {
-    if (this.root && this.$route.name === 'home') {
-      this.$emit('filtered', this.buildFilter());
-    }
-  },
   methods: {
     selectAll(filter) {
       this.series.forEach(s => this.toggleSeriesImpl(s, true, filter));
@@ -66,8 +61,10 @@ export default {
       }
     },
     allSelected(series) {
-      return series.books.reduce((acc, b) => acc && b.selected, true)
-        && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
+      return series.books.reduce(
+        (acc, b) => acc && (b.selected || b.searchedByDefault !== true),
+        true,
+      ) && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
     },
     toggleSeries(series, value) {
       this.toggleSeriesImpl(series, value, () => true);
@@ -101,46 +98,80 @@ export default {
         this.$emit('filtered');
       }
     },
+    buildExclusions(series) {
+      const exclusions = [];
+
+      exclusions.push(
+        ...series.books
+          .filter(b => b.searchedByDefault !== true && !b.selected)
+          .map(b => b.id),
+      );
+
+      series.children.forEach(this.buildExclusions);
+
+      return exclusions;
+    },
     buildFilter() {
       if (this.series.reduce((acc, s) => acc && this.allSelected(s), true)) {
-        return { series: undefined, books: undefined };
+        const excluded = this.series.reduce(
+          (acc, s) => [...acc, ...(this.buildExclusions(s) || [])],
+          [],
+        );
+
+        return {
+          series: undefined,
+          books: undefined,
+          excluded: excluded.length > 0 ? excluded : undefined,
+        };
       }
 
       return this.series.reduce(
-        ({ series, books }, c) => {
-          const { series: cSeries, books: cBooks } = this.buildSeriesFilter('', c);
+        ({ series, books, excluded }, c) => {
+          const {
+            series: cSeries,
+            books: cBooks,
+            excluded: cExcluded,
+          } = this.buildSeriesFilter('', c);
+
           return ({
             series: [...series, ...cSeries],
             books: [...books, ...cBooks],
+            excluded: [...excluded, ...cExcluded],
           });
         },
-        { series: [], books: [] },
+        { series: [], books: [], excluded: [] },
       );
     },
     buildSeriesFilter(seriesPath, s) {
       if (this.allSelected(s)) {
-        return { series: [`${seriesPath}${s.name}`], books: [] };
+        return { series: [`${seriesPath}${s.name}`], books: [], excluded: this.buildExclusions(s) };
       }
 
       const currentBooks = s.books.filter(b => b.selected).map(b => b.id);
 
-      const { series, books } = s.children.reduce(
-        ({ series: accSeries, books: accBooks }, c) => {
-          const { series: cSeries, books: cBooks } = this.buildSeriesFilter(
+      const { series, books, excluded } = s.children.reduce(
+        ({ series: accSeries, books: accBooks, excluded: accExcluded }, c) => {
+          const {
+            series: cSeries,
+            books: cBooks,
+            excluded: cExcluded,
+          } = this.buildSeriesFilter(
             `${seriesPath}${s.name}\\`,
             c,
           );
           return ({
             series: [...accSeries, ...cSeries],
             books: [...accBooks, ...cBooks],
+            excluded: [...accExcluded, ...cExcluded],
           });
         },
-        { series: [], books: [] },
+        { series: [], books: [], excluded: [] },
       );
 
       return {
         series,
         books: [...currentBooks, ...books],
+        excluded,
       };
     },
     onChildFiltered() {

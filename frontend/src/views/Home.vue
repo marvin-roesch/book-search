@@ -13,7 +13,8 @@
       @search="onSearch"
       @filter="onFilter"
       @group-results="onGroupResults"
-      @chapter-scope="onChapterScope">
+      @chapter-scope="onChapterScope"
+    >
     </QueryPanel>
   </div>
 </Fullscreen>
@@ -35,6 +36,7 @@ export default {
       query: '',
       bookFilter: undefined,
       seriesFilter: undefined,
+      excluded: this.$store.getters.optionalBooks,
       chapterScope: this.$store.state.auth.identity.defaultSearchScope === 'chapters',
       groupResults: this.$store.state.auth.identity.groupResultsByDefault,
       oldQuery: {},
@@ -44,8 +46,12 @@ export default {
   async mounted() {
     try {
       const {
-        q, books, series, scope, grouped,
-      } = { ...this.oldQuery, ...this.$route.query };
+        q, books, series, excluded, scope, grouped,
+      } = await new Promise((resolve) => {
+        this.$nextTick(() => {
+          resolve({ ...this.oldQuery, ...this.$route.query });
+        });
+      });
 
       this.query = q || '';
       if (scope !== undefined) {
@@ -56,6 +62,19 @@ export default {
       }
       const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
       const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
+      const excludedFilter = excluded !== undefined
+        ? excluded.split('+').filter(s => s.length > 0)
+        : this.excluded;
+
+      if (seriesFilter !== null) {
+        this.seriesFilter = seriesFilter;
+      }
+
+      if (bookFilter !== null) {
+        this.bookFilter = bookFilter;
+      }
+
+      this.excluded = excludedFilter;
 
       const seriesRegex = seriesFilter === null ? null : seriesFilter.map(
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
@@ -63,11 +82,11 @@ export default {
 
       this.$store.commit(
         'applySeriesFilter',
-        { seriesFilter: seriesRegex, bookFilter, ignoreOptional: true },
+        { seriesFilter: seriesRegex, bookFilter, excluded: excludedFilter },
       );
       await this.$store.dispatch(
         'refreshSeries',
-        { seriesFilter: seriesRegex, bookFilter, ignoreOptional: true },
+        { seriesFilter: seriesRegex, bookFilter, excluded: excludedFilter },
       );
     } catch (error) {
       this.$handleApiError(error);
@@ -91,14 +110,16 @@ export default {
           q: this.query,
           series: this.seriesFilter === undefined ? undefined : this.seriesFilter.join('+'),
           books: this.bookFilter === undefined ? undefined : this.bookFilter.join('+'),
+          excluded: this.excluded === undefined ? undefined : this.excluded.join('+'),
           scope: this.chapterScope ? 'chapters' : undefined,
           grouped: this.groupResults || undefined,
         },
       });
     },
-    onFilter({ series, books }) {
+    onFilter({ series, books, excluded }) {
       this.seriesFilter = series;
       this.bookFilter = books;
+      this.excluded = excluded;
     },
     onChapterScope(chapterScope) {
       this.chapterScope = chapterScope;

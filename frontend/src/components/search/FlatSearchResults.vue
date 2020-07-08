@@ -10,13 +10,15 @@
     infinite-scroll-listen-for-event="reset-infinite"
     tag="div" class="search-result-list" name="search-slide"
     @after-leave="reset"
-    v-if="chapterScope">
+    v-if="chapterScope"
+  >
     <ChapterSearchResult
       :query="query"
       :result="result"
       :style="{'--delay': `${result.delay}ms`}"
       v-for="(result, index) in results"
-      :key="`$route.fullPath` + index">
+      :key="`$route.fullPath` + index"
+    >
     </ChapterSearchResult>
   </transition-group>
   <transition-group
@@ -26,13 +28,15 @@
     infinite-scroll-listen-for-event="reset-infinite"
     tag="div" class="search-result-list" name="search-slide"
     @after-leave="reset"
-    v-else>
+    v-else
+  >
     <search-result
       :query="query"
       :result="result"
       :style="{'--delay': `${result.delay}ms`}"
       v-for="(result, index) in results"
-      :key="`$route.fullPath` + index">
+      :key="`$route.fullPath` + index"
+    >
     </search-result>
   </transition-group>
   <LoadingSpinner v-if="loading"></LoadingSpinner>
@@ -40,7 +44,8 @@
   <ErrorCard
     :message="errorMessage"
     @retry="reset"
-    v-if="errorMessage !== null">
+    v-if="errorMessage !== null"
+  >
   </ErrorCard>
 </div>
 </template>
@@ -66,6 +71,7 @@ export default {
     query: String,
     seriesFilter: Array,
     bookFilter: Array,
+    excluded: Array,
     chapterScope: Boolean,
   },
   data() {
@@ -138,6 +144,7 @@ export default {
           page: this.page,
           seriesFilter: this.seriesFilter,
           bookFilter: this.bookFilter,
+          excluded: this.excluded,
         },
         {
           cancelToken: this.cancelToken.token,
@@ -181,6 +188,7 @@ export default {
           page: this.page,
           seriesFilter: this.seriesFilter,
           bookFilter: this.bookFilter,
+          excluded: this.excluded,
         },
         {
           cancelToken: this.cancelToken.token,
@@ -219,6 +227,9 @@ export default {
       this.reset();
     },
     bookFilter() {
+      this.reset();
+    },
+    excluded() {
       this.reset();
     },
     chapterScope() {

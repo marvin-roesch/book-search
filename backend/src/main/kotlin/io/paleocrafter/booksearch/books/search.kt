@@ -20,21 +20,22 @@ fun Route.bookSearch(index: BookIndex) {
         }
     }
 
-    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?) =
+    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?, excluded: List<String>?) =
         if (seriesFilter == null && bookFilter == null) {
-            BookCache.books.map { it.id }
+            BookCache.books.map { it.id }.filter { excluded == null || it.toString() !in excluded }
         } else {
             val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
             BookCache.linearSeries
                 .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path.orElse("No Series")) } }
                 .flatMap { it.books }
                 .map { it.id } + bookFilter.orEmpty().map { UUID.fromString(it) }
+                .filter { excluded == null || it.toString() !in excluded }
         }
 
     post("/paragraph-search") {
         val request = call.receive<SearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -76,7 +77,7 @@ fun Route.bookSearch(index: BookIndex) {
     post("/chapter-search") {
         val request = call.receive<SearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -117,7 +118,7 @@ fun Route.bookSearch(index: BookIndex) {
     post("/paragraph-search/grouped") {
         val request = call.receive<GroupedSearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -166,7 +167,7 @@ fun Route.bookSearch(index: BookIndex) {
     post("/chapter-search/grouped") {
         val request = call.receive<GroupedSearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -270,7 +271,7 @@ fun Route.bookSearch(index: BookIndex) {
             val id = UUID.fromString(call.parameters["id"])
             val request = call.receive<GroupedSearchRequest>()
 
-            val filter = buildFilter(request.seriesFilter, request.bookFilter)
+            val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
             if (filter.isEmpty()) {
                 return@post call.respond(mapOf(
                     "totalHits" to 0,
@@ -340,9 +341,9 @@ fun Route.bookSearch(index: BookIndex) {
     }
 }
 
-private data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?)
+private data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?, val excluded: List<String>?)
 
-private data class GroupedSearchRequest(val query: String, val seriesFilter: List<String>?, val bookFilter: List<String>?)
+private data class GroupedSearchRequest(val query: String, val seriesFilter: List<String>?, val bookFilter: List<String>?, val excluded: List<String>?)
 
 private fun <T> Comparator<in T>.lexicographical(): Comparator<in Iterable<T>> =
     Comparator { left, right ->

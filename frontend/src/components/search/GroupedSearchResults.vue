@@ -9,6 +9,7 @@
       :query="query"
       :series-filter="seriesFilter"
       :book-filter="bookFilter"
+      :excluded="excluded"
       :chapter-scope="chapterScope"
       v-for="book in books" :key="book.id">
     </BookSearchResult>
@@ -42,6 +43,7 @@ export default {
     query: String,
     seriesFilter: Array,
     bookFilter: Array,
+    excluded: Array,
     chapterScope: Boolean,
   },
   data() {
@@ -81,6 +83,7 @@ export default {
             query: this.query,
             seriesFilter: this.seriesFilter,
             bookFilter: this.bookFilter,
+            excluded: this.excluded,
           },
           {
             cancelToken: this.cancelToken.token,
@@ -110,6 +113,9 @@ export default {
       this.reset();
     },
     bookFilter() {
+      this.reset();
+    },
+    excluded() {
       this.reset();
     },
     chapterScope() {
