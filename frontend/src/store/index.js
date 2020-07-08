@@ -6,18 +6,26 @@ import notifications from '@/store/notifications';
 
 Vue.use(Vuex);
 
-function prepareSeries(path, series, seriesFilter, bookFilter) {
+function prepareSeries(path, series, seriesFilter, bookFilter, ignoreOptional) {
+  const includeOptional = ignoreOptional !== true;
+
   series.books.forEach((b) => {
     Vue.set(
       b,
       'selected',
-      (seriesFilter === null && bookFilter === null && b.searchedByDefault)
+      (seriesFilter === null && bookFilter === null && (b.searchedByDefault || includeOptional))
       || (bookFilter === null && b.searchedByDefault)
-      || (b.searchedByDefault && seriesFilter.some(f => path.match(f)))
+      || ((b.searchedByDefault || includeOptional) && seriesFilter.some(f => path.match(f)))
       || (bookFilter !== null && bookFilter.includes(b.id)),
     );
   });
-  series.children.forEach(s => prepareSeries(`${path}\\${s.name}`, s, seriesFilter, bookFilter));
+  series.children.forEach(s => prepareSeries(
+    `${path}\\${s.name}`,
+    s,
+    seriesFilter,
+    bookFilter,
+    ignoreOptional,
+  ));
 }
 
 const cachedSeries = window.localStorage.getItem('series');
@@ -50,11 +58,11 @@ const mutations = {
     state.tags = tags;
     window.localStorage.setItem('tags', JSON.stringify(tags));
   },
-  applySeriesFilter(state, { seriesFilter, bookFilter }) {
+  applySeriesFilter(state, { seriesFilter, bookFilter, ignoreOptional }) {
     if (state.series === null) {
       return;
     }
-    state.series.forEach(s => prepareSeries(s.name, s, seriesFilter, bookFilter));
+    state.series.forEach(s => prepareSeries(s.name, s, seriesFilter, bookFilter, ignoreOptional));
     window.localStorage.setItem('series', JSON.stringify(state.series));
   },
 };

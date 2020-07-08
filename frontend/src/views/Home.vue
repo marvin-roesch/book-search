@@ -20,9 +20,9 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import QueryPanel from '@/components/search/QueryPanel.vue';
 import Fullscreen from '@/views/Fullscreen.vue';
-import { mapState } from 'vuex';
 
 export default {
   name: 'home',
@@ -59,8 +59,14 @@ export default {
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
       );
 
-      this.$store.commit('applySeriesFilter', { seriesFilter: seriesRegex, bookFilter });
-      await this.$store.dispatch('refreshSeries', { seriesFilter: seriesRegex, bookFilter });
+      this.$store.commit(
+        'applySeriesFilter',
+        { seriesFilter: seriesRegex, bookFilter, ignoreOptional: true },
+      );
+      await this.$store.dispatch(
+        'refreshSeries',
+        { seriesFilter: seriesRegex, bookFilter, ignoreOptional: true },
+      );
     } catch (error) {
       this.$handleApiError(error);
     }

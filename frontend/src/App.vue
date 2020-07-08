@@ -20,8 +20,8 @@
 </template>
 
 <script>
-import Notification from '@/components/Notification.vue';
 import { mapState } from 'vuex';
+import Notification from '@/components/Notification.vue';
 
 export default {
   name: 'app',

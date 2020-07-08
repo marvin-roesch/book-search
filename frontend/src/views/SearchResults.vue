@@ -84,10 +84,7 @@ export default {
   },
   async mounted() {
     try {
-      const { books, series } = this.$route.query;
-
-      const seriesFilter = series !== undefined ? series.split('+').filter(s => s.length > 0) : null;
-      const bookFilter = books !== undefined ? books.split('+').filter(s => s.length > 0) : null;
+      const { seriesFilter, bookFilter } = this;
 
       const seriesRegex = seriesFilter === null ? null : seriesFilter.map(
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
@@ -100,21 +97,6 @@ export default {
     }
   },
   methods: {
-    prepareSeries(path, series, seriesFilter, bookFilter) {
-      return {
-        ...series,
-        books: series.books
-          .map(b => ({
-            ...b,
-            selected: (seriesFilter === null && bookFilter === null)
-              || bookFilter === null
-              || seriesFilter.some(f => path.match(f))
-              || bookFilter.includes(b.id),
-          })),
-        children: series.children
-          .map(s => this.prepareSeries(`${path}\\${s.name}`, s, seriesFilter, bookFilter)),
-      };
-    },
     onSearch(query) {
       this.$router.replace({
         name: 'search',
