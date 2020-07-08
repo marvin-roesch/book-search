@@ -24,7 +24,8 @@
       class="book-filter-child"
       :root="false"
       :series="s.children"
-      @filtered="onChildFiltered">
+      @filtered="onChildFiltered"
+    >
     </BookFilter>
   </li>
 </ul>
@@ -39,6 +40,11 @@ export default {
   props: {
     root: Boolean,
     series: Array,
+  },
+  mounted() {
+    if (this.root && this.$route.name === 'home') {
+      this.$emit('filtered', this.buildFilter());
+    }
   },
   methods: {
     selectAll(filter) {
@@ -120,7 +126,10 @@ export default {
 
       const { series, books } = s.children.reduce(
         ({ series: accSeries, books: accBooks }, c) => {
-          const { series: cSeries, books: cBooks } = this.buildSeriesFilter(`${seriesPath}${s.name}\\`, c);
+          const { series: cSeries, books: cBooks } = this.buildSeriesFilter(
+            `${seriesPath}${s.name}\\`,
+            c,
+          );
           return ({
             series: [...accSeries, ...cSeries],
             books: [...accBooks, ...cBooks],

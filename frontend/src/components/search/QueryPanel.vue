@@ -30,7 +30,7 @@
           exclude: ['filter-trigger'],
           handler() { filterVisible = false; }
         }"
-          v-if="filterVisible"
+          v-show="filterVisible"
         >
           <a
             class="query-panel-filter-action" href="#"

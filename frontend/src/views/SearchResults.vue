@@ -42,12 +42,12 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import FlatSearchResults from '@/components/search/FlatSearchResults.vue';
 import GroupedSearchResults from '@/components/search/GroupedSearchResults.vue';
 import QueryPanel from '@/components/search/QueryPanel.vue';
 import UserPanel from '@/components/UserPanel.vue';
 import { scrollAware } from '@/custom-directives';
-import { mapState } from 'vuex';
 
 export default {
   name: 'search-results',

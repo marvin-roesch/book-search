@@ -43,7 +43,9 @@ export default {
   computed: mapState(['series']),
   async mounted() {
     try {
-      const { q, books, series, scope, grouped } = { ...this.oldQuery, ...this.$route.query };
+      const {
+        q, books, series, scope, grouped,
+      } = { ...this.oldQuery, ...this.$route.query };
 
       this.query = q || '';
       if (scope !== undefined) {
