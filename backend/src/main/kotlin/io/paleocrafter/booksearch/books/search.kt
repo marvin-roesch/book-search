@@ -25,11 +25,12 @@ fun Route.bookSearch(index: BookIndex) {
             BookCache.books.map { it.id }.filter { excluded == null || it.toString() !in excluded }
         } else {
             val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
-            BookCache.linearSeries
+            (BookCache.linearSeries
                 .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path.orElse("No Series")) } }
                 .flatMap { it.books }
-                .map { it.id } + bookFilter.orEmpty().map { UUID.fromString(it) }
-                .filter { excluded == null || it.toString() !in excluded }
+                .map { it.id }
+                + bookFilter.orEmpty().map { UUID.fromString(it) }
+            ).filter { excluded == null || it.toString() !in excluded }
         }
 
     post("/paragraph-search") {

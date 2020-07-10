@@ -4,6 +4,7 @@
     <CheckBox
       :name="s.name"
       :value="allSelected(s)"
+      :class="{ 'book-filter__series--optional': allNonDefault(s) }"
       @input="toggleSeries(s, $event.target.checked)"
     >
       {{ s.name }}
@@ -60,11 +61,19 @@ export default {
         this.$emit('filtered', this.buildFilter());
       }
     },
+    allNonDefault(series) {
+      return series.books.every(b => b.searchedByDefault === false)
+        && series.children.every(this.allNonDefault);
+    },
     allSelected(series) {
-      return series.books.reduce(
-        (acc, b) => acc && (b.selected || b.searchedByDefault !== true),
-        true,
-      ) && series.children.reduce((acc, s) => acc && this.allSelected(s), true);
+      if (this.allNonDefault(series)) {
+        return series.books.every(b => b.selected) && series.children.every(this.allSelected);
+      }
+
+      const defaultBooks = series.books.filter(b => b.searchedByDefault);
+
+      return defaultBooks.every(b => b.selected)
+        && series.children.every(this.allSelected);
     },
     toggleSeries(series, value) {
       this.toggleSeriesImpl(series, value, () => true);
@@ -112,7 +121,7 @@ export default {
       return exclusions;
     },
     buildFilter() {
-      if (this.series.reduce((acc, s) => acc && this.allSelected(s), true)) {
+      if (this.series.every(this.allSelected)) {
         const excluded = this.series.reduce(
           (acc, s) => [...acc, ...(this.buildExclusions(s) || [])],
           [],
@@ -217,8 +226,10 @@ export default {
     }
   }
 
-  &__book--optional .checkbox-label {
-    opacity: 0.5 !important;
+  &__series--optional, &__book--optional {
+    .checkbox-label {
+      opacity: 0.5 !important;
+    }
   }
 }
 </style>
