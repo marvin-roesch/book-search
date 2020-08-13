@@ -150,7 +150,6 @@ export default {
       this.copySelection(
         '{{quote\n',
         this.citation === null ? '\n}}' : `\n|${this.citation || ''}\n}}`,
-        s => s.split('\n').map(l => `|${l}`).join('\n'),
       );
     },
     copyWikiCitation() {
