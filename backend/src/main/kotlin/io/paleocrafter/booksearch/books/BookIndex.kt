@@ -150,12 +150,12 @@ class BookIndex(vararg hosts: HttpHost) {
                     },
                     "stemmed_strip_html_analyzer": {
                         "tokenizer": "classic",
-                        "filter": ["remove_accents", "keyword_repeat", "possessive_stemmer", "kstem", "unique_stem"],
+                        "filter": ["remove_accents", "keyword_repeat", "possessive_stemmer", "porter_stem", "unique_stem"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "stemmed_case_insensitive_analyzer": {
                         "tokenizer": "classic",
-                        "filter": ["lowercase", "remove_accents", "keyword_repeat", "possessive_stemmer", "kstem", "unique_stem"],
+                        "filter": ["lowercase", "remove_accents", "keyword_repeat", "possessive_stemmer", "porter_stem", "unique_stem"],
                         "char_filter": ["html_stripper", "normalize_quotes", "normalize_apostrophes"]
                     },
                     "signature_analyzer": {
