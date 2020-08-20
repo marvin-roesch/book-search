@@ -1,4 +1,4 @@
-FROM gradle:5.4.1-jdk8 AS builder
+FROM gradle:6.6.0-jdk14 AS builder
 WORKDIR /app
 
 COPY ./src /app/src
@@ -7,7 +7,7 @@ COPY ./gradle.properties /app
 
 RUN gradle build shadowJar
 
-FROM openjdk:8-jre-alpine
+FROM openjdk:14-jre-alpine
 
 ENV APPLICATION_USER ktor
 RUN adduser -D -g '' $APPLICATION_USER

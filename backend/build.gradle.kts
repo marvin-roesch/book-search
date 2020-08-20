@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     application
-    kotlin("jvm") version "1.3.40"
+    kotlin("jvm") version "1.4.0"
     id("com.github.johnrengelman.shadow") version "5.0.0"
 }
 
@@ -19,11 +19,12 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("io.ktor:ktor-server-core:1.2.1")
-    implementation("io.ktor:ktor-server-netty:1.2.1")
-    implementation("io.ktor:ktor-jackson:1.2.1")
-    implementation("io.ktor:ktor-auth:1.2.1")
-    implementation("io.ktor:ktor-server-sessions:1.2.1")
+    implementation("io.ktor:ktor-server-core:1.4.0")
+    implementation("io.ktor:ktor-server-netty:1.4.0")
+    implementation("io.ktor:ktor-jackson:1.4.0")
+    implementation("io.ktor:ktor-auth:1.4.0")
+    implementation("io.ktor:ktor-server-sessions:1.4.0")
+    implementation("at.favre.lib:bcrypt:0.9.0")
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("org.postgresql:postgresql:42.2.5")
     implementation("com.zaxxer:HikariCP:2.7.8")
@@ -37,9 +38,8 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "14"
     kotlinOptions.freeCompilerArgs = listOf(
-        "-Xnew-inference",
         "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi",
         "-Xuse-experimental=kotlinx.coroutines.ObsoleteCoroutinesApi",
         "-Xuse-experimental=io.ktor.util.KtorExperimentalAPI"

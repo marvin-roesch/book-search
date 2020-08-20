@@ -1,5 +1,7 @@
 package io.paleocrafter.booksearch.auth
 
+import at.favre.lib.crypto.bcrypt.BCrypt
+import at.favre.lib.crypto.bcrypt.LongPasswordStrategies
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
 import io.ktor.application.ApplicationCallPipeline
@@ -7,7 +9,6 @@ import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.auth.Authentication
 import io.ktor.auth.Principal
-import io.ktor.auth.SessionAuthChallenge
 import io.ktor.auth.authenticate
 import io.ktor.auth.authentication
 import io.ktor.auth.session
@@ -32,7 +33,6 @@ import io.ktor.sessions.set
 import io.ktor.util.AttributeKey
 import io.ktor.util.hex
 import org.jetbrains.exposed.sql.SizedCollection
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
@@ -43,13 +43,28 @@ import javax.crypto.spec.SecretKeySpec
 fun Application.auth() {
     val keyString = environment.config.propertyOrNull("crypto.key")?.getString()
         ?: throw IllegalStateException("'crypto.key' must be configured! Either specify it in config file or pass CRYPTO_KEY env variable.")
-    val hashKey = SecretKeySpec(hex(keyString), "HmacSHA1")
+    val oldHashKey = SecretKeySpec(hex(keyString), "HmacSHA1")
+    val hasher = BCrypt.with(BCrypt.Version.VERSION_2A, LongPasswordStrategies.hashSha512(BCrypt.Version.VERSION_2A))
+    val verifier = BCrypt.verifyer(BCrypt.Version.VERSION_2A, LongPasswordStrategies.hashSha512(BCrypt.Version.VERSION_2A))
 
-    fun hash(password: String): String {
+    fun isOldHash(hash: String) = !hash.startsWith("$2a$")
+
+    fun verifyOld(password: String, stored: String): Boolean {
         val hmac = Mac.getInstance("HmacSHA1")
-        hmac.init(hashKey)
-        return hex(hmac.doFinal(password.toByteArray(Charsets.UTF_8)))
+        hmac.init(oldHashKey)
+        return hex(hmac.doFinal(password.toByteArray(Charsets.UTF_8))) == stored
     }
+
+    fun preparePassword(password: String) = "$keyString.$password"
+
+    fun hash(password: String) =
+        hasher.hashToString(12, preparePassword(password).toCharArray())
+
+    fun verify(password: String, stored: String) =
+        if (isOldHash(stored))
+            verifyOld(password, stored)
+        else
+            verifier.verify(preparePassword(password).toCharArray(), stored.toCharArray()).verified
 
     transaction {
         if (User.all().none()) {
@@ -81,7 +96,9 @@ fun Application.auth() {
 
     install(Authentication) {
         session<UserId> {
-            challenge = SessionAuthChallenge.Unauthorized
+            challenge {
+                call.respond(HttpStatusCode.Unauthorized)
+            }
             validate {
                 it
             }
@@ -103,8 +120,15 @@ fun Application.auth() {
                 val request = call.receive<LoginRequest>()
 
                 val (user, hasLoggedIn) = transaction {
-                    val dbUser = User.find { (Users.username eq request.username) and (Users.password eq hash(request.password)) }
-                        .firstOrNull() ?: return@transaction null
+                    val dbUser = User.find { (Users.username eq request.username) }.firstOrNull() ?: return@transaction null
+
+                    if (!verify(request.password, dbUser.password)) {
+                        return@transaction null
+                    }
+
+                    if (isOldHash(dbUser.password)) {
+                        dbUser.password = hash(request.password)
+                    }
 
                     dbUser.view to dbUser.hasLoggedIn
                 } ?: return@post call.respond(
@@ -148,7 +172,11 @@ fun Application.auth() {
                     val user = call.user
                     val request = call.receive<ChangePasswordRequest>()
 
-                    if (transaction { User.findById(user.id)?.password != hash(request.oldPassword) }) {
+                    if (
+                        transaction {
+                            !verify(request.oldPassword, User.findById(user.id)?.password ?: return@transaction true)
+                        }
+                    ) {
                         return@patch call.respond(
                             HttpStatusCode.BadRequest,
                             mapOf(

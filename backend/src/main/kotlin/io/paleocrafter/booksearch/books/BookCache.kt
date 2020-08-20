@@ -57,7 +57,9 @@ object BookCache {
         var rebuiltPath: Optional<String>? = null
         for (seriesName in seriesHierarchy) {
             val root = rebuiltPath === null
-            rebuiltPath = if (rebuiltPath === null) seriesName else rebuiltPath.flatMap { p -> seriesName.map { "$p\\$it" } }
+            val localPath = if (rebuiltPath === null) seriesName else rebuiltPath.flatMap { p -> seriesName.map { "$p\\$it" } }
+            rebuiltPath = localPath
+
             var series = seriesPaths[rebuiltPath]
             if (series === null) {
                 series = Series(rebuiltPath, root, seriesName.orElse("No Series"), mutableListOf(), ConcurrentHashMap())
