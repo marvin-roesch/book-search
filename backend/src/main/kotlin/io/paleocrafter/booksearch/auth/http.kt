@@ -128,6 +128,7 @@ fun Application.auth() {
 
                     if (isOldHash(dbUser.password)) {
                         dbUser.password = hash(request.password)
+                        environment.log.info("User ${dbUser.username} was migrated to new password hash!")
                     }
 
                     dbUser.view to dbUser.hasLoggedIn
@@ -342,6 +343,8 @@ fun Application.auth() {
                             mapOf("message" to "User with ID '$id' does not exist!")
                         )
 
+                        environment.log.info("User ${userName} was updated!")
+
                         call.respond(
                             mapOf("message" to "Roles for user '$userName' were successfully updated!")
                         )
@@ -368,6 +371,8 @@ fun Application.auth() {
                             HttpStatusCode.NotFound,
                             mapOf("message" to "User with ID '$id' does not exist!")
                         )
+
+                        environment.log.info("User ${userName} was deleted!")
 
                         call.respond(
                             mapOf("message" to "User '$userName' was successfully deleted!")
@@ -398,6 +403,8 @@ fun Application.auth() {
                                 roles = Role.find { Roles.id inList request.initialRoles }
                             }.adminView
                         }
+
+                        environment.log.info("New user ${request.username} was created!")
 
                         call.respond(
                             mapOf(
