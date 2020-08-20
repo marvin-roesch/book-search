@@ -5,9 +5,9 @@ COPY ./src /app/src
 COPY ./build.gradle.kts /app
 COPY ./gradle.properties /app
 
-RUN gradle build shadowJar
+RUN gradle --no-daemon build shadowJar
 
-FROM openjdk:14-jre-alpine
+FROM adoptopenjdk/openjdk14:alpine-jre
 
 ENV APPLICATION_USER ktor
 RUN adduser -D -g '' $APPLICATION_USER

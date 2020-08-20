@@ -28,10 +28,11 @@ import io.paleocrafter.booksearch.auth.Roles
 import io.paleocrafter.booksearch.auth.user
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.find
-import kotlinx.coroutines.channels.mapNotNull
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
@@ -131,14 +132,10 @@ fun Route.bookManagement(index: BookIndex) {
     suspend fun PipelineContext<Unit, ApplicationCall>.receiveEpub(): Pair<Epub, ByteArray>? {
         return coroutineScope {
             val multipart = call.receiveMultipart()
-            val channel = Channel<PartData>()
-            launch {
-                multipart.forEachPart { channel.send(it) }
-                channel.close()
-            }
-            val file = channel
+            val file = flow { multipart.forEachPart { emit(it) } }
+                .flowOn(Dispatchers.IO)
                 .mapNotNull { it as? PartData.FileItem }
-                .find { it.name == "book" && File(it.originalFileName).extension == "epub" }
+                .firstOrNull { it.name == "book" && File(it.originalFileName).extension == "epub" }
                 ?: return@coroutineScope null.also {
                     call.respond(
                         HttpStatusCode.BadRequest,
