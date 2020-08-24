@@ -96,6 +96,8 @@ fun Route.bookManagement(index: BookIndex) {
 
             BookCache.removeBook(id)
 
+            logger.info("Book '$title' deleted by ${call.user.username}")
+
             call.respond(
                 mapOf(
                     "message" to "Book '$title' was successfully deleted!"
@@ -249,6 +251,8 @@ fun Route.bookManagement(index: BookIndex) {
             BookCache.updateBook(book)
             BookCache.rebuildTags()
 
+            logger.info("Book '${book.title}' metadata updated by ${call.user.username}")
+
             call.respond(
                 mapOf("message" to "Book information was successfully updated")
             )
@@ -291,7 +295,7 @@ fun Route.bookManagement(index: BookIndex) {
             val id = UUID.fromString(call.parameters["id"])
             val entries = call.receive<Set<String>>()
             val epubReader = EpubReader()
-            transaction {
+            val title = transaction {
                 val book = Book.findById(id) ?: return@transaction null
 
                 val existingCitationParameters = Chapter.find { Chapters.book eq id }.associate { it.tocReference to it.citationParameter }
@@ -357,12 +361,16 @@ fun Route.bookManagement(index: BookIndex) {
                 }
 
                 BookCache.updateBook(book, updateSeries = false)
+
+                book.title
             } ?: return@put call.respond(
                 HttpStatusCode.NotFound,
                 mapOf("message" to "Book with ID '$id' does not exist")
             )
 
             val showCitations = transaction { Book.findById(id)?.citationTemplate } != null
+
+            logger.info("Book '$title' chapters updated by ${call.user.username}")
 
             call.respond(mapOf(
                 "id" to id,
@@ -421,6 +429,8 @@ fun Route.bookManagement(index: BookIndex) {
                     }
                 }
             }
+
+            logger.info("Book '${book.title}' citations updated by ${call.user.username}")
 
             call.respond(mapOf("id" to id))
         }
@@ -486,6 +496,8 @@ fun Route.bookManagement(index: BookIndex) {
             )
 
             BookCache.updateBook(book, updateSeries = false)
+
+            logger.info("Book '${book.title}' class mappings updated by ${call.user.username}")
 
             call.respond(mapOf(
                 "id" to id
