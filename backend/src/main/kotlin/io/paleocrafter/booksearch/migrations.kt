@@ -27,6 +27,12 @@ import java.sql.ResultSet
 
 object DbMigrations : Table() {
     private val logger = LoggerFactory.getLogger("DbMigrations")
+    private val initialMigrations = listOf(
+        CreateAuthTablesMigration,
+        CreateBookTablesMigration,
+        AddTagsTableMigration,
+        CreatePermissionsTablesMigration
+    )
     private val versions = mapOf(
         0 to listOf(CreateAuthTablesMigration, CreateBookTablesMigration),
         1 to listOf(AddCoverMigration),
@@ -44,7 +50,34 @@ object DbMigrations : Table() {
             SchemaUtils.createMissingTablesAndColumns(ExecutedMigrations)
 
             val lastVersion = ExecutedMigrations.selectAll().orderBy(ExecutedMigrations.version, SortOrder.DESC).firstOrNull()
-                ?.get(ExecutedMigrations.version) ?: 0
+                ?.get(ExecutedMigrations.version)
+
+            if (lastVersion == null) {
+                logger.info("No migrations have been run yet, running initial migrations...")
+
+                for (migration in initialMigrations) {
+                    migration.apply()
+                    logger.info("Executed initial migration '${migration.name}'")
+                }
+
+                logger.info("Marking all migrations as already run...")
+                for ((versionNumber, migrations) in versions) {
+                    for (migration in migrations) {
+                        ExecutedMigrations.insert {
+                            it[this.version] = versionNumber
+                            it[this.name] = migration.name
+                            it[this.executedOn] = DateTime.now()
+                        }
+
+                        logger.info("Marked migration '${migration.name}' from version $versionNumber as executed")
+                    }
+                }
+
+                logger.info("Initial database setup completed")
+
+                return@transaction
+            }
+
             val executed = ExecutedMigrations.select { ExecutedMigrations.version eq lastVersion }.map { it[ExecutedMigrations.name] }
             for ((versionNumber, migrations) in versions.tailMap(lastVersion)) {
                 for (migration in migrations) {
