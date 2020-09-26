@@ -169,4 +169,4 @@ data class SearchResult(val bookId: UUID, val chapterId: UUID, val mainPosition:
 
 class SearchParagraph(val main: Boolean, val position: Int, val text: String, val classes: List<String>)
 
-data class DictionaryEntry(val word: String, val occurrences: Long)
+data class DictionaryEntry(val term: String, val occurrences: Long)
