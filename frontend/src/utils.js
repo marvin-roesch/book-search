@@ -16,3 +16,16 @@ export function copyText(text) {
 
   document.body.removeChild(el);
 }
+
+export function saveAs(blob, name) {
+  const a = document.createElement('a');
+  a.download = name;
+  a.rel = 'noopener';
+  a.href = URL.createObjectURL(blob);
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+  }, 4e4);
+  setTimeout(() => {
+    a.click();
+  }, 0);
+}
