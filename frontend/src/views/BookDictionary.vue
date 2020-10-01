@@ -161,6 +161,8 @@ export default {
 
   &-entries {
     width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
 
     th {
       text-align: left;
