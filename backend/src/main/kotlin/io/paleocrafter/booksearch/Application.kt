@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.application.Application
+import io.ktor.application.ApplicationStarted
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CachingHeaders
@@ -19,9 +20,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.CachingOptions
 import io.ktor.jackson.jackson
 import io.ktor.response.respond
+import io.ktor.routing.get
+import io.ktor.routing.routing
 import io.paleocrafter.booksearch.books.ManagementError
 import org.jetbrains.exposed.sql.Database
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 fun Application.db() {
     val connection = environment.config.propertyOrNull("db.connection")?.getString()
@@ -91,6 +95,21 @@ fun Application.main() {
                 CachingOptions(CacheControl.MaxAge(maxAgeSeconds = 30 * 24 * 60 * 60))
             } else {
                 null
+            }
+        }
+    }
+
+    val healthy = AtomicBoolean()
+    environment.monitor.subscribe(ApplicationStarted) {
+        healthy.set(true)
+    }
+
+    routing {
+        get("/api/health") {
+            if (healthy.get()) {
+                call.respond(HttpStatusCode.OK, mapOf("healthy" to true))
+            } else {
+                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("healthy" to false))
             }
         }
     }

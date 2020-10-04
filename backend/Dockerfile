@@ -9,6 +9,9 @@ RUN gradle --no-daemon build shadowJar
 
 FROM adoptopenjdk/openjdk14:alpine-jre
 
+RUN apk add --no-cache curl
+HEALTHCHECK --interval=10s --timeout=10s --retries=3 CMD curl --silent --fail localhost/api/health || exit 1
+
 ENV APPLICATION_USER ktor
 RUN adduser -D -g '' $APPLICATION_USER
 

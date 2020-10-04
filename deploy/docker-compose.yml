@@ -3,19 +3,16 @@ version: '3'
 services:
   frontend:
     image: marvinroesch/book-search-frontend
-    container_name: bs-frontend
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
     ports:
       - "4080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
   backend:
     image: marvinroesch/book-search-backend
-    container_name: bs-api
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    volumes:
+      - sessions:/app/.sessions
     environment:
       - ELASTIC_HOST=http://elasticsearch:9200
       - DEFAULT_PASSWORD=booksearcher
@@ -34,38 +31,31 @@ services:
 
   elasticsearch:
     image: marvinroesch/book-search-elasticsearch
-    container_name: bs-search
-    build:
-      context: ./
-      dockerfile: Dockerfile-elasticsearch
     volumes:
       - esdata:/usr/share/elasticsearch/data
     environment:
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - discovery.type=single-node
-    ports:
-      - "9300:9300"
-      - "9200:9200"
 
   db:
     image: postgres:12
-    container_name: bs-db
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 3
+    volumes:
+      - ./database-init:/docker-entrypoint-initdb.d
+      - dbdata:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=example
       - DB_MIGRATION_USER=booksearch_migrations
       - DB_MIGRATION_PASSWORD=migr4tion5
       - DB_DATA_USER=booksearch
       - DB_DATA_PASSWORD=b00kse4rch
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./deploy/database-init:/docker-entrypoint-initdb.d
 
 volumes:
+  sessions:
   esdata:
+  dbdata:
