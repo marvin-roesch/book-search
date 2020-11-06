@@ -98,12 +98,9 @@ export default {
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
       );
 
+      await this.$store.dispatch('refreshSeries');
       this.$store.commit(
         'applySeriesFilter',
-        { seriesFilter: seriesRegex, bookFilter, excluded },
-      );
-      await this.$store.dispatch(
-        'refreshSeries',
         { seriesFilter: seriesRegex, bookFilter, excluded },
       );
     } catch (error) {

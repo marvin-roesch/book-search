@@ -80,13 +80,14 @@ export default {
         f => new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\\\)`),
       );
 
+      await this.$store.dispatch('refreshSeries');
       this.$store.commit(
         'applySeriesFilter',
-        { seriesFilter: seriesRegex, bookFilter, excluded: excludedFilter },
-      );
-      await this.$store.dispatch(
-        'refreshSeries',
-        { seriesFilter: seriesRegex, bookFilter, excluded: excludedFilter },
+        {
+          seriesFilter: seriesRegex,
+          bookFilter,
+          excluded: excluded !== undefined ? excludedFilter : this.$store.getters.optionalBooks,
+        },
       );
     } catch (error) {
       this.$handleApiError(error);

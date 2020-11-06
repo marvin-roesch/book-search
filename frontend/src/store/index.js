@@ -68,10 +68,9 @@ const mutations = {
 };
 
 const actions = {
-  async refreshSeries({ commit }, filter) {
+  async refreshSeries({ commit }) {
     const { data: series } = await api.get('/books/series');
     commit('setSeries', series);
-    commit('applySeriesFilter', filter);
   },
   async refreshTags({ commit }) {
     const { data: tags } = await api.get('/books/tags');
