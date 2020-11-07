@@ -16,6 +16,7 @@ enum class BookStyle(val group: String, val id: String, val description: String)
 
     ITALIC("Text Modifiers", "italic", "Italic"),
     BOLD("Text Modifiers", "bold", "Bold"),
+    SMALL_CAPS("Text Modifiers", "smallCaps", "Small Caps"),
     RESET("Text Modifiers", "reset", "Reset"),
 
     FULL_WIDTH_IMAGE("Images", "fullWidthImage", "Full width image"),

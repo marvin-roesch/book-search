@@ -241,6 +241,8 @@ export default {
   }
 
   p {
+    text-align: justify;
+    text-indent: 1rem;
     margin: 0.5rem 0;
 
     &:first-child {
@@ -255,16 +257,19 @@ export default {
   h1, .h1 {
     text-align: center;
     font-size: 1.5rem;
+    text-indent: 0;
   }
 
   h2, .h2 {
     text-align: center;
     font-size: 1.25rem;
+    text-indent: 0;
   }
 
   h3, .h3 {
     text-align: center;
     font-size: 1.1rem;
+    text-indent: 0;
   }
 
   .chapterText {
@@ -280,6 +285,7 @@ export default {
 
   .centeredImage, .fullWidthImage, .iconImage {
     text-align: center;
+    text-indent: 0;
   }
 
   .centeredImage img {
@@ -299,6 +305,7 @@ export default {
     margin-left: auto;
     margin-right: auto;
     text-align: justify;
+    text-indent: 0;
   }
 
   .epigraphCitation {
@@ -306,6 +313,7 @@ export default {
     margin-left: auto;
     margin-right: auto;
     text-align: right;
+    text-indent: 0;
   }
 
   * + .embed {
@@ -317,6 +325,7 @@ export default {
     box-sizing: border-box;
     display: block;
     padding: 0 1.5rem;
+    text-indent: 0;
 
     & + * {
       margin-top: 1rem;
@@ -331,6 +340,7 @@ export default {
     font-size: 0.9rem;
     padding: 0.5rem 0;
     color: var(--muted-text-color);
+    text-indent: 0;
   }
 
   samp {
@@ -347,7 +357,13 @@ export default {
     font-weight: bold;
   }
 
+  .smallCaps {
+    font-variant-caps: small-caps;
+  }
+
   .graphicNovelLine, .graphicNovelThought, .graphicNovelSfx {
+    text-indent: 0;
+
     .graphicNovelSpeaker {
       display: block;
       text-align: left;
@@ -368,6 +384,8 @@ export default {
   }
 
   .graphicNovelThought {
+    text-indent: 0;
+
     .graphicNovelSpeaker:after {
       content: ' (thinking)';
       font-weight: normal;
@@ -388,6 +406,7 @@ export default {
     height: 0;
     margin: 1rem auto;
     border: 1px solid rgba(0, 0, 0, 0.2);
+    text-indent: 0;
   }
 
   .reset {
