@@ -73,7 +73,9 @@
 
 <script>
 import Multiselect from 'vue-multiselect';
-import { BarChartIcon, GridIcon, HashIcon, Link2Icon, TypeIcon, UserIcon } from 'vue-feather-icons';
+import {
+  BarChartIcon, GridIcon, HashIcon, Link2Icon, TypeIcon, UserIcon,
+} from 'vue-feather-icons';
 import Button from '@/components/Button.vue';
 import TextField from '@/components/TextField.vue';
 import CheckBox from '@/components/CheckBox.vue';

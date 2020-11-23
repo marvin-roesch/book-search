@@ -59,7 +59,9 @@ import {
 
 export default {
   name: 'SeriesEntry',
-  components: { RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon, UploadIcon, LockIcon },
+  components: {
+    RefreshCcwIcon, AlertTriangleIcon, XIcon, Edit2Icon, UploadIcon, LockIcon,
+  },
   props: {
     series: Array,
   },

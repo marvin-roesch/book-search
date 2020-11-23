@@ -6,16 +6,18 @@
       {{ chapter.title }}
       <small>({{ chapter.totalOccurrences }})</small>
     </span>
-    <router-link
-      class="chapter-sub-result-read"
-      :to="{
+    <div class="chapter-sub-result-actions">
+      <router-link
+        class="chapter-sub-result-read"
+        :to="{
         name: 'search-preview',
         params: { id: chapter.id },
         query: { ...$route.query, q: query }
       }"
-      @click.native="$event.stopImmediatePropagation()">
-      Read
-    </router-link>
+        @click.native="$event.stopImmediatePropagation()">
+        Read
+      </router-link>
+    </div>
   </div>
   </template>
   <div class="search-result-list">
@@ -38,7 +40,9 @@ import SearchResult from '@/components/search/SearchResult.vue';
 
 export default {
   name: 'ChapterSubResult',
-  components: { SearchResult, ErrorMessage, Expandable, LoadingSpinner },
+  components: {
+    SearchResult, ErrorMessage, Expandable, LoadingSpinner,
+  },
   props: {
     book: Object,
     chapter: Object,
@@ -125,7 +129,7 @@ export default {
     font-size: 1.1rem;
   }
 
-  &-read {
+  &-actions {
     pointer-events: auto;
     margin-left: auto;
   }

@@ -34,7 +34,7 @@ export default {
         return '';
       }
       let buffer = '';
-      for (let i = 0; i < rules.length; i++) {
+      for (let i = 0; i < rules.length; i += 1) {
         const rule = rules[i];
         const classRegex = new RegExp(`\\.${this.cls.name}([\\s,]|$)`);
         if (!rule.selectorText || !rule.selectorText.match(classRegex)) {

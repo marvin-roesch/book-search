@@ -1,12 +1,12 @@
 import Vue from 'vue';
 import * as shadow from 'vue-shadow-dom';
+import InfiniteScroll from 'vue-infinite-scroll';
+import Vuebar from 'vuebar';
 import App from '@/App.vue';
 import router from '@/router';
 import store from '@/store';
 import Api from '@/api-plugin';
 import CustomDirectives from '@/custom-directives';
-import InfiniteScroll from 'vue-infinite-scroll';
-import Vuebar from 'vuebar';
 
 Vue.use(Api);
 Vue.use(CustomDirectives);

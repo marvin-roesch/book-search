@@ -1,7 +1,7 @@
 import hljs from 'highlight.js/lib/highlight';
 import hljsCss from 'highlight.js/lib/languages/css';
-import store from '@/store';
 import axios from 'axios';
+import store from '@/store';
 
 export const scrollAware = {
   data() {
@@ -83,17 +83,16 @@ export default {
         const { status, data } = error.response;
         if (data.message) {
           return data.message;
-        } else {
-          switch (status) {
-            case 400:
-              return 'The provided data is invalid!';
-            case 401:
-              return 'Only logged in users may do this!';
-            case 403:
-              return 'You do not have permission to do this!';
-            default:
-              return null;
-          }
+        }
+        switch (status) {
+          case 400:
+            return 'The provided data is invalid!';
+          case 401:
+            return 'Only logged in users may do this!';
+          case 403:
+            return 'You do not have permission to do this!';
+          default:
+            return null;
         }
       }
       return null;

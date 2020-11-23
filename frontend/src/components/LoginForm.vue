@@ -26,14 +26,16 @@
 </template>
 
 <script>
+import { LockIcon, UserIcon } from 'vue-feather-icons';
 import TextField from '@/components/TextField.vue';
 import Button from '@/components/Button.vue';
 import Form from '@/components/Form.vue';
-import { LockIcon, UserIcon } from 'vue-feather-icons';
 
 export default {
   name: 'LoginForm',
-  components: { Form, Button, TextField, LockIcon, UserIcon },
+  components: {
+    Form, Button, TextField, LockIcon, UserIcon,
+  },
   data() {
     return {
       username: '',

@@ -91,7 +91,9 @@ import Button from '@/components/Button.vue';
 
 export default {
   name: 'UserList',
-  components: { Button, UserIcon, LockIcon, TextField, Card, Multiselect },
+  components: {
+    Button, UserIcon, LockIcon, TextField, Card, Multiselect,
+  },
   data() {
     return {
       users: [],

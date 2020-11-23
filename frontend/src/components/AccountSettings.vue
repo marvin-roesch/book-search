@@ -84,12 +84,12 @@
 </template>
 
 <script>
+import { KeyIcon, LockIcon, RepeatIcon } from 'vue-feather-icons';
+import { mapState } from 'vuex';
 import TextField from '@/components/TextField.vue';
 import Button from '@/components/Button.vue';
-import { KeyIcon, LockIcon, RepeatIcon } from 'vue-feather-icons';
 import Card from '@/components/Card.vue';
 import CheckBox from '@/components/CheckBox.vue';
-import { mapState } from 'vuex';
 
 export default {
   name: 'AccountSettings',

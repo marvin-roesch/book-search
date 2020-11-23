@@ -42,7 +42,9 @@ import ChapterSearchResult from '@/components/search/ChapterSearchResult.vue';
 
 export default {
   name: 'BookSearchResult',
-  components: { ChapterSearchResult, ErrorMessage, ChapterSubResult, Expandable, LoadingSpinner },
+  components: {
+    ChapterSearchResult, ErrorMessage, ChapterSubResult, Expandable, LoadingSpinner,
+  },
   props: {
     book: Object,
     query: String,

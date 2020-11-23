@@ -44,8 +44,8 @@
 </template>
 
 <script>
-import Card from '@/components/Card.vue';
 import { Share2Icon, XIcon } from 'vue-feather-icons';
+import Card from '@/components/Card.vue';
 import BookText from '@/components/BookText.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import { buildCitation, copyText } from '@/utils';
@@ -53,7 +53,9 @@ import Button from '@/components/Button.vue';
 
 export default {
   name: 'chapter-overlay',
-  components: { Button, Share2Icon, BookText, XIcon, Card, LoadingSpinner },
+  components: {
+    Button, Share2Icon, BookText, XIcon, Card, LoadingSpinner,
+  },
   data() {
     return {
       book: null,

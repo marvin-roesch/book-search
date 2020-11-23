@@ -67,8 +67,10 @@
 </template>
 
 <script>
+import {
+  BookIcon, DownloadIcon, ListIcon, SearchIcon, XIcon,
+} from 'vue-feather-icons';
 import UserPanel from '@/components/UserPanel.vue';
-import { BookIcon, DownloadIcon, ListIcon, SearchIcon, XIcon } from 'vue-feather-icons';
 import { scrollAware } from '@/custom-directives';
 
 export default {

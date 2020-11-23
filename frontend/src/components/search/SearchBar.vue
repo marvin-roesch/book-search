@@ -88,7 +88,9 @@ import Card from '@/components/Card.vue';
 
 export default {
   name: 'SearchBar',
-  components: { XIcon, Card, SearchIcon, HelpCircleIcon },
+  components: {
+    XIcon, Card, SearchIcon, HelpCircleIcon,
+  },
   props: {
     query: String,
     toolbar: Boolean,

@@ -40,14 +40,16 @@
 </template>
 
 <script>
+import { LockIcon, KeyIcon, RepeatIcon } from 'vue-feather-icons';
 import TextField from '@/components/TextField.vue';
 import Button from '@/components/Button.vue';
 import Form from '@/components/Form.vue';
-import { LockIcon, KeyIcon, RepeatIcon } from 'vue-feather-icons';
 
 export default {
   name: 'FirstLoginForm',
-  components: { Form, Button, TextField, LockIcon, KeyIcon, RepeatIcon },
+  components: {
+    Form, Button, TextField, LockIcon, KeyIcon, RepeatIcon,
+  },
   data() {
     return {
       oldPassword: '',

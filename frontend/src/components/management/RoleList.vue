@@ -85,7 +85,9 @@ import Button from '@/components/Button.vue';
 
 export default {
   name: 'RoleList',
-  components: { Button, TypeIcon, TextField, Card, Multiselect },
+  components: {
+    Button, TypeIcon, TextField, Card, Multiselect,
+  },
   data() {
     return {
       roles: [],
