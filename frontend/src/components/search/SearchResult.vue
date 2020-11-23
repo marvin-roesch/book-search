@@ -11,11 +11,20 @@
       @click.native="$event.stopImmediatePropagation()">
       {{ result.book.title }} - {{ result.chapter.title }}
     </router-link>
+    <Button
+      v-if="citation !== null"
+      class="search-result-cite"
+      slim
+      @click="cite"
+      @click.native="$event.stopImmediatePropagation()"
+    >
+      Cite
+    </Button>
   </h2>
   <BookText
     :book-title="result.book.title"
     :chapter-title="result.chapter.title"
-    :citation="buildCitation()"
+    :citation="citation"
   >
     <BidirectionalExpandable :expanded="showSiblings" :visible-height="24">
       <template slot="start">
@@ -46,11 +55,13 @@
 <script>
 import BidirectionalExpandable from '@/components/BidirectionalExpandable.vue';
 import BookText from '@/components/BookText.vue';
-import { buildCitation } from '@/utils';
+import { buildCitation, copyText } from '@/utils';
+import Button from '@/components/Button.vue';
 
 export default {
   name: 'search-result',
   components: {
+    Button,
     BookText,
     BidirectionalExpandable,
   },
@@ -67,14 +78,20 @@ export default {
       showSiblings: false,
     };
   },
+  computed: {
+    citation() {
+      return buildCitation(this.result.book, this.result.chapter);
+    },
+  },
   methods: {
     toggleSiblings() {
       if (window.getSelection().type !== 'Range') {
         this.showSiblings = !this.showSiblings;
       }
     },
-    buildCitation() {
-      return buildCitation(this.result.book, this.result.chapter);
+    cite() {
+      copyText(this.citation);
+      this.$notifications.success('A citation for this chapter has been copied to your clipboard!');
     },
   },
 };
@@ -93,7 +110,16 @@ export default {
   cursor: pointer;
 
   h2 {
+    display: flex;
+    align-items: center;
     margin: 0;
+
+    .search-result-cite {
+      margin-left: auto;
+      height: auto;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+    }
   }
 
   & > .book-text {

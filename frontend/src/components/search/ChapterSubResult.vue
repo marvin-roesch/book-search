@@ -7,13 +7,18 @@
       <small>({{ chapter.totalOccurrences }})</small>
     </span>
     <div class="chapter-sub-result-actions">
+      <template v-if="citation !== null">
+      <a href="#" @click.stop.prevent="cite">
+        Cite
+      </a>
+      &centerdot;
+      </template>
       <router-link
-        class="chapter-sub-result-read"
         :to="{
-        name: 'search-preview',
-        params: { id: chapter.id },
-        query: { ...$route.query, q: query }
-      }"
+          name: 'search-preview',
+          params: { id: chapter.id },
+          query: { ...$route.query, q: query }
+        }"
         @click.native="$event.stopImmediatePropagation()">
         Read
       </router-link>
@@ -37,6 +42,7 @@ import Expandable from '@/components/Expandable.vue';
 import ErrorMessage from '@/components/search/ErrorCard.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import SearchResult from '@/components/search/SearchResult.vue';
+import { buildCitation, copyText } from '@/utils';
 
 export default {
   name: 'ChapterSubResult',
@@ -58,6 +64,11 @@ export default {
       cancelToken: null,
       errorMessage: null,
     };
+  },
+  computed: {
+    citation() {
+      return buildCitation(this.book, this.chapter);
+    },
   },
   methods: {
     async onExpand() {
@@ -110,6 +121,10 @@ export default {
         this.cancelToken.cancel();
         this.cancelToken = null;
       }
+    },
+    cite() {
+      copyText(this.citation);
+      this.$notifications.success('A citation for this chapter has been copied to your clipboard!');
     },
   },
 };
