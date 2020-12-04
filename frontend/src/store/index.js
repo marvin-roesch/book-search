@@ -82,6 +82,20 @@ const actions = {
 
     commit('setTags', ordered);
   },
+  async loadDefaultFilter({ commit }, fallback) {
+    try {
+      const { data: stored } = await api.get('/auth/default-filter');
+
+      commit('applySeriesFilter', stored);
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        commit('applySeriesFilter', fallback);
+        return;
+      }
+
+      throw error;
+    }
+  },
 };
 
 const getters = {

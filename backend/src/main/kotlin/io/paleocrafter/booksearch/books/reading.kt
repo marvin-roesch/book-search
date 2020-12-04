@@ -63,7 +63,7 @@ fun Route.bookReading() {
                     ?: return@transaction null
                 val type = ContentType.fromFilePath(image[Images.name]).firstOrNull() ?: ContentType.Application.OctetStream
 
-                type to image[Images.data].binaryStream.readBytes()
+                type to image[Images.data].bytes
             } ?: return@get call.respond(
                 HttpStatusCode.NotFound,
                 mapOf("message" to "Image '$name' for book with ID '$id' does not exist")
@@ -83,7 +83,7 @@ fun Route.bookReading() {
                 }
                 val type = ContentType.parse(mime)
 
-                type to cover.binaryStream.readBytes()
+                type to cover.bytes
             } ?: return@get call.respond(
                 HttpStatusCode.NotFound,
                 mapOf("message" to "Book with ID '$id' does not exist or does not have a cover")

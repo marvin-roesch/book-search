@@ -1,15 +1,14 @@
 package io.paleocrafter.booksearch.auth
 
+import io.paleocrafter.booksearch.jsonb
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
-import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.dao.IdTable
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.UUIDTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
@@ -22,16 +21,20 @@ object Users : UUIDTable() {
     val hasLoggedIn = bool("has_logged_in").default(false)
     val defaultSearchScope = varchar("default_search_scope", 255).default("paragraphs")
     val groupResultsByDefault = bool("group_results_by_default").default(false)
+    val defaultFilter = jsonb<User.DefaultFilter>("default_filter").nullable()
 }
 
 class User(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<User>(Users)
+
+    data class DefaultFilter(val seriesFilter: List<String>?, val bookFilter: List<String>?, val excluded: List<String>?)
 
     var username by Users.username
     var password by Users.password
     var hasLoggedIn by Users.hasLoggedIn
     var defaultSearchScope by Users.defaultSearchScope
     var groupResultsByDefault by Users.groupResultsByDefault
+    var defaultFilter by Users.defaultFilter
 
     var roles by Role via UserRoles
 
@@ -104,11 +107,15 @@ class Role(id: EntityID<UUID>) : UUIDEntity(id) {
 object UserRoles : Table() {
     val user = reference("user", Users).primaryKey(0)
     val role = reference("role", Roles).primaryKey(1)
+
+    override val primaryKey = PrimaryKey(user, role)
 }
 
 object Permissions : IdTable<String>() {
-    override val id: Column<EntityID<String>> = varchar("id", 255).primaryKey().entityId()
+    override val id: Column<EntityID<String>> = varchar("id", 255).entityId()
     val description = varchar("description", 255)
+
+    override val primaryKey = PrimaryKey(id)
 
     fun deleteById(id: String) {
         RolePermissions.deleteWhere { RolePermissions.permission eq id }
@@ -129,6 +136,8 @@ class Permission(id: EntityID<String>) : Entity<String>(id) {
 }
 
 object RolePermissions : Table() {
-    val role = reference("role", Roles).primaryKey(0)
-    val permission = reference("permission", Permissions).primaryKey(1)
+    val role = reference("role", Roles)
+    val permission = reference("permission", Permissions)
+
+    override val primaryKey = PrimaryKey(role, permission)
 }

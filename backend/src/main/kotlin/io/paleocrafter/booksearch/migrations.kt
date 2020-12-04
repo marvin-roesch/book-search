@@ -1,5 +1,6 @@
 package io.paleocrafter.booksearch
 
+import io.paleocrafter.booksearch.auth.AddDefaultFilterMigration
 import io.paleocrafter.booksearch.auth.AddSearchSettingsMigration
 import io.paleocrafter.booksearch.auth.ConvertFlagsToPermissionsMigration
 import io.paleocrafter.booksearch.auth.CreateAuthTablesMigration
@@ -10,20 +11,22 @@ import io.paleocrafter.booksearch.books.AddSearchByDefaultMigration
 import io.paleocrafter.booksearch.books.AddTagsTableMigration
 import io.paleocrafter.booksearch.books.CreateBookTablesMigration
 import io.paleocrafter.booksearch.books.CreateCitationsMigration
+import io.paleocrafter.booksearch.books.FixBookTagsPrimaryKey
 import io.paleocrafter.booksearch.books.RestrictedBooksMigration
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.`java-time`.timestamp
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import java.sql.ResultSet
+import java.time.Instant
 
 object DbMigrations : Table() {
     private val logger = LoggerFactory.getLogger("DbMigrations")
@@ -42,7 +45,8 @@ object DbMigrations : Table() {
         5 to listOf(CreatePermissionsTablesMigration, ConvertFlagsToPermissionsMigration),
         6 to listOf(RestrictedBooksMigration),
         7 to listOf(CreateCitationsMigration),
-        8 to listOf(AddSearchByDefaultMigration)
+        8 to listOf(AddSearchByDefaultMigration),
+        9 to listOf(AddDefaultFilterMigration, FixBookTagsPrimaryKey)
     ).toSortedMap()
 
     fun run(db: Database) {
@@ -66,7 +70,7 @@ object DbMigrations : Table() {
                         ExecutedMigrations.insert {
                             it[this.version] = versionNumber
                             it[this.name] = migration.name
-                            it[this.executedOn] = DateTime.now()
+                            it[this.executedOn] = Instant.now()
                         }
 
                         logger.info("Marked migration '${migration.name}' from version $versionNumber as executed")
@@ -90,7 +94,7 @@ object DbMigrations : Table() {
                     ExecutedMigrations.insert {
                         it[this.version] = versionNumber
                         it[this.name] = migration.name
-                        it[this.executedOn] = DateTime.now()
+                        it[this.executedOn] = Instant.now()
                     }
                 }
             }
@@ -123,9 +127,11 @@ fun <T : Any> String.execAndMap(transform: (ResultSet) -> T): List<T> {
 }
 
 private object ExecutedMigrations : Table() {
-    val version = integer("version").primaryKey(0)
-    val name = varchar("migration", 255).primaryKey(1)
-    val executedOn = datetime("executed_on")
+    val version = integer("version")
+    val name = varchar("migration", 255)
+    val executedOn = timestamp("executed_on")
+
+    override val primaryKey = PrimaryKey(version, name)
 }
 
 abstract class DbMigration(val name: String) {

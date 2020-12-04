@@ -39,6 +39,15 @@
     >
       Group search results by default
     </CheckBox>
+    <div class="account-settings-default-filter">
+      <template v-if="hasDefaultFilter">
+      You currently have a default filter set.
+      <Button slim @click="resetDefaultFilter" :loading="resettingDefaultFilter">Reset</Button>
+      </template>
+      <template v-else>
+      You currently do not have a default filter set.
+      </template>
+    </div>
     <div class="card-footer">
       <Button slim @click="changeSearchSettings" :loading="verifyingSearchSettings">Save</Button>
     </div>
@@ -106,14 +115,19 @@ export default {
     return {
       defaultSearchScope: this.$store.state.auth.identity.defaultSearchScope,
       groupResultsByDefault: this.$store.state.auth.identity.groupResultsByDefault,
+      hasDefaultFilter: false,
       oldPassword: '',
       newPassword: '',
       newPasswordRepeat: '',
       verifyingSearchSettings: false,
       verifyingPassword: false,
+      resettingDefaultFilter: false,
     };
   },
   computed: mapState(['darkMode']),
+  mounted() {
+    this.checkDefaultFilter();
+  },
   methods: {
     async changeSearchSettings() {
       const {
@@ -131,6 +145,30 @@ export default {
         this.$handleApiError(error);
       }
       this.verifyingSearchSettings = false;
+    },
+    async checkDefaultFilter() {
+      try {
+        await this.$api.get('/auth/default-filter');
+        this.hasDefaultFilter = true;
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          this.hasDefaultFilter = false;
+          return;
+        }
+
+        throw error;
+      }
+    },
+    async resetDefaultFilter() {
+      this.resettingDefaultFilter = true;
+      try {
+        const { data: { message } } = await this.$api.delete('/auth/default-filter');
+        this.$notifications.success(message);
+        await this.checkDefaultFilter();
+      } catch (error) {
+        this.$handleApiError(error);
+      }
+      this.resettingDefaultFilter = false;
     },
     async changePassword() {
       const {
@@ -209,6 +247,16 @@ export default {
 
     &:last-of-type {
       margin-right: 0.25rem;
+    }
+  }
+
+  &-default-filter {
+    margin-top: 0.5rem;
+
+    .button {
+      height: auto !important;
+      padding: 0.5rem !important;
+      font-size: 0.9rem !important;
     }
   }
 

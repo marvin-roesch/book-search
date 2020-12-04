@@ -18,7 +18,9 @@
       @search="onSearch"
       @filter="onFilter"
       @chapter-scope="onChapterScope"
-      @group-results="onGroupResults">
+      @group-results="onGroupResults"
+      @save-filter="saveFilter"
+    >
     </QueryPanel>
   </div>
   <transition name="fade-slide-up" @after-enter="preventBodyScroll">
@@ -99,10 +101,16 @@ export default {
       );
 
       await this.$store.dispatch('refreshSeries');
-      this.$store.commit(
-        'applySeriesFilter',
-        { seriesFilter: seriesRegex, bookFilter, excluded },
-      );
+      const fallbackFilter = {
+        seriesFilter: seriesRegex,
+        bookFilter,
+        excluded,
+      };
+      if (seriesFilter !== null || bookFilter !== null || excluded !== null) {
+        this.$store.commit('applySeriesFilter', fallbackFilter);
+      } else {
+        await this.$store.dispatch('loadDefaultFilter', fallbackFilter);
+      }
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -148,6 +156,17 @@ export default {
     },
     preventBodyScroll() {
       document.body.classList.add('chapter-preview');
+    },
+    async saveFilter() {
+      try {
+        const { data: { message } } = await this.$api.put(
+          '/auth/default-filter',
+          { seriesFilter: this.seriesFilter, bookFilter: this.bookFilter, excluded: this.excluded },
+        );
+        this.$notifications.success(message);
+      } catch (error) {
+        this.$handleApiError(error);
+      }
     },
   },
 };

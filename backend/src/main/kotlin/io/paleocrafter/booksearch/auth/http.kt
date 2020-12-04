@@ -236,6 +236,52 @@ fun Application.auth() {
                         )
                     )
                 }
+
+                get("/default-filter") {
+                    val userId = call.userId
+
+                    val filter = transaction {
+                        User.findById(userId)?.defaultFilter
+                    } ?: return@get call.respond(
+                        HttpStatusCode.NotFound,
+                        mapOf(
+                            "message" to "You do not have a default filter configured!"
+                        )
+                    )
+
+                    call.respond(filter)
+                }
+
+                put("/default-filter") {
+                    val userId = call.userId
+                    val request = call.receive<User.DefaultFilter>()
+
+                    transaction {
+                        val user = User.findById(userId) ?: return@transaction null
+
+                        user.defaultFilter = request
+                    } ?: return@put call.respond(
+                        HttpStatusCode.BadRequest,
+                        mapOf("message" to "Your user does not seem to exist!")
+                    )
+
+                    call.respond(mapOf("message" to "Your default filter was successfully set!"))
+                }
+
+                delete("/default-filter") {
+                    val userId = call.userId
+
+                    transaction {
+                        val user = User.findById(userId) ?: return@transaction null
+
+                        user.defaultFilter = null
+                    } ?: return@delete call.respond(
+                        HttpStatusCode.BadRequest,
+                        mapOf("message" to "Your user does not seem to exist!")
+                    )
+
+                    call.respond(mapOf("message" to "Your default filter was successfully reset!"))
+                }
             }
 
             get("/roles") {

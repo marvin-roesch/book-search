@@ -47,6 +47,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.jsoup.Jsoup
@@ -117,10 +118,7 @@ fun Route.bookManagement(index: BookIndex) {
             )
 
             val fileName = transaction { "${book.author} - ${book.title}.epub" }
-            val content = withContext(Dispatchers.IO) {
-                val stream = book.content.binaryStream
-                stream.use { it.readBytes() }
-            }
+            val content = book.content.bytes
 
             call.response.header(
                 HttpHeaders.ContentDisposition,
@@ -164,11 +162,11 @@ fun Route.bookManagement(index: BookIndex) {
         val authorName = epub.metadata.authors.firstOrNull()?.let { "${it.firstname} ${it.lastname}" } ?: ""
         val book = transaction {
             Book.new(bookId) {
-                content = SerialBlob(buffer)
+                content = ExposedBlob(buffer)
                 title = epub.title
                 author = authorName
                 epub.coverImage?.let {
-                    cover = SerialBlob(it.data)
+                    cover = ExposedBlob(it.data)
                     coverMime = it.mediaType.name
                 }
             }
@@ -187,11 +185,11 @@ fun Route.bookManagement(index: BookIndex) {
             val (epub, buffer) = receiveEpub() ?: return@put
             val book = transaction {
                 val book = Book.findById(id) ?: return@transaction null
-                book.content = SerialBlob(buffer)
+                book.content = ExposedBlob(buffer)
 
                 val cover = epub.coverImage
                 if (epub.coverImage != null) {
-                    book.cover = SerialBlob(cover.data)
+                    book.cover = ExposedBlob(cover.data)
                     book.coverMime = cover.mediaType.name
                 }
 
@@ -264,7 +262,7 @@ fun Route.bookManagement(index: BookIndex) {
             val (epub, existingChapters) = transaction {
                 val book = Book.findById(id) ?: return@transaction null
 
-                epubReader.readEpub(book.content.binaryStream) to Chapter.find { Chapters.book eq book.id }.map { it.tocReference }
+                epubReader.readEpub(book.content.bytes.inputStream()) to Chapter.find { Chapters.book eq book.id }.map { it.tocReference }
             } ?: return@get call.respond(
                 HttpStatusCode.NotFound,
                 mapOf("message" to "Book with ID '$id' does not exist")
@@ -310,7 +308,7 @@ fun Route.bookManagement(index: BookIndex) {
                     }
                 }
 
-                val epub = epubReader.readEpub(book.content.binaryStream)
+                val epub = epubReader.readEpub(book.content.bytes.inputStream())
                 val chapters = epub.tableOfContents.tocReferences
                     .withIndex()
                     .flatMap { (index, tocReference) -> linearizeTableOfContents(tocReference.buildId("", index), tocReference) }
@@ -335,7 +333,7 @@ fun Route.bookManagement(index: BookIndex) {
                         Images.insertIgnore {
                             it[Images.book] = book.id
                             it[Images.name] = name
-                            it[Images.data] = SerialBlob(data)
+                            it[Images.data] = ExposedBlob(data)
                         }
                         name
                     }
@@ -441,7 +439,7 @@ fun Route.bookManagement(index: BookIndex) {
             val classes = transaction {
                 val book = Book.findById(id) ?: return@transaction null
 
-                val epub = epubReader.readEpub(book.content.binaryStream)
+                val epub = epubReader.readEpub(book.content.bytes.inputStream())
                 val chapters = Chapter.find { Chapters.book eq book.id }
                     .map { Jsoup.parse(it.content) }
 

@@ -1,23 +1,24 @@
 <template>
-<Fullscreen user-panel class="home">
-  <div class="home-content">
-    <h1>Book Search</h1>
-    <QueryPanel
-      auto-focus
-      class="search-results-toolbar"
-      :query="query"
-      :series="series"
-      :chapter-scope="chapterScope"
-      :group-results="groupResults"
+  <Fullscreen user-panel class="home">
+    <div class="home-content">
+      <h1>Book Search</h1>
+      <QueryPanel
+        auto-focus
+        class="search-results-toolbar"
+        :query="query"
+        :series="series"
+        :chapter-scope="chapterScope"
+        :group-results="groupResults"
 
-      @search="onSearch"
-      @filter="onFilter"
-      @group-results="onGroupResults"
-      @chapter-scope="onChapterScope"
-    >
-    </QueryPanel>
-  </div>
-</Fullscreen>
+        @search="onSearch"
+        @filter="onFilter"
+        @group-results="onGroupResults"
+        @chapter-scope="onChapterScope"
+        @save-filter="saveFilter"
+      >
+      </QueryPanel>
+    </div>
+  </Fullscreen>
 </template>
 
 <script>
@@ -81,14 +82,16 @@ export default {
       );
 
       await this.$store.dispatch('refreshSeries');
-      this.$store.commit(
-        'applySeriesFilter',
-        {
-          seriesFilter: seriesRegex,
-          bookFilter,
-          excluded: excluded !== undefined ? excludedFilter : this.$store.getters.optionalBooks,
-        },
-      );
+      const fallbackFilter = {
+        seriesFilter: seriesRegex,
+        bookFilter,
+        excluded: excluded !== undefined ? excludedFilter : this.$store.getters.optionalBooks,
+      };
+      if (seriesFilter !== null || bookFilter !== null || excluded !== undefined) {
+        this.$store.commit('applySeriesFilter', fallbackFilter);
+      } else {
+        await this.$store.dispatch('loadDefaultFilter', fallbackFilter);
+      }
     } catch (error) {
       this.$handleApiError(error);
     }
@@ -127,6 +130,17 @@ export default {
     },
     onGroupResults(grouped) {
       this.groupResults = grouped;
+    },
+    async saveFilter() {
+      try {
+        const { data: { message } } = await this.$api.put(
+          '/auth/default-filter',
+          { seriesFilter: this.seriesFilter, bookFilter: this.bookFilter, excluded: this.excluded },
+        );
+        this.$notifications.success(message);
+      } catch (error) {
+        this.$handleApiError(error);
+      }
     },
   },
 };

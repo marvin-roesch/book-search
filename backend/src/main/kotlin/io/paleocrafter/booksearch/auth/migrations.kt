@@ -78,3 +78,9 @@ object ConvertFlagsToPermissionsMigration : DbMigration("convert-flags-to-permis
         }
     }
 }
+
+object AddDefaultFilterMigration : DbMigration("add-default-filter") {
+    override fun apply() {
+        Users.createOrModifyColumns(Users.defaultFilter)
+    }
+}

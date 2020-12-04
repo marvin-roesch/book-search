@@ -5,7 +5,8 @@ import io.paleocrafter.booksearch.createOrModifyColumns
 import nl.siegmann.epublib.epub.EpubReader
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.or
-import javax.sql.rowset.serial.SerialBlob
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 
 object CreateBookTablesMigration : DbMigration("create-book-tables") {
     override fun apply() {
@@ -20,9 +21,9 @@ object AddCoverMigration : DbMigration("add-book-covers") {
         val booksMissingCovers = Book.find { Books.cover.isNull() or Books.coverMime.isNull() }
         val epubReader = EpubReader()
         for (book in booksMissingCovers) {
-            val epub = epubReader.readEpub(book.content.binaryStream)
+            val epub = epubReader.readEpub(book.content.bytes.inputStream())
             epub.coverImage.let {
-                book.cover = SerialBlob(it.data)
+                book.cover = ExposedBlob(it.data)
                 book.coverMime = it.mediaType.name
             }
         }
@@ -67,5 +68,19 @@ object CreateCitationsMigration : DbMigration("create-citations") {
 object AddSearchByDefaultMigration : DbMigration("search-by-default") {
     override fun apply() {
         Books.createOrModifyColumns(Books.searchedByDefault)
+    }
+}
+
+object FixBookTagsPrimaryKey : DbMigration("fix-book-tags-primary-key") {
+    override fun apply() {
+        with(TransactionManager.current()) {
+            val idColumn = this.db.dialect.tableColumns(BookTags)[BookTags]?.find { it.name.toLowerCase() == "id" } ?: return
+            val tableName = identity(BookTags)
+
+            exec("ALTER TABLE $tableName DROP CONSTRAINT pk_booktags")
+            exec("ALTER TABLE $tableName DROP COLUMN ${db.identifierManager.quoteIdentifierWhenWrongCaseOrNecessary(idColumn.name)}")
+            exec("ALTER TABLE $tableName ADD PRIMARY KEY (${identity(BookTags.book)}, ${identity(BookTags.tag)})")
+            exec("DROP INDEX IF EXISTS booktags_book")
+        }
     }
 }

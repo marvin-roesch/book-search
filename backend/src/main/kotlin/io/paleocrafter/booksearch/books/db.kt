@@ -1,11 +1,12 @@
 package io.paleocrafter.booksearch.books
 
-import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.UUIDTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jsoup.nodes.Element
 import java.util.UUID
 
@@ -39,7 +40,6 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
     var coverMime by Books.coverMime
     var indexing by Books.indexing
     var restricted by Books.restricted
-    val tags by BookTag referrersOn BookTags.book
     var citationTemplate by Books.citationTemplate
     var searchedByDefault by Books.searchedByDefault
 
@@ -53,7 +53,7 @@ class Book(id: EntityID<UUID>) : UUIDEntity(id) {
             searchable,
             indexing,
             restricted,
-            tags.mapTo(mutableSetOf()) { it.tag },
+            BookTags.select { BookTags.book eq id }.mapTo(mutableSetOf()) { it[BookTags.tag] },
             citationTemplate,
             searchedByDefault
         )
@@ -89,16 +89,11 @@ data class ResolvedBook(
         )
 }
 
-object BookTags : UUIDTable() {
-    val book = reference("book", Books).index().primaryKey(0)
+object BookTags : Table() {
+    val book = reference("book", Books)
     val tag = varchar("tag", 255)
-}
 
-class BookTag(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<BookTag>(BookTags)
-
-    var book by Book referencedOn BookTags.book
-    var tag by BookTags.tag
+    override val primaryKey = PrimaryKey(book, tag)
 }
 
 object Chapters : UUIDTable() {
@@ -143,13 +138,17 @@ class Chapter(id: EntityID<UUID>) : UUIDEntity(id) {
 data class ResolvedChapter(val id: UUID, val bookId: UUID, val title: String, val position: Int, val content: Element)
 
 object Images : Table() {
-    val book = reference("book", Books).primaryKey(0)
-    val name = varchar("name", 255).primaryKey(1)
+    val book = reference("book", Books)
+    val name = varchar("name", 255)
     val data = blob("data")
+
+    override val primaryKey = PrimaryKey(book, name)
 }
 
 object ClassMappings : Table() {
-    val book = reference("book", Books).primaryKey(0)
-    val className = varchar("class_name", 255).primaryKey(1)
+    val book = reference("book", Books)
+    val className = varchar("class_name", 255)
     val mapping = varchar("mapping", 255)
+
+    override val primaryKey = PrimaryKey(book, className)
 }

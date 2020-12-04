@@ -23,13 +23,19 @@
       >
         <book-filter-summary :series="series" :tags="tags"></book-filter-summary>
       </a>
+      <a
+        class="query-panel-filter-save" href="#"
+        @click.prevent="$emit('save-filter')" ref="filter-save"
+      >
+        Save as default
+      </a>
       <transition name="fade">
         <div
           class="query-panel-filter-container"
           v-closable="{
-          exclude: ['filter-trigger'],
-          handler() { filterVisible = false; }
-        }"
+            exclude: ['filter-trigger', 'filter-save'],
+            handler() { filterVisible = false; }
+          }"
           v-show="filterVisible"
         >
           <a
@@ -142,9 +148,6 @@ export default {
     }
   },
   methods: {
-    search(event) {
-      this.$emit('search', event.target.value);
-    },
     onScopeChange(event) {
       this.$emit('chapter-scope', event.target.value === 'chapters');
     },
@@ -277,6 +280,18 @@ export default {
       align-items: center;
       z-index: 2001;
       flex-grow: 1;
+      min-width: 0;
+      margin-left: 0.25rem;
+      line-height: 1rem;
+    }
+
+    &-save {
+      position: relative;
+      display: flex;
+      align-items: center;
+      z-index: 2001;
+      flex-grow: 0;
+      flex-shrink: 0;
       min-width: 0;
       margin-left: 0.25rem;
       line-height: 1rem;
