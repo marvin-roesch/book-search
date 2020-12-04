@@ -1,4 +1,4 @@
-import hljs from 'highlight.js/lib/highlight';
+import hljs from 'highlight.js/lib/core';
 import hljsCss from 'highlight.js/lib/languages/css';
 import axios from 'axios';
 import store from '@/store';
