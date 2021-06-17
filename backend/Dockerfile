@@ -23,6 +23,9 @@ USER $APPLICATION_USER
 COPY --from=builder /app/build/libs/book-search.jar /app/book-search.jar
 WORKDIR /app
 
+RUN mkdir /app/.sessions
+VOLUME /app/.sessions
+
 EXPOSE 80
 
 CMD ["java", "-server", "-XX:+UnlockExperimentalVMOptions", "-XX:InitialRAMPercentage=90", "-XX:MinRAMPercentage=90", "-XX:MaxRAMPercentage=90", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=100", "-XX:+UseStringDeduplication", "-jar", "book-search.jar", "-port", "80"]
