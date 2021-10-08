@@ -30,7 +30,6 @@ import io.ktor.sessions.directorySessionStorage
 import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
-import io.ktor.util.AttributeKey
 import io.ktor.util.hex
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.deleteWhere
@@ -100,7 +99,9 @@ fun Application.auth() {
                 call.respond(HttpStatusCode.Unauthorized)
             }
             validate {
-                it
+                transaction {
+                    User.findById(it.id)?.view
+                }
             }
         }
     }
@@ -212,7 +213,7 @@ fun Application.auth() {
                 }
 
                 patch("/search-settings") {
-                    val userId = call.userId
+                    val userId = call.user.id
                     val request = call.receive<ChangeSearchSettingsRequest>()
 
                     val view = transaction {
@@ -238,7 +239,7 @@ fun Application.auth() {
                 }
 
                 get("/default-filter") {
-                    val userId = call.userId
+                    val userId = call.user.id
 
                     val filter = transaction {
                         User.findById(userId)?.defaultFilter
@@ -253,7 +254,7 @@ fun Application.auth() {
                 }
 
                 put("/default-filter") {
-                    val userId = call.userId
+                    val userId = call.user.id
                     val request = call.receive<User.DefaultFilter>()
 
                     transaction {
@@ -269,7 +270,7 @@ fun Application.auth() {
                 }
 
                 delete("/default-filter") {
-                    val userId = call.userId
+                    val userId = call.user.id
 
                     transaction {
                         val user = User.findById(userId) ?: return@transaction null
@@ -399,7 +400,7 @@ fun Application.auth() {
                     delete("/{id}") {
                         val id = UUID.fromString(call.parameters["id"])
 
-                        if (id == call.userId) {
+                        if (id == call.user.id) {
                             return@delete call.respond(
                                 mapOf("message" to "You may not delete your own account!")
                             )
@@ -418,7 +419,7 @@ fun Application.auth() {
                             mapOf("message" to "User with ID '$id' does not exist!")
                         )
 
-                        environment.log.info("User ${userName} was deleted!")
+                        environment.log.info("User $userName was deleted!")
 
                         call.respond(
                             mapOf("message" to "User '$userName' was successfully deleted!")
@@ -465,17 +466,8 @@ fun Application.auth() {
     }
 }
 
-val ApplicationCall.userId: UUID
-    get() = authentication.principal<UserId>()?.id ?: throw RuntimeException("Cannot retrieve user ID from request")
-
-val USER_KEY = AttributeKey<UserView>("User")
-
 val ApplicationCall.user: UserView
-    get() = this.attributes.computeIfAbsent(USER_KEY) {
-        transaction {
-            User.findById(userId)?.view ?: throw RuntimeException("Cannot find user $userId")
-        }
-    }
+    get() = authentication.principal() ?: throw RuntimeException("Cannot retrieve user from request")
 
 fun Route.authorize(check: ApplicationCall.(UserView) -> Boolean, build: Route.() -> Unit): Route {
     return authenticate {

@@ -1,5 +1,6 @@
 package io.paleocrafter.booksearch.auth
 
+import io.ktor.auth.Principal
 import io.paleocrafter.booksearch.jsonb
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
@@ -74,7 +75,7 @@ data class UserView(
     val defaultSearchScope: String,
     val groupResultsByDefault: Boolean,
     val permissions: Set<String>
-)
+) : Principal
 
 data class AdminUserView(
     val id: UUID,
