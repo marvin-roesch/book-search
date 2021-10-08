@@ -82,9 +82,24 @@ const actions = {
 
     commit('setTags', ordered);
   },
-  async loadDefaultFilter({ commit }, fallback) {
+  async loadDefaultFilter({ commit, getters }, fallback) {
     try {
       const { data: stored } = await api.get('/auth/default-filter');
+
+      const knownBooks = stored.knownBooks.reduce(
+        (acc, id) => {
+          acc[id] = true;
+          return acc;
+        },
+        {},
+      );
+
+      const unknownOptionalBooks = getters.optionalBooks.filter(b => knownBooks[b] !== true);
+      if (stored.excluded === null && unknownOptionalBooks.length > 0) {
+        stored.excluded = unknownOptionalBooks;
+      } else if (stored.excluded !== null) {
+        stored.excluded.push(...unknownOptionalBooks);
+      }
 
       commit('applySeriesFilter', stored);
     } catch (error) {

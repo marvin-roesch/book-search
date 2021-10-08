@@ -4,10 +4,10 @@ import io.ktor.auth.Principal
 import io.paleocrafter.booksearch.jsonb
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
@@ -28,7 +28,12 @@ object Users : UUIDTable() {
 class User(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<User>(Users)
 
-    data class DefaultFilter(val seriesFilter: List<String>?, val bookFilter: List<String>?, val excluded: List<String>?)
+    data class DefaultFilter(
+        val seriesFilter: List<String>?,
+        val bookFilter: List<String>?,
+        val excluded: List<String>?,
+        var knownBooks: Set<String> = emptySet()
+    )
 
     var username by Users.username
     var password by Users.password

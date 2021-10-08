@@ -47,7 +47,7 @@
           &middot;
           <a
             class="query-panel-filter-action" href="#"
-            @click.prevent="$refs.filter.deselectAll(getSelectionFilter($event))"
+            @click.prevent="$refs.filter.deselectAll(() => true)"
           >
             None
           </a>

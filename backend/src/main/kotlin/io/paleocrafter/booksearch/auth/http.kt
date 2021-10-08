@@ -31,6 +31,7 @@ import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
 import io.ktor.util.hex
+import io.paleocrafter.booksearch.books.BookCache
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -256,6 +257,7 @@ fun Application.auth() {
                 put("/default-filter") {
                     val userId = call.user.id
                     val request = call.receive<User.DefaultFilter>()
+                    request.knownBooks = BookCache.books.mapTo(mutableSetOf()) { it.id.toString() }
 
                     transaction {
                         val user = User.findById(userId) ?: return@transaction null
