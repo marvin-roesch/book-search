@@ -91,6 +91,12 @@ export default {
         this.$store.commit('applySeriesFilter', fallbackFilter);
       } else {
         await this.$store.dispatch('loadDefaultFilter', fallbackFilter);
+
+        if (this.$store.state.defaultFilter !== null) {
+          this.bookFilter = this.$store.state.defaultFilter.bookFilter;
+          this.seriesFilter = this.$store.state.defaultFilter.seriesFilter;
+          this.excluded = this.$store.state.defaultFilter.excluded;
+        }
       }
     } catch (error) {
       this.$handleApiError(error);
@@ -112,9 +118,9 @@ export default {
         name: 'search',
         query: {
           q: this.query,
-          series: this.seriesFilter === undefined ? undefined : this.seriesFilter.join('+'),
-          books: this.bookFilter === undefined ? undefined : this.bookFilter.join('+'),
-          excluded: this.excluded === undefined ? undefined : this.excluded.join('+'),
+          series: !this.seriesFilter ? undefined : this.seriesFilter.join('+'),
+          books: !this.bookFilter ? undefined : this.bookFilter.join('+'),
+          excluded: !this.excluded ? undefined : this.excluded.join('+'),
           scope: this.chapterScope ? 'chapters' : undefined,
           grouped: this.groupResults || undefined,
         },

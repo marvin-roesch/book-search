@@ -43,6 +43,7 @@ const initialState = {
   darkMode: window.localStorage.getItem('darkMode') === 'true',
   series: !cachedSeries ? [] : JSON.parse(cachedSeries),
   tags: parsedTags,
+  defaultFilter: null,
 };
 
 const mutations = {
@@ -65,6 +66,9 @@ const mutations = {
     state.series.forEach(s => prepareSeries(s.name, s, seriesFilter, bookFilter, excluded));
     window.localStorage.setItem('series', JSON.stringify(state.series));
   },
+  setDefaultFilter(state, filter) {
+    state.defaultFilter = filter;
+  },
 };
 
 const actions = {
@@ -86,6 +90,8 @@ const actions = {
     try {
       const { data: stored } = await api.get('/auth/default-filter');
 
+      commit('setDefaultFilter', stored);
+
       const knownBooks = stored.knownBooks.reduce(
         (acc, id) => {
           acc[id] = true;
@@ -104,6 +110,7 @@ const actions = {
       commit('applySeriesFilter', stored);
     } catch (error) {
       if (error.response && error.response.status === 404) {
+        commit('setDefaultFilter', null);
         commit('applySeriesFilter', fallback);
         return;
       }
