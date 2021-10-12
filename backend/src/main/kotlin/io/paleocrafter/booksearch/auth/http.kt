@@ -110,7 +110,7 @@ fun Application.auth() {
     routing {
         route("/api/auth") {
             post("/login") {
-                if (call.sessions.get<UserId>() != null) {
+                if (call.authentication.principal != null) {
                     return@post call.respond(
                         HttpStatusCode.Unauthorized,
                         mapOf(
