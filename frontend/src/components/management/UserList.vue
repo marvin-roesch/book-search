@@ -42,7 +42,7 @@
     </div>
     </template>
   </div>
-  <form class="user-list-form">
+  <form ref="createForm" class="user-list-form">
     <h3>Create new user</h3>
     <TextField name="new-user-username" placeholder="Username" v-model="newUsername">
       <template slot="icon">
@@ -157,6 +157,10 @@ export default {
           selectedRoles: this.roles.filter(r => user.roles.includes(r.id)),
         });
         this.$notifications.success(message);
+        this.$refs.createForm.reset();
+        this.newUsername = '';
+        this.newPassword = '';
+        this.newRoles = [];
       } catch (error) {
         this.$handleApiError(error);
       }
