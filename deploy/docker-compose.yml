@@ -16,7 +16,7 @@ services:
     environment:
       - ELASTIC_HOST=http://elasticsearch:9200
       - DEFAULT_PASSWORD=booksearcher
-      - CRYPTO_KEY=966efc7f2526829ec7580bfb033652555adcc2bd8fb2a250aaa0ced12bbff00b7b60dd0e323f129171a27d66660af93b258eab90507ff28895fb79b459ced1f2
+      - CRYPTO_KEY=966efc7f2526829ec7580bfb033652555adcc2bd8fb2a250aaa0ced12bbff00b7b60dd0e323f129171a27d66660af93b258eab90507ff28895fb79b459ced1f2 # Must be hexadecimal
       - DB_CONNECTION=jdbc:postgresql://db/booksearch
       - DB_DRIVER=org.postgresql.Driver
       - DB_USERNAME=booksearch

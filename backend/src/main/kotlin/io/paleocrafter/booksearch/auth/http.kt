@@ -27,7 +27,6 @@ import io.ktor.sessions.Sessions
 import io.ktor.sessions.clear
 import io.ktor.sessions.cookie
 import io.ktor.sessions.directorySessionStorage
-import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
 import io.ktor.util.hex
@@ -43,7 +42,14 @@ import javax.crypto.spec.SecretKeySpec
 fun Application.auth() {
     val keyString = environment.config.propertyOrNull("crypto.key")?.getString()
         ?: throw IllegalStateException("'crypto.key' must be configured! Either specify it in config file or pass CRYPTO_KEY env variable.")
-    val oldHashKey = SecretKeySpec(hex(keyString), "HmacSHA1")
+    val oldHashKey = SecretKeySpec(
+        runCatching {
+            hex(keyString)
+        }.getOrElse {
+            throw IllegalStateException("'crypto.key' must be a 128-character hexadecimal value!")
+        },
+        "HmacSHA1"
+    )
     val hasher = BCrypt.with(BCrypt.Version.VERSION_2A, LongPasswordStrategies.hashSha512(BCrypt.Version.VERSION_2A))
     val verifier = BCrypt.verifyer(BCrypt.Version.VERSION_2A, LongPasswordStrategies.hashSha512(BCrypt.Version.VERSION_2A))
 
@@ -69,8 +75,10 @@ fun Application.auth() {
     transaction {
         if (User.all().none()) {
             val defaultPassword = environment.config.propertyOrNull("auth.admin-password")?.getString()
-                ?: throw IllegalStateException("There are no users yet and no default admin password is set! " +
-                    "Either specify it as 'auth.admin-password' in config file or pass DEFAULT_PASSWORD env variable.")
+                ?: throw IllegalStateException(
+                    "There are no users yet and no default admin password is set! " +
+                        "Either specify it as 'auth.admin-password' in config file or pass DEFAULT_PASSWORD env variable."
+                )
 
             val manageBooksPermission = Permission.new("books.manage") { description = "Manage books" }
             val manageUsersPermission = Permission.new("users.manage") { description = "Manage users" }
