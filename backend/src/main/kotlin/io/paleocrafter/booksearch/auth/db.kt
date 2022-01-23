@@ -111,8 +111,8 @@ class Role(id: EntityID<UUID>) : UUIDEntity(id) {
 }
 
 object UserRoles : Table() {
-    val user = reference("user", Users).primaryKey(0)
-    val role = reference("role", Roles).primaryKey(1)
+    val user = reference("user", Users)
+    val role = reference("role", Roles)
 
     override val primaryKey = PrimaryKey(user, role)
 }

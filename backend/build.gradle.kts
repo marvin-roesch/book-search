@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     application
-    kotlin("jvm") version "1.4.20"
+    kotlin("jvm") version "1.6.10"
     id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
@@ -11,7 +11,6 @@ version = "1.0.0"
 
 repositories {
     mavenCentral()
-    jcenter()
     maven {
         url = uri("https://github.com/psiegman/mvn-repo/raw/master/releases")
     }
@@ -28,10 +27,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("org.postgresql:postgresql:42.2.5")
     implementation("com.zaxxer:HikariCP:2.7.8")
-    implementation("org.jetbrains.exposed:exposed-core:0.28.1")
-    implementation("org.jetbrains.exposed:exposed-dao:0.28.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.28.1")
-    implementation("org.jetbrains.exposed:exposed-java-time:0.28.1")
+    implementation("org.jetbrains.exposed:exposed-core:0.37.3")
+    implementation("org.jetbrains.exposed:exposed-dao:0.37.3")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.37.3")
+    implementation("org.jetbrains.exposed:exposed-java-time:0.37.3")
     implementation("org.elasticsearch.client:elasticsearch-rest-high-level-client:7.1.1")
     implementation("nl.siegmann.epublib:epublib-core:3.1") {
         exclude(group = "org.slf4j", module = "slf4j-simple")
