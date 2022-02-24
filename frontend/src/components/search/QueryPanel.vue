@@ -60,10 +60,17 @@
             {{ tag }}
           </a>
           </template>
+          <TextField type="search" placeholder="Search" v-model="filterSearch">
+            <template slot="icon">
+            <SearchIcon></SearchIcon>
+            </template>
+          </TextField>
           <div class="query-panel-filter-scrollable" v-bar>
             <div>
               <book-filter
-                :root="true" :series="series"
+                :root="true"
+                :series="series"
+                :search="filterSearch"
                 @filtered="$emit('filter', $event)" ref="filter"
               >
               </book-filter>
@@ -113,17 +120,26 @@
 <script>
 import { easeInOut as easing } from 'ramjet';
 import { mapState } from 'vuex';
+import { SearchIcon } from 'vue-feather-icons';
 import BookFilterSummary from '@/components/search/BookFilterSummary.vue';
 import BookFilter from '@/components/search/BookFilter.vue';
 import CheckBox from '@/components/CheckBox.vue';
 import SearchBar from '@/components/search/SearchBar.vue';
 import SharedElement from '@/components/SharedElement.vue';
 import QuickHelp from '@/components/search/QuickHelp.vue';
+import TextField from '@/components/TextField.vue';
 
 export default {
   name: 'QueryPanel',
   components: {
-    QuickHelp, SharedElement, SearchBar, CheckBox, BookFilter, BookFilterSummary,
+    QuickHelp,
+    SharedElement,
+    SearchBar,
+    CheckBox,
+    BookFilter,
+    BookFilterSummary,
+    TextField,
+    SearchIcon,
   },
   props: {
     toolbar: Boolean,
@@ -137,6 +153,7 @@ export default {
     return {
       filterVisible: false,
       easing,
+      filterSearch: '',
     };
   },
   computed: mapState(['tags']),

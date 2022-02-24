@@ -1,6 +1,6 @@
 <template>
 <ul class="book-filter">
-  <li class="book-filter-series" v-for="s in series" :key="s.name">
+  <li class="book-filter-series" v-for="s in includedSeries" :key="s.name">
     <CheckBox
       :name="s.name"
       :value="allSelected(s)"
@@ -10,7 +10,7 @@
       {{ s.name }}
     </CheckBox>
     <ul class="book-filter-books">
-      <li v-for="book in s.books" :key="book.id">
+      <li v-for="book in searchBooks(s.books)" :key="book.id">
         <CheckBox
           :name="book.id"
           :value="book.selected"
@@ -25,9 +25,13 @@
       class="book-filter-child"
       :root="false"
       :series="s.children"
+      :search="search"
       @filtered="onChildFiltered"
     >
     </BookFilter>
+  </li>
+  <li v-if="root && includedSeries.length === 0">
+    No books or series match your search.
   </li>
 </ul>
 </template>
@@ -41,6 +45,12 @@ export default {
   props: {
     root: Boolean,
     series: Array,
+    search: String,
+  },
+  computed: {
+    includedSeries() {
+      return this.series.filter(this.shouldIncludeSeries);
+    },
   },
   methods: {
     selectAll(filter) {
@@ -189,6 +199,14 @@ export default {
       } else {
         this.$emit('filtered');
       }
+    },
+    shouldIncludeSeries(series) {
+      return series.name.includes(this.search)
+        || (series.books.length > 0 && series.books.some(book => book.title.includes(this.search)))
+        || (series.children.length > 0 && series.children.some(this.shouldIncludeSeries));
+    },
+    searchBooks(books) {
+      return books.filter(book => book.title.includes(this.search));
     },
   },
 };
