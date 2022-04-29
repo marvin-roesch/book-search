@@ -20,9 +20,11 @@ fun Route.bookSearch(index: BookIndex) {
         }
     }
 
-    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?, excluded: List<String>?) =
+    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?, excluded: List<String>?, permissions: Set<String>) =
         if (seriesFilter == null && bookFilter == null) {
-            BookCache.books.map { it.id }.filter { excluded == null || it.toString() !in excluded }
+            BookCache.books
+                .map { it.id }
+                .filter { (excluded == null || it.toString() !in excluded) && Book.readingPermission(it) in permissions }
         } else {
             val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
             (BookCache.linearSeries
@@ -30,13 +32,13 @@ fun Route.bookSearch(index: BookIndex) {
                 .flatMap { it.books }
                 .map { it.id }
                 + bookFilter.orEmpty().map { UUID.fromString(it) }
-            ).filter { excluded == null || it.toString() !in excluded }
+            ).filter { (excluded == null || it.toString() !in excluded) && Book.readingPermission(it) in permissions }
         }
 
     post("/paragraph-search") {
         val request = call.receive<SearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -50,11 +52,11 @@ fun Route.bookSearch(index: BookIndex) {
         )
 
         val results = transaction {
-            searchResult.results.map {
+            searchResult.results.mapNotNull {
                 val book = BookCache.find(it.bookId) ?: return@transaction null
 
                 if (book.restricted && Book.readingPermission(book.id) !in call.user.permissions) {
-                    return@transaction null
+                    return@mapNotNull null
                 }
 
                 val chapter = Chapter.findById(it.chapterId) ?: return@transaction null
@@ -78,7 +80,7 @@ fun Route.bookSearch(index: BookIndex) {
     post("/chapter-search") {
         val request = call.receive<SearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -92,12 +94,12 @@ fun Route.bookSearch(index: BookIndex) {
         )
 
         val results = transaction {
-            searchResult.results.map {
+            searchResult.results.mapNotNull {
                 val chapter = Chapter.findById(it) ?: return@transaction null
                 val book = chapter.book.resolved
 
                 if (book.restricted && Book.readingPermission(book.id) !in call.user.permissions) {
-                    return@transaction null
+                    return@mapNotNull null
                 }
 
                 mapOf(
@@ -119,7 +121,7 @@ fun Route.bookSearch(index: BookIndex) {
     post("/paragraph-search/grouped") {
         val request = call.receive<GroupedSearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -168,7 +170,7 @@ fun Route.bookSearch(index: BookIndex) {
     post("/chapter-search/grouped") {
         val request = call.receive<GroupedSearchRequest>()
 
-        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
+        val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
             return@post call.respond(mapOf(
                 "totalHits" to 0,
@@ -272,7 +274,7 @@ fun Route.bookSearch(index: BookIndex) {
             val id = UUID.fromString(call.parameters["id"])
             val request = call.receive<GroupedSearchRequest>()
 
-            val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded)
+            val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
             if (filter.isEmpty()) {
                 return@post call.respond(mapOf(
                     "totalHits" to 0,
