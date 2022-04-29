@@ -23,16 +23,17 @@ fun Route.bookSearch(index: BookIndex) {
     fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?, excluded: List<String>?, permissions: Set<String>) =
         if (seriesFilter == null && bookFilter == null) {
             BookCache.books
-                .map { it.id }
-                .filter { (excluded == null || it.toString() !in excluded) && Book.readingPermission(it) in permissions }
+                .mapNotNull { book -> book.id.takeIf { !book.restricted || Book.readingPermission(it) in permissions } }
+                .filter { excluded == null || it.toString() !in excluded }
         } else {
             val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
             (BookCache.linearSeries
                 .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path.orElse("No Series")) } }
                 .flatMap { it.books }
-                .map { it.id }
-                + bookFilter.orEmpty().map { UUID.fromString(it) }
-            ).filter { (excluded == null || it.toString() !in excluded) && Book.readingPermission(it) in permissions }
+                .mapNotNull { book -> book.id.takeIf { !book.restricted || Book.readingPermission(it) in permissions } }
+                + bookFilter.orEmpty().mapNotNull { raw ->
+                UUID.fromString(raw).takeIf { BookCache.find(it)?.restricted != true || Book.readingPermission(it) in permissions }
+            }).filter { (excluded == null || it.toString() !in excluded) && Book.readingPermission(it) in permissions }
         }
 
     post("/paragraph-search") {
@@ -40,10 +41,12 @@ fun Route.bookSearch(index: BookIndex) {
 
         val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
-            return@post call.respond(mapOf(
-                "totalHits" to 0,
-                "results" to emptyList<Any>()
-            ))
+            return@post call.respond(
+                mapOf(
+                    "totalHits" to 0,
+                    "results" to emptyList<Any>()
+                )
+            )
         }
 
         val searchResult = index.paragraphs.search(request.query, filter, request.page) ?: return@post call.respond(
@@ -71,10 +74,12 @@ fun Route.bookSearch(index: BookIndex) {
             mapOf("message" to "Book or chapter does not exist")
         )
 
-        call.respond(mapOf(
-            "totalHits" to searchResult.totalHits,
-            "results" to results
-        ))
+        call.respond(
+            mapOf(
+                "totalHits" to searchResult.totalHits,
+                "results" to results
+            )
+        )
     }
 
     post("/chapter-search") {
@@ -82,10 +87,12 @@ fun Route.bookSearch(index: BookIndex) {
 
         val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
-            return@post call.respond(mapOf(
-                "totalHits" to 0,
-                "results" to emptyList<Any>()
-            ))
+            return@post call.respond(
+                mapOf(
+                    "totalHits" to 0,
+                    "results" to emptyList<Any>()
+                )
+            )
         }
 
         val searchResult = index.chapters.search(request.query, filter, request.page) ?: return@post call.respond(
@@ -112,10 +119,12 @@ fun Route.bookSearch(index: BookIndex) {
             mapOf("message" to "Chapter does not exist")
         )
 
-        call.respond(mapOf(
-            "totalHits" to searchResult.totalHits,
-            "results" to results
-        ))
+        call.respond(
+            mapOf(
+                "totalHits" to searchResult.totalHits,
+                "results" to results
+            )
+        )
     }
 
     post("/paragraph-search/grouped") {
@@ -123,10 +132,12 @@ fun Route.bookSearch(index: BookIndex) {
 
         val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
-            return@post call.respond(mapOf(
-                "totalHits" to 0,
-                "results" to emptyList<Any>()
-            ))
+            return@post call.respond(
+                mapOf(
+                    "totalHits" to 0,
+                    "results" to emptyList<Any>()
+                )
+            )
         }
 
         val searchResult = index.paragraphs.searchBooks(request.query, filter) ?: return@post call.respond(
@@ -161,10 +172,12 @@ fun Route.bookSearch(index: BookIndex) {
             }
             .toList()
 
-        call.respond(mapOf(
-            "totalHits" to searchResult.totalHits,
-            "results" to results
-        ))
+        call.respond(
+            mapOf(
+                "totalHits" to searchResult.totalHits,
+                "results" to results
+            )
+        )
     }
 
     post("/chapter-search/grouped") {
@@ -172,10 +185,12 @@ fun Route.bookSearch(index: BookIndex) {
 
         val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
         if (filter.isEmpty()) {
-            return@post call.respond(mapOf(
-                "totalHits" to 0,
-                "results" to emptyList<Any>()
-            ))
+            return@post call.respond(
+                mapOf(
+                    "totalHits" to 0,
+                    "results" to emptyList<Any>()
+                )
+            )
         }
 
         val searchResult = index.chapters.searchBooks(request.query, filter) ?: return@post call.respond(
@@ -210,10 +225,12 @@ fun Route.bookSearch(index: BookIndex) {
             }
             .toList()
 
-        call.respond(mapOf(
-            "totalHits" to searchResult.totalHits,
-            "results" to results
-        ))
+        call.respond(
+            mapOf(
+                "totalHits" to searchResult.totalHits,
+                "results" to results
+            )
+        )
     }
 
     requireBookPermissions {
@@ -276,10 +293,12 @@ fun Route.bookSearch(index: BookIndex) {
 
             val filter = buildFilter(request.seriesFilter, request.bookFilter, request.excluded, call.user.permissions)
             if (filter.isEmpty()) {
-                return@post call.respond(mapOf(
-                    "totalHits" to 0,
-                    "results" to emptyList<Any>()
-                ))
+                return@post call.respond(
+                    mapOf(
+                        "totalHits" to 0,
+                        "results" to emptyList<Any>()
+                    )
+                )
             }
 
             val searchResult = index.paragraphs.search(request.query, filter, chapterFilter = listOf(id), sort = true)
@@ -344,9 +363,20 @@ fun Route.bookSearch(index: BookIndex) {
     }
 }
 
-private data class SearchRequest(val query: String, val page: Int, val seriesFilter: List<String>?, val bookFilter: List<String>?, val excluded: List<String>?)
+private data class SearchRequest(
+    val query: String,
+    val page: Int,
+    val seriesFilter: List<String>?,
+    val bookFilter: List<String>?,
+    val excluded: List<String>?
+)
 
-private data class GroupedSearchRequest(val query: String, val seriesFilter: List<String>?, val bookFilter: List<String>?, val excluded: List<String>?)
+private data class GroupedSearchRequest(
+    val query: String,
+    val seriesFilter: List<String>?,
+    val bookFilter: List<String>?,
+    val excluded: List<String>?
+)
 
 private fun <T> Comparator<in T>.lexicographical(): Comparator<in Iterable<T>> =
     Comparator { left, right ->
