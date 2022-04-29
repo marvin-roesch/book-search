@@ -24,6 +24,7 @@ import io.ktor.util.pipeline.PipelineContext
 import io.paleocrafter.booksearch.auth.Permission
 import io.paleocrafter.booksearch.auth.Permissions
 import io.paleocrafter.booksearch.auth.Role
+import io.paleocrafter.booksearch.auth.RolePermissions
 import io.paleocrafter.booksearch.auth.Roles
 import io.paleocrafter.booksearch.auth.user
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Resources
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
@@ -60,7 +60,6 @@ import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.Paths
 import java.util.UUID
-import javax.sql.rowset.serial.SerialBlob
 import nl.siegmann.epublib.domain.Book as Epub
 
 private val logger = LoggerFactory.getLogger("BookManagement")
@@ -227,6 +226,9 @@ fun Route.bookManagement(index: BookIndex) {
                         description = """Read "${book.title}" by ${book.author}"""
                     }
 
+                    RolePermissions.deleteWhere {
+                        (RolePermissions.permission eq permission.id) and (RolePermissions.role notInList request.permittedRoles)
+                    }
                     Role.find { Roles.id inList request.permittedRoles }.forUpdate().forEach {
                         it.permissions = SizedCollection(it.permissions.toSet() + permission)
                     }
@@ -370,11 +372,13 @@ fun Route.bookManagement(index: BookIndex) {
 
             logger.info("Book '$title' chapters updated by ${call.user.username}")
 
-            call.respond(mapOf(
-                "id" to id,
-                "message" to "Table of contents for book was successfully updated",
-                "showCitations" to showCitations
-            ))
+            call.respond(
+                mapOf(
+                    "id" to id,
+                    "message" to "Table of contents for book was successfully updated",
+                    "showCitations" to showCitations
+                )
+            )
         }
 
         get("/{id}/chapter-citations") {
@@ -398,10 +402,12 @@ fun Route.bookManagement(index: BookIndex) {
                 }
             }
 
-            call.respond(mapOf(
-                "id" to id,
-                "chapters" to chapters
-            ))
+            call.respond(
+                mapOf(
+                    "id" to id,
+                    "chapters" to chapters
+                )
+            )
         }
 
         put("/{id}/chapter-citations") {
@@ -497,9 +503,11 @@ fun Route.bookManagement(index: BookIndex) {
 
             logger.info("Book '${book.title}' class mappings updated by ${call.user.username}")
 
-            call.respond(mapOf(
-                "id" to id
-            ))
+            call.respond(
+                mapOf(
+                    "id" to id
+                )
+            )
         }
     }
 
@@ -558,10 +566,12 @@ fun Route.bookManagement(index: BookIndex) {
                 BookCache.updateBook(book)
             }
 
-            call.respond(mapOf(
-                "id" to id,
-                "message" to "Indexing of '${book.title}' was successfully started and will soon be searchable!"
-            ))
+            call.respond(
+                mapOf(
+                    "id" to id,
+                    "message" to "Indexing of '${book.title}' was successfully started and will soon be searchable!"
+                )
+            )
         }
     }
 
@@ -592,9 +602,11 @@ fun Route.bookManagement(index: BookIndex) {
             logger.info("All books reindexed")
         }
 
-        call.respond(mapOf(
-            "message" to "Re-indexing for all books was started!"
-        ))
+        call.respond(
+            mapOf(
+                "message" to "Re-indexing for all books was started!"
+            )
+        )
     }
 }
 
@@ -695,4 +707,10 @@ private fun Document.extractClasses(resources: Resources): List<HtmlClass> {
         }
 }
 
-private data class HtmlClass(val name: String, val sample: String, val styles: String, val mapping: String? = null, val occurrences: Int = 0)
+private data class HtmlClass(
+    val name: String,
+    val sample: String,
+    val styles: String,
+    val mapping: String? = null,
+    val occurrences: Int = 0
+)
