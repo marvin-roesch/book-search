@@ -20,21 +20,23 @@ fun Route.bookSearch(index: BookIndex) {
         }
     }
 
-    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?, excluded: List<String>?, permissions: Set<String>) =
-        if (seriesFilter == null && bookFilter == null) {
-            BookCache.books
-                .mapNotNull { book -> book.id.takeIf { !book.restricted || Book.readingPermission(it) in permissions } }
-                .filter { excluded == null || it.toString() !in excluded }
+    fun buildFilter(seriesFilter: List<String>?, bookFilter: List<String>?, excluded: List<String>?, permissions: Set<String>): List<UUID> {
+        val included = if (seriesFilter == null && bookFilter == null) {
+            BookCache.books.map { it.id }
         } else {
             val adjustedFilter = seriesFilter.orEmpty().map { Regex("^${Regex.escape(it)}($|\\\\)") }
             (BookCache.linearSeries
                 .filter { s -> adjustedFilter.any { r -> r.containsMatchIn(s.path.orElse("No Series")) } }
                 .flatMap { it.books }
-                .mapNotNull { book -> book.id.takeIf { !book.restricted || Book.readingPermission(it) in permissions } }
-                + bookFilter.orEmpty().mapNotNull { raw ->
-                UUID.fromString(raw).takeIf { BookCache.find(it)?.restricted != true || Book.readingPermission(it) in permissions }
-            }).filter { (excluded == null || it.toString() !in excluded) && Book.readingPermission(it) in permissions }
+                .map { book -> book.id }
+                + bookFilter.orEmpty().map { UUID.fromString(it) })
         }
+
+        return included.filter {
+            (excluded == null || it.toString() !in excluded)
+                && (BookCache.find(it)?.restricted != true || Book.readingPermission(it) in permissions)
+        }
+    }
 
     post("/paragraph-search") {
         val request = call.receive<SearchRequest>()
