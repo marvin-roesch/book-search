@@ -201,12 +201,17 @@ export default {
       }
     },
     shouldIncludeSeries(series) {
-      return series.name.includes(this.search)
-        || (series.books.length > 0 && series.books.some(book => book.title.includes(this.search)))
+      return series.name.toLowerCase().includes(this.search.toLowerCase())
+        || (
+          series.books.length > 0
+          && series.books.some(
+            book => book.title.toLowerCase().includes(this.search.toLowerCase()),
+          )
+        )
         || (series.children.length > 0 && series.children.some(this.shouldIncludeSeries));
     },
     searchBooks(books) {
-      return books.filter(book => book.title.includes(this.search));
+      return books.filter(book => book.title.toLowerCase().includes(this.search.toLowerCase()));
     },
   },
 };
