@@ -40,6 +40,39 @@ export default {
     document.addEventListener('touchstart', this.showPopup);
     document.addEventListener('touchend', this.showPopup);
     document.addEventListener('contextmenu', this.showPopup);
+    this.$el.querySelectorAll("[data-footnote]").forEach((element) => {
+      element.addEventListener('click', (event) => {
+        const target = document.getElementById(new URL(element.href).hash.substring(1))
+        if (target) {
+          window.scrollTo({ top: target.offsetTop })
+          target.classList.add('flash-paragraph')
+          setTimeout(() => {
+            target.classList.remove('flash-paragraph')
+          }, 1000)
+        }
+        event.preventDefault()
+      })
+    })
+    this.$el.querySelectorAll("[data-footnote-back]").forEach((element) => {
+      element.addEventListener('click', (event) => {
+        const target = document.getElementById(new URL(element.href).hash.substring(1))
+        if (target) {
+          window.scrollTo({ top: target.offsetTop })
+          let parent = target
+          while (parent && parent.tagName.toLowerCase() !== 'p') {
+            parent = parent.parentNode
+          }
+
+          if (parent) {
+            parent.classList.add('flash-paragraph')
+            setTimeout(() => {
+              parent.classList.remove('flash-paragraph')
+            }, 1000)
+          }
+        }
+        event.preventDefault()
+      })
+    })
   },
   destroyed() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
@@ -343,6 +376,14 @@ export default {
     text-indent: 0;
   }
 
+  .footnotes {
+    list-style-type: none;
+    margin-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--muted-text-color);
+    padding-top: 1rem;
+  }
+
   samp {
     font-family: 'Nunito Sans', sans-serif;
     text-align: justify;
@@ -415,7 +456,29 @@ export default {
   }
 
   .result-paragraph {
-    background: var(--chapter-highlight-color);
+    background: rgb(var(--chapter-highlight-color));
+  }
+
+  .flash-paragraph {
+    animation: flash-paragraph 1s ease;
+  }
+
+  @keyframes flash-paragraph {
+    0% {
+      background: rgba(var(--chapter-highlight-color), 0);
+    }
+
+    25% {
+      background: rgba(var(--chapter-highlight-color), 1);
+    }
+
+    75% {
+      background: rgba(var(--chapter-highlight-color), 1);
+    }
+
+    100% {
+      background: rgba(var(--chapter-highlight-color), 0);
+    }
   }
 }
 </style>

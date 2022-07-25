@@ -60,7 +60,7 @@ import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.Paths
 import java.util.UUID
-import nl.siegmann.epublib.domain.Book as Epub
+import nl.siegmann.epublib.domain.Book as EPub
 
 private val logger = LoggerFactory.getLogger("BookManagement")
 
@@ -128,7 +128,7 @@ fun Route.bookManagement(index: BookIndex) {
         }
     }
 
-    suspend fun PipelineContext<Unit, ApplicationCall>.receiveEpub(): Pair<Epub, ByteArray>? {
+    suspend fun PipelineContext<Unit, ApplicationCall>.receiveEpub(): Pair<EPub, ByteArray>? {
         return coroutineScope {
             val multipart = call.receiveMultipart()
             val file = flow { multipart.forEachPart { emit(it) } }
@@ -315,7 +315,7 @@ fun Route.bookManagement(index: BookIndex) {
                     .withIndex()
                     .flatMap { (index, tocReference) -> linearizeTableOfContents(tocReference.buildId("", index), tocReference) }
                     .filter { it.first in entries }
-                    .splitOffFragments()
+                    .splitOffFragments(epub)
 
                 for ((position, entry) in chapters.withIndex()) {
                     val (tocId, chapter, content) = entry
@@ -621,7 +621,7 @@ private data class BookPatchRequest(
     val searchedByDefault: Boolean
 )
 
-private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChapter> {
+private fun List<Pair<String, TOCReference>>.splitOffFragments(epub: EPub): List<SplitChapter> {
     val result = mutableListOf<SplitChapter>()
 
     for (i in this.indices) {
@@ -654,6 +654,49 @@ private fun List<Pair<String, TOCReference>>.splitOffFragments(): List<SplitChap
             }
             reference.siblingNodes().drop(reference.siblingIndex()).forEach { it.remove() }
             reference.remove()
+        }
+
+        val footnotes = content.select("[epub:type='noteref']").mapNotNull { ref ->
+            val footnoteFragment = ref.attr("href").substringAfter('#')
+            val footnoteFile = epub.resources.getByHref(
+                Paths.get(tocReference.resource.href).resolveSibling(ref.attr("href").substringBefore('#')).toString()
+            ) ?: return@mapNotNull null.also {
+                ref.remove()
+            }
+            val footnoteContent = Jsoup.parse(String(footnoteFile.data)).getElementById(footnoteFragment)
+                ?: return@mapNotNull null.also {
+                    ref.remove()
+                }
+
+            if (footnoteContent.text().isBlank()) {
+                ref.remove()
+                return@mapNotNull null
+            }
+
+            val footnoteId = UUID.randomUUID().toString()
+            ref.attr("data-footnote", "true")
+            ref.attr("id", "fn-$footnoteId-ref")
+            ref.attr("href", "#fn-$footnoteId")
+
+            val backLink = footnoteContent.selectFirst(".reversefootnote")
+            backLink?.attr("data-footnote-back", "true")
+            backLink?.attr("href", "#fn-$footnoteId-ref")
+            backLink?.removeAttr("hidden")
+
+            footnoteContent.attr("id", "fn-$footnoteId")
+
+            footnoteContent
+        }
+
+        if (footnotes.isNotEmpty()) {
+            val footnoteList = content.body().appendElement("ul").attr("data-footnotes", "true")
+            footnotes.forEach {
+                if (it.tagName() == "li") {
+                    footnoteList.appendChild(it)
+                } else {
+                    footnoteList.appendElement("li").appendChild(it)
+                }
+            }
         }
 
         result.add(SplitChapter(tocId, tocReference, content))

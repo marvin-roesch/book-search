@@ -11,7 +11,7 @@ body {
   --base-text-color: #{$light-base-text-color};
   --muted-text-color: #{lighten($light-base-text-color, 30%)};
   --highlight-text-color: #{lighten($light-base-text-color, 10%)};
-  --chapter-highlight-color: aliceblue;
+  --chapter-highlight-color: 240, 248, 255;
 
   &.dark-theme {
     --body-bg: #3d424a;
@@ -19,6 +19,6 @@ body {
     --base-text-color: #{$dark-base-text-color};
     --muted-text-color: #{darken($dark-base-text-color, 20%)};
     --highlight-text-color: #{darken($dark-base-text-color, 10%)};
-    --chapter-highlight-color: #44574e;
+    --chapter-highlight-color: 68, 87, 78;
   }
 }

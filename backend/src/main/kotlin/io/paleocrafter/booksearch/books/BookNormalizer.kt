@@ -8,6 +8,11 @@ object BookNormalizer {
         chapter.content.stripStyles()
         chapter.content.stripLinks()
         chapter.content.mapClasses(classMappings)
+        chapter.content.enrichFootnotes()
+    }
+
+    private fun Element.enrichFootnotes() {
+        select("[data-footnotes='true']").addClass("footnotes")
     }
 
     private fun Element.stripStyles() {
@@ -21,6 +26,11 @@ object BookNormalizer {
         val iterator = links.iterator()
         while (iterator.hasNext()) {
             val link = iterator.next()
+
+            if (link.attr("data-footnote") == "true" || link.attr("data-footnote-back") == "true") {
+                continue
+            }
+
             link.replaceWith(link.childNodes().toList())
             iterator.remove()
         }
