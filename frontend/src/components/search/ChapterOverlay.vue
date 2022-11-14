@@ -64,6 +64,26 @@ export default {
       contentLoaded: false,
     };
   },
+  watch: {
+    book: {
+      handler() {
+        this.updateTitle();
+      },
+      immediate: true,
+    },
+    chapter: {
+      handler() {
+        this.updateTitle();
+      },
+      immediate: true,
+    },
+    '$route.query.q': {
+      handler() {
+        this.updateTitle();
+      },
+      immediate: true,
+    },
+  },
   async mounted() {
     try {
       const { data: { book, chapter, content } } = await this.$api.post(
@@ -114,6 +134,14 @@ export default {
     },
     buildCitation() {
       return buildCitation(this.book, this.chapter);
+    },
+    updateTitle() {
+      if (this.book === null || this.chapter === null) {
+        return;
+      }
+      this.$nextTick(() => {
+        document.title = `Results for '${this.$route.query.q}' in ${this.book.title} - ${this.chapter.title} · Book Search`;
+      });
     },
   },
   beforeRouteLeave(to, from, next) {

@@ -115,6 +115,14 @@ export default {
       this.$handleApiError(error);
     }
   },
+  watch: {
+    '$route.query.q': {
+      handler() {
+        document.title = `Results for '${this.$route.query.q}' · Book Search`;
+      },
+      immediate: true,
+    },
+  },
   methods: {
     onSearch(query) {
       this.$router.replace({

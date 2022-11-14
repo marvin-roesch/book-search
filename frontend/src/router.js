@@ -38,74 +38,74 @@ const router = new Router({
       path: '/login',
       name: 'login',
       component: Login,
-      meta: { requiresUnauthorized: true },
+      meta: { requiresUnauthorized: true, title: 'Login' },
     },
     {
       path: '/',
       name: 'home',
       component: Home,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Home' },
     },
     ...withPrefix('/management', [
       {
         path: '/users',
         name: 'user-management',
         component: UserManagement,
-        meta: { requiresAuth: true, requiredPermissions: 'users.manage' },
+        meta: { requiresAuth: true, requiredPermissions: 'users.manage', title: 'Users' },
       },
       {
         path: '/roles',
         name: 'role-management',
         component: RoleManagement,
-        meta: { requiresAuth: true, requiredPermissions: 'users.manage' },
+        meta: { requiresAuth: true, requiredPermissions: 'users.manage', title: 'Roles' },
       },
       {
         path: '/books',
         name: 'book-management',
         component: BookManagement,
-        meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+        meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Books' },
       },
       ...withPrefix('/books', [
         {
           path: '/new',
           name: 'book-upload',
           component: NewBook,
-          meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+          meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Upload Book' },
         },
         {
           path: '/edit/:id',
-          meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+          meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Edit Book' },
           component: EditBook,
           children: [
             {
               path: '/',
               name: 'book-metadata',
               component: MetadataEditor,
-              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Edit Metadata' },
             },
             {
               path: 'reupload',
               name: 'book-reupload',
               component: ReuploadBook,
-              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Upload New Version' },
             },
             {
               path: 'table-of-contents',
               name: 'table-of-contents',
               component: TableOfContents,
-              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Table of Contents' },
             },
             {
               path: 'citations',
               name: 'chapter-citations',
               component: ChapterCitations,
-              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Chapter Citations' },
             },
             {
               path: 'classes',
               name: 'book-classes',
               component: ClassMapper,
-              meta: { requiresAuth: true, requiredPermissions: 'books.manage' },
+              meta: { requiresAuth: true, requiredPermissions: 'books.manage', title: 'Styles' },
             },
           ],
         },
@@ -115,18 +115,19 @@ const router = new Router({
       path: '/account',
       name: 'account',
       component: UserProfile,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Account' },
     },
     {
       path: '/search',
       name: 'search',
       component: SearchResults,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, autoTitle: false },
       children: [
         {
           path: 'preview/:id',
           name: 'search-preview',
           component: ChapterOverlay,
+          meta: { autoTitle: false },
         },
       ],
     },
@@ -134,30 +135,30 @@ const router = new Router({
       path: '/chapters/:id',
       name: 'chapter',
       component: Chapter,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, autoTitle: false },
     },
     {
       path: '/library',
       name: 'library',
       component: Library,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Library' },
     },
     {
       path: '/library/:id',
       component: BookOverview,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, autoTitle: false },
       children: [
         {
           path: '/',
           name: 'book-chapters',
           component: BookChapters,
-          meta: { coverTransition: true, title: 'Chapters' },
+          meta: { coverTransition: true, autoTitle: false },
         },
         {
           path: 'dictionary',
           name: 'book-dictionary',
           component: BookDictionary,
-          meta: { coverTransition: true, title: 'Dictionary' },
+          meta: { coverTransition: true, autoTitle: false },
         },
       ],
     },
@@ -235,6 +236,16 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
+});
+
+router.afterEach((to) => {
+  if (to.meta.autoTitle === false) {
+    return;
+  }
+
+  Vue.nextTick(() => {
+    document.title = to.meta.title ? `${to.meta.title} · Book Search` : 'Book Search';
+  });
 });
 
 export default router;

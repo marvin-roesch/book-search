@@ -22,6 +22,9 @@ import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 export default {
   name: 'book-chapters',
   components: { LoadingSpinner },
+  props: {
+    book: Object,
+  },
   data() {
     return {
       chapters: [],
@@ -33,6 +36,7 @@ export default {
     try {
       const { data: chapters } = await this.$api.get(`/books/${this.$route.params.id}/chapters`);
       this.chapters = chapters;
+      document.title = `${this.book.title} - Chapters · Book Search`;
     } catch (error) {
       this.$handleApiError(error);
     }

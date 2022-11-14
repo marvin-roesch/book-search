@@ -129,6 +129,7 @@ export default {
         this.prevChapter = prevChapter;
         this.nextChapter = nextChapter;
         this.contentLoaded = true;
+        document.title = `${query ? `'${query}' in ` : ''}${book.title} - ${chapter.title} · Book Search`;
       } catch (error) {
         this.contentLoaded = true;
         if (axios.isCancel(error)) {

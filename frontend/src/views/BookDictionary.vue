@@ -75,6 +75,9 @@ import { saveAs } from '@/utils';
 export default {
   name: 'book-dictionary',
   components: { LoadingSpinner },
+  props: {
+    book: Object,
+  },
   data() {
     return {
       dictionary: [],
@@ -86,6 +89,7 @@ export default {
     try {
       const { data: dictionary } = await this.$api.get(`/books/${this.$route.params.id}/dictionary`);
       this.dictionary = dictionary;
+      document.title = `${this.book.title} - Dictionary · Book Search`;
     } catch (error) {
       this.$handleApiError(error);
     }

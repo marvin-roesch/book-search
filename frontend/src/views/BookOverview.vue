@@ -61,7 +61,7 @@
   </div>
   <h1>{{ $route.meta.title }}</h1>
   <transition name="fade-relative">
-    <router-view></router-view>
+    <router-view :book="book"></router-view>
   </transition>
 </div>
 </template>
@@ -104,6 +104,7 @@ export default {
       try {
         const { data: book } = await this.$api.get(`/books/${this.bookId}`);
         this.book = book;
+        document.title = `${book.title} · Book Search`;
       } catch (error) {
         this.$handleApiError(error);
       }

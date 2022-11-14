@@ -40,39 +40,39 @@ export default {
     document.addEventListener('touchstart', this.showPopup);
     document.addEventListener('touchend', this.showPopup);
     document.addEventListener('contextmenu', this.showPopup);
-    this.$el.querySelectorAll("[data-footnote]").forEach((element) => {
+    this.$el.querySelectorAll('[data-footnote]').forEach((element) => {
       element.addEventListener('click', (event) => {
-        const target = document.getElementById(new URL(element.href).hash.substring(1))
+        const target = document.getElementById(new URL(element.href).hash.substring(1));
         if (target) {
-          window.scrollTo({ top: target.offsetTop })
-          target.classList.add('flash-paragraph')
+          window.scrollTo({ top: target.offsetTop });
+          target.classList.add('flash-paragraph');
           setTimeout(() => {
-            target.classList.remove('flash-paragraph')
-          }, 1000)
+            target.classList.remove('flash-paragraph');
+          }, 1000);
         }
-        event.preventDefault()
-      })
-    })
-    this.$el.querySelectorAll("[data-footnote-back]").forEach((element) => {
+        event.preventDefault();
+      });
+    });
+    this.$el.querySelectorAll('[data-footnote-back]').forEach((element) => {
       element.addEventListener('click', (event) => {
-        const target = document.getElementById(new URL(element.href).hash.substring(1))
+        const target = document.getElementById(new URL(element.href).hash.substring(1));
         if (target) {
-          window.scrollTo({ top: target.offsetTop })
-          let parent = target
+          window.scrollTo({ top: target.offsetTop });
+          let parent = target;
           while (parent && parent.tagName.toLowerCase() !== 'p') {
-            parent = parent.parentNode
+            parent = parent.parentNode;
           }
 
           if (parent) {
-            parent.classList.add('flash-paragraph')
+            parent.classList.add('flash-paragraph');
             setTimeout(() => {
-              parent.classList.remove('flash-paragraph')
-            }, 1000)
+              parent.classList.remove('flash-paragraph');
+            }, 1000);
           }
         }
-        event.preventDefault()
-      })
-    })
+        event.preventDefault();
+      });
+    });
   },
   destroyed() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
