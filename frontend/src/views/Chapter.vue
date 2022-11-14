@@ -25,9 +25,9 @@
       <QuickHelp></QuickHelp>
     </div>
   </div>
-  <ChapterNavigation fixed :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
+  <ChapterNavigation route="chapter" fixed :prev="prevChapter" :next="nextChapter" />
   <div class="chapter-content-container">
-    <ChapterNavigation :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
+    <ChapterNavigation route="chapter" :prev="prevChapter" :next="nextChapter" />
     <transition name="fade-relative">
       <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
       <Card class="chapter-content" v-else>
@@ -41,7 +41,7 @@
         </BookText>
       </Card>
     </transition>
-    <ChapterNavigation :prev="prevChapter" :next="nextChapter"></ChapterNavigation>
+    <ChapterNavigation route="chapter" :prev="prevChapter" :next="nextChapter" />
   </div>
 </div>
 </template>
@@ -129,7 +129,7 @@ export default {
         this.prevChapter = prevChapter;
         this.nextChapter = nextChapter;
         this.contentLoaded = true;
-        document.title = `${query ? `'${query}' in ` : ''}${book.title} - ${chapter.title} · Book Search`;
+        document.title = `${query ? `Results for '${query}' in ` : ''}${book.title} - ${chapter.title} · Book Search`;
       } catch (error) {
         this.contentLoaded = true;
         if (axios.isCancel(error)) {

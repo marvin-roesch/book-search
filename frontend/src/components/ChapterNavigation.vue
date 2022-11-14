@@ -2,7 +2,11 @@
 <div :class="fixed ? 'chapter-navigation-fixed' : 'chapter-navigation'">
   <router-link
     class="chapter-navigation-prev"
-    :to="{ name: 'chapter', params: { id: prev } }"
+    :to="{
+      name: route,
+      params: { id: prev },
+      query: { ...this.$route.query, position: undefined }
+    }"
     title="Previous chapter"
     v-if="prev !== null">
     <ChevronLeftIcon :width="fixed ? 48 : 24" :height="fixed ? 48 : 24">
@@ -11,7 +15,11 @@
   </router-link>
   <router-link
     class="chapter-navigation-next"
-    :to="{ name: 'chapter', params: { id: next } }"
+    :to="{
+      name: route,
+      params: { id: next },
+      query: { ...this.$route.query, position: undefined }
+    }"
     title="Next chapter"
     v-if="next !== null">
     <template v-if="!fixed">Next</template>
@@ -31,6 +39,7 @@ export default {
     ChevronLeftIcon,
   },
   props: {
+    route: String,
     fixed: Boolean,
     prev: String,
     next: String,

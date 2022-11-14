@@ -28,7 +28,9 @@
       <XIcon class="chapter-overlay-header-close-icon" @click.prevent.stop="close"></XIcon>
     </div>
   </div>
+  <ChapterNavigation route="search-preview" fixed :prev="prevChapter" :next="nextChapter" />
   <div class="chapter-overlay-content-container" @click.self.stop="close">
+    <ChapterNavigation route="search-preview" :prev="prevChapter" :next="nextChapter" />
     <LoadingSpinner v-if="!contentLoaded"></LoadingSpinner>
     <Card class="chapter-overlay-content" v-else>
       <BookText
@@ -39,6 +41,7 @@
         ref="text">
       </BookText>
     </Card>
+    <ChapterNavigation route="search-preview" :prev="prevChapter" :next="nextChapter" />
   </div>
 </div>
 </template>
@@ -50,11 +53,18 @@ import BookText from '@/components/BookText.vue';
 import LoadingSpinner from '@/components/search/LoadingSpinner.vue';
 import { buildCitation, copyText } from '@/utils';
 import Button from '@/components/Button.vue';
+import ChapterNavigation from '@/components/ChapterNavigation.vue';
 
 export default {
   name: 'chapter-overlay',
   components: {
-    Button, Share2Icon, BookText, XIcon, Card, LoadingSpinner,
+    Button,
+    ChapterNavigation,
+    Share2Icon,
+    BookText,
+    XIcon,
+    Card,
+    LoadingSpinner,
   },
   data() {
     return {
@@ -62,9 +72,62 @@ export default {
       chapter: null,
       content: '',
       contentLoaded: false,
+      prevChapter: null,
+      nextChapter: null,
     };
   },
   watch: {
+    '$route.params.id': {
+      async handler() {
+        this.book = null;
+        this.chapter = null;
+        this.contentLoaded = false;
+
+        try {
+          const {
+            data: {
+              book, chapter, content, prevChapter, nextChapter,
+            },
+          } = await this.$api.post(
+            `/books/chapters/${this.$route.params.id}/search`,
+            {
+              query: this.$route.query.q,
+              seriesFilter: null,
+              bookFilter: null,
+            },
+          );
+
+          this.book = book;
+          this.chapter = chapter;
+          this.content = content;
+          this.prevChapter = prevChapter;
+          this.nextChapter = nextChapter;
+          this.contentLoaded = true;
+
+          const { position } = this.$route.query;
+          if (position !== undefined) {
+            this.$nextTick(() => {
+              const paragraphs = this.$refs.text.$el.querySelectorAll('p');
+
+              if (position >= paragraphs.length) {
+                return;
+              }
+
+              const paragraph = paragraphs[position];
+              paragraph.classList.add('result-paragraph');
+              this.$refs.container.scrollTop = paragraph.offsetTop - 70;
+            });
+          } else {
+            this.$nextTick(() => {
+              this.$refs.container.scrollTop = 0;
+            })
+          }
+        } catch (error) {
+          this.$handleApiError(error);
+        }
+      },
+      immediate: true,
+    },
     book: {
       handler() {
         this.updateTitle();
@@ -84,43 +147,12 @@ export default {
       immediate: true,
     },
   },
-  async mounted() {
-    try {
-      const { data: { book, chapter, content } } = await this.$api.post(
-        `/books/chapters/${this.$route.params.id}/search`,
-        {
-          query: this.$route.query.q,
-          seriesFilter: null,
-          bookFilter: null,
-        },
-      );
-
-      this.book = book;
-      this.chapter = chapter;
-      this.content = content;
-      this.contentLoaded = true;
-
-      const { position } = this.$route.query;
-      if (position !== undefined) {
-        this.$nextTick(() => {
-          const paragraphs = this.$refs.text.$el.querySelectorAll('p');
-
-          if (position >= paragraphs.length) {
-            return;
-          }
-
-          const paragraph = paragraphs[position];
-          paragraph.classList.add('result-paragraph');
-          this.$refs.container.scrollTop = paragraph.offsetTop - 70;
-        });
-      }
-    } catch (error) {
-      this.$handleApiError(error);
-    }
-  },
   methods: {
     close() {
-      this.$router.back();
+      this.$router.replace({
+        name: 'search',
+        query: { ...this.$route.query, position: undefined },
+      });
     },
     share() {
       const baseUrl = window.location.origin;
